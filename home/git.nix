@@ -12,8 +12,8 @@
       commit.gpgsign = true;
       init.defaultBranch = "main";
       pull.rebase = true;
-      credential."https://github.com".helper = "!/opt/homebrew/bin/gh auth git-credential";
-      credential."https://gist.github.com".helper = "!/opt/homebrew/bin/gh auth git-credential";
+      credential."https://github.com".helper = "!/run/current-system/sw/bin/gh auth git-credential";
+      credential."https://gist.github.com".helper = "!/run/current-system/sw/bin/gh auth git-credential";
     };
     ignores = [".DS_Store" ".env.local" "*.log" ".claude/settings.local.json"];
   };
