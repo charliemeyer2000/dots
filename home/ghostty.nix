@@ -23,5 +23,9 @@ in {
     keybind = cmd+opt+=equalize_splits
     keybind = cmd+opt+enter=toggle_split_zoom
     keybind = cmd+w=close_surface
+
+    # Unbind shift+enter to allow it to work as newline in Claude Code
+    keybind = shift+enter=unbind
+    keybind = cmd+shift+enter=unbind
   '';
 }

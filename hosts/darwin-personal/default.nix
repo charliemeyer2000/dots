@@ -4,6 +4,7 @@
     ../../modules/darwin.nix
     ../../modules/apps.nix
     ../../modules/secrets.nix
+    ../../modules/ros2.nix
   ];
 
   system.primaryUser = "charlie";
