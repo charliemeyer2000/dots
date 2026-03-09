@@ -43,28 +43,16 @@
       unsetopt correct_all
       unsetopt correct
 
-      # Read dots directory from stored location (written by 'just switch')
       if [ -f "$HOME/.config/dots/location" ]; then
         export DOTS_DIR=$(cat "$HOME/.config/dots/location")
-      elif [ -d "$HOME/all/dots" ]; then
-        export DOTS_DIR="$HOME/all/dots"
       else
-        # Try to find it using git
-        if command -v git &>/dev/null && git rev-parse --show-toplevel &>/dev/null 2>&1; then
-          local git_root=$(git rev-parse --show-toplevel)
-          if [ -f "$git_root/flake.nix" ]; then
-            export DOTS_DIR="$git_root"
-          fi
-        fi
+        export DOTS_DIR="$HOME/all/dots"
       fi
 
       [ -f ~/.env.local ] && source ~/.env.local
 
       export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:$HOME/.local/bin:$PATH"
 
-      # Fix Claude Code environment inheritance issue
-      # When launching new terminal windows from within Claude Code,
-      # they inherit CLAUDECODE=1 which prevents running cc/claude
       unset CLAUDECODE
 
       eval "$(zoxide init zsh)"
