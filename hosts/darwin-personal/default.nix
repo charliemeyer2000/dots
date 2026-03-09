@@ -9,6 +9,9 @@
     home = "/Users/charlie";
   };
 
+  # Determinate Systems installer manages Nix, not nix-darwin
+  nix.enable = false;
+
   # Set the hostname used by nix-darwin
   networking.hostName = "charlies-MacBook-Pro-2";
 
