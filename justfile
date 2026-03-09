@@ -13,11 +13,11 @@ check:
 
 # rebuild current machine
 switch:
-  nix flake check && darwin-rebuild switch --flake .#darwin-personal
+  nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#darwin-personal
 
 # rebuild and show diff
 switch-dry:
-  darwin-rebuild build --flake .#darwin-personal
+  /run/current-system/sw/bin/darwin-rebuild build --flake .#darwin-personal
 
 # enter dev shell
 dev:

@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{...}: {
   # System defaults
   system.defaults = {
     dock.autohide = true;
