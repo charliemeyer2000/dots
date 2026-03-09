@@ -22,3 +22,7 @@ switch-dry:
 # enter dev shell
 dev:
   nix develop
+
+# enter ROS2 dev shell
+ros2:
+  nix develop .#ros2

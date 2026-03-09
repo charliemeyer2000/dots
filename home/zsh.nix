@@ -71,6 +71,9 @@
       [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc"
 
       if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
+
+      # Fix Shift+Return in Ghostty terminal
+      bindkey '^[[27;2;13~' self-insert
     '';
   };
 }
