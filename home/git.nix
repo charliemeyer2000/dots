@@ -5,7 +5,7 @@
       user = {
         name = "Charlie Meyer";
         email = "charlie@charliemeyer.xyz";
-        signingkey = "~/.ssh/id_ed25519.pub";
+        signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKATWx0Ji3b96HH3rBEol2cEnNqTlZBUvOjV0McaUm1q";
       };
       gpg.format = "ssh";
       gpg.ssh.program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
