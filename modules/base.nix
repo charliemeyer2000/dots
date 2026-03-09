@@ -50,6 +50,7 @@
     docker-buildx
     docker-compose
     cloudflared
+    tailscale
     redis
   ];
 
