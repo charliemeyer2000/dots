@@ -1,2 +1,4 @@
 audit
 audit.sh
+result
+secrets/.env.local

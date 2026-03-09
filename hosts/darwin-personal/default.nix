@@ -3,6 +3,7 @@
     ../../modules/base.nix
     ../../modules/darwin.nix
     ../../modules/apps.nix
+    ../../modules/secrets.nix
   ];
 
   # nix-darwin needs to know the primary user
