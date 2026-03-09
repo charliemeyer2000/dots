@@ -1,6 +1,7 @@
 {...}: {
   programs.ssh = {
     enable = true;
+    enableDefaultConfig = false;
     includes = ["/Users/charlie/.colima/ssh_config"];
     matchBlocks = {
       workstation = {
@@ -27,6 +28,11 @@
         user = "root";
       };
       "*" = {
+        forwardAgent = false;
+        compression = false;
+        serverAliveInterval = 0;
+        serverAliveCountMax = 3;
+        hashKnownHosts = false;
         setEnv = {
           TERM = "xterm-256color";
         };
