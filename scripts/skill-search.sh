@@ -4,7 +4,7 @@ set -euo pipefail
 owner_repo=$1
 
 TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf $TEMP_DIR' EXIT
 
 git clone --depth 1 --quiet "https://github.com/${owner_repo}.git" "$TEMP_DIR/repo" 2>/dev/null || {
     echo "Failed to search ${owner_repo}"

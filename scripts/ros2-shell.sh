@@ -2,10 +2,12 @@
 ROS2_WS="${ROS2_WS:-$HOME/ros2_jazzy}"
 
 if [ -f "$ROS2_WS/.venv/bin/activate" ]; then
+  # shellcheck source=/dev/null
   source "$ROS2_WS/.venv/bin/activate"
 fi
 
 if [ -f "$ROS2_WS/install/setup.bash" ]; then
+  # shellcheck source=/dev/null
   source "$ROS2_WS/install/setup.bash"
   echo "ROS2 environment loaded from $ROS2_WS"
 else

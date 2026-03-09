@@ -11,6 +11,7 @@ mkdir -p "$ROS2_WS/src"
 if [ ! -d "$VENV" ]; then
   echo "Creating Python virtual environment..."
   python3 -m venv "$VENV"
+  # shellcheck source=/dev/null
   source "$VENV/bin/activate"
   pip install --upgrade pip setuptools wheel
   pip install -q \
@@ -34,6 +35,7 @@ if [ ! -d "$VENV" ]; then
     pydot
   echo "Python environment ready"
 else
+  # shellcheck source=/dev/null
   source "$VENV/bin/activate"
 fi
 

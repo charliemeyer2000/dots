@@ -41,7 +41,6 @@ in {
       lz4
       git
       pythonWithRos2
-
     ]
     ++ lib.optionals pkgs.stdenv.isDarwin [
       libiconv
