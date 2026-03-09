@@ -11,6 +11,14 @@ fmt:
 check:
   nix flake check
 
+# rebuild current machine
+switch:
+  nix flake check && darwin-rebuild switch --flake .#darwin-personal
+
+# rebuild and show diff
+switch-dry:
+  darwin-rebuild build --flake .#darwin-personal
+
 # enter dev shell
 dev:
   nix develop

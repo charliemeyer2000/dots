@@ -6,6 +6,16 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -25,6 +35,7 @@
         ./parts/formatter.nix
         ./parts/checks.nix
         ./parts/devshell.nix
+        ./parts/hosts.nix
       ];
     };
 }
