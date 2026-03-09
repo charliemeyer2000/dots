@@ -1,10 +1,17 @@
 # Global Rules
 
+## Coding Practice
+
+- Always **ultrathink** about the codebase, structure, patterns, existing files/utilities. Think - what's a high-quality, senior-engineer implementation for this? 
+- If you're lost, always read documentation, or consult the user for guidance.
+- Read the AGENTS.md and CLAUDE.md
+
+
 ## Package Managers
 
-- **JS**: use `pnpm`, never `npm`. node is managed by nvm, default version via nix.
-- **Python**: use `uv` for everything. `uv run` for scripts, `uv sync` for projects, `uv tool install` for global CLI tools. never `pip install`.
-- **Rust**: use `cargo` via `rustup`.
+- JS: use `pnpm`, never `npm`. node is managed by nvm, default version via nix.
+- Python: use `uv` for everything. `uv run` for scripts, `uv sync` for projects, `uv tool install` for global CLI tools. never `pip install`.
+- Rust: use `cargo` via `rustup`.
 
 ## Commits
 
@@ -18,4 +25,9 @@
 - Config lives at `~/all/dots`
 - `just switch` to rebuild
 - Secrets injected via 1Password `op inject` during activation
-- Don't create .env files manually — they come from `secrets/secrets.zsh.tmpl`
+
+## Other machines
+
+Check out the .ssh/config for other machines we have access to
+- `workstation`: personal workstation running a 5090 
+- `jetson-nano`: edge device, jetson orin nano

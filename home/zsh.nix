@@ -40,13 +40,13 @@
 
       export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:$HOME/.local/bin:$PATH"
 
+      # Fix Claude Code environment inheritance issue
+      # When launching new terminal windows from within Claude Code,
+      # they inherit CLAUDECODE=1 which prevents running cc/claude
+      unset CLAUDECODE
+
       eval "$(zoxide init zsh)"
 
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-      [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-      [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
       export PNPM_HOME="$HOME/Library/pnpm"
       case ":$PATH:" in

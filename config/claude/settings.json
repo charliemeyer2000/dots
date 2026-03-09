@@ -7,5 +7,14 @@
     "clangd-lsp@claude-plugins-official": true
   },
   "skipDangerousModePermissionPrompt": true,
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "attribution": {
+    "commit": "feat: AI-assisted changes\n\nCo-Authored-By: Claude <ai@anthropic.com>",
+    "pr": ""
+  },
+  "respectGitignore": true,
+  "alwaysThinkingEnabled": true,
+  "showTurnDuration": false,
+  "spinnerTipsEnabled": false,
+  "terminalProgressBarEnabled": true
 }
