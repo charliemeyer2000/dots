@@ -1,0 +1,38 @@
+# Manual Setup
+
+Things that can't be managed by Nix. Install these by hand and document them here.
+
+## Mac App Store Apps
+
+Install manually from the Mac App Store:
+- Xcode (for command line tools and iOS development)
+
+## App-Internal Configs
+
+These store settings internally and can't be declaratively managed:
+- **Raycast** — extensions, keybindings, snippets (use Raycast's built-in sync)
+- **Cursor** — settings sync via GitHub account
+- **Chrome** — profile/extensions via Google account sync
+- **1Password** — sign in via account credentials
+
+## ROS2 (if needed)
+
+Requires SIP disabled on macOS. Not nixifiable.
+
+```bash
+# Follow official install guide for your platform
+# https://docs.ros.org/en/jazzy/Installation.html
+```
+
+## Kext-Based Installs
+
+Hardware drivers or VPN clients that require kernel extensions must be installed manually.
+
+## After Bootstrap Checklist
+
+1. Sign into 1Password: `op signin`
+2. Run `just switch` to inject secrets
+3. Sign into GitHub CLI: `gh auth login`
+4. Sign into Tailscale: `tailscale up`
+5. Import SSH keys to 1Password (if new machine)
+6. Set up Ghostty config (managed via dots, should just work)
