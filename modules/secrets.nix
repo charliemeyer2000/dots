@@ -16,11 +16,22 @@
   script = ''
     if ${pkgs._1password-cli}/bin/op whoami &>/dev/null; then
       echo "Injecting secrets via 1Password..."
-      ${pkgs._1password-cli}/bin/op inject -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local
-      mkdir -p ${homeDir}/.aws
-      ${pkgs._1password-cli}/bin/op inject -i ${dotsDir}/secrets/aws.tmpl -o ${homeDir}/.aws/credentials
-      chown charlie:${group} ${homeDir}/.env.local ${homeDir}/.aws/credentials
-      chmod 600 ${homeDir}/.env.local ${homeDir}/.aws/credentials
+      ${pkgs._1password-cli}/bin/op inject -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local && \
+        chown charlie:${group} ${homeDir}/.env.local && \
+        chmod 600 ${homeDir}/.env.local && \
+        echo "  -> ~/.env.local injected" || \
+        echo "  -> ~/.env.local failed (check template references)"
+
+      # Only inject AWS if the template items exist
+      if ${pkgs._1password-cli}/bin/op inject -i ${dotsDir}/secrets/aws.tmpl 2>/dev/null | head -c1 | grep -q .; then
+        mkdir -p ${homeDir}/.aws
+        ${pkgs._1password-cli}/bin/op inject -i ${dotsDir}/secrets/aws.tmpl -o ${homeDir}/.aws/credentials
+        chown charlie:${group} ${homeDir}/.aws/credentials
+        chmod 600 ${homeDir}/.aws/credentials
+        echo "  -> ~/.aws/credentials injected"
+      else
+        echo "  -> ~/.aws/credentials skipped (AWS items not in 1Password yet)"
+      fi
     else
       echo "1Password not signed in, skipping secrets injection."
     fi
