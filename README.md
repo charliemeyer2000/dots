@@ -4,8 +4,7 @@ my nix configuration
 
 ## easy commands
 
-setup: `darwin-rebuild switch --flake .#[host]`
-    - hosts: `[darwin-minimal, darwin-personal, linux-ec2, linux-hpc]`
+rebuild
 
 other commands are in `justfile`
 
