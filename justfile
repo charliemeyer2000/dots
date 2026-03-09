@@ -27,8 +27,8 @@ switch config='':
     echo "Example: just switch darwin-personal"
     exit 1
   fi
-  @mkdir -p ~/.config/dots
-  @pwd > ~/.config/dots/location
+  mkdir -p ~/.config/dots
+  pwd > ~/.config/dots/location
   nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
 
 # rebuild and show diff
