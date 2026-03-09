@@ -28,7 +28,15 @@ These store settings internally and can't be declaratively managed:
 
 ## Fonts
 
-**Berkeley Mono** (used by Ghostty) must be installed manually — it's a paid font and can't be committed to a public repo. Copy the OTF/TTF files to `~/Library/Fonts/`.
+Nix manages JetBrainsMono and FiraCode Nerd Fonts. Private/paid fonts must be installed manually:
+
+```bash
+gh repo clone barrettruth/fonts /tmp/fonts
+cp /tmp/fonts/**/*.{otf,ttf} ~/Library/Fonts/
+rm -rf /tmp/fonts
+```
+
+Fonts used by Ghostty (Berkeley Mono) must be in `~/Library/Fonts/` before Ghostty will render them.
 
 ## ROS2
 
