@@ -58,7 +58,33 @@ case "$(uname -s)" in
     ;;
 esac
 
-# 5. Secrets / 1Password setup
+# 5. Oh My Zsh + custom plugins
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+  echo "Installing Oh My Zsh..."
+  RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
+if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ]; then
+  echo "Installing zsh-autosuggestions plugin..."
+  git clone https://github.com/zsh-users/zsh-autosuggestions "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+fi
+if [ ! -d "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" ]; then
+  echo "Installing zsh-syntax-highlighting plugin..."
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+fi
+
+# 6. NVM (Node version manager)
+if [ ! -d "$HOME/.nvm" ]; then
+  echo "Installing NVM..."
+  PROFILE=/dev/null bash -c "$(curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh)"
+fi
+
+# 7. Claude Code CLI
+if ! command -v claude &>/dev/null; then
+  echo "Installing Claude Code CLI..."
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+# 8. Secrets / 1Password setup
 if [ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]; then
   echo "Service account token detected — saving for activation scripts..."
   mkdir -p "$HOME/.config/op"

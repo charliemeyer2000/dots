@@ -28,6 +28,9 @@
       tf = "terraform";
       cc = "claude --dangerously-skip-permissions";
       killport = "f() { lsof -ti :$1 | xargs kill -9; }; f";
+      npm = "echo 'use pnpm instead' && false";
+      pip = "echo 'use uv instead' && false";
+      pip3 = "echo 'use uv instead' && false";
     };
 
     initContent = ''
@@ -49,13 +52,11 @@
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
       [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-      # bun
-      export BUN_INSTALL="$HOME/.bun"
-      export PATH="$BUN_INSTALL/bin:$PATH"
+      # bun completions
       [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
-      # pnpm
-      export PNPM_HOME="/Users/charlie/Library/pnpm"
+      # pnpm global bin
+      export PNPM_HOME="$HOME/Library/pnpm"
       case ":$PATH:" in
         *":$PNPM_HOME:"*) ;;
         *) export PATH="$PNPM_HOME:$PATH" ;;
