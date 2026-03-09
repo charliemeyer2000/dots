@@ -11,15 +11,43 @@ fmt:
 check:
   nix flake check
 
-# rebuild current machine
-switch:
+# rebuild machine with specified configuration
+switch config='':
+  #!/usr/bin/env bash
+  if [[ -z "{{config}}" ]]; then
+    echo "Error: Configuration name required"
+    echo ""
+    echo "Available configurations:"
+    echo "  - darwin-personal   # Full macOS setup with GUI apps"
+    echo "  - darwin-minimal    # Minimal macOS setup without GUI apps"
+    echo "  - linux-ec2         # AWS EC2 Linux instances"
+    echo "  - linux-hpc         # HPC cluster nodes"
+    echo ""
+    echo "Usage: just switch <config>"
+    echo "Example: just switch darwin-personal"
+    exit 1
+  fi
   @mkdir -p ~/.config/dots
   @pwd > ~/.config/dots/location
-  nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#darwin-personal
+  nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
 
 # rebuild and show diff
-switch-dry:
-  /run/current-system/sw/bin/darwin-rebuild build --flake .#darwin-personal
+switch-dry config='':
+  #!/usr/bin/env bash
+  if [[ -z "{{config}}" ]]; then
+    echo "Error: Configuration name required"
+    echo ""
+    echo "Available configurations:"
+    echo "  - darwin-personal   # Full macOS setup with GUI apps"
+    echo "  - darwin-minimal    # Minimal macOS setup without GUI apps"
+    echo "  - linux-ec2         # AWS EC2 Linux instances"
+    echo "  - linux-hpc         # HPC cluster nodes"
+    echo ""
+    echo "Usage: just switch-dry <config>"
+    echo "Example: just switch-dry darwin-personal"
+    exit 1
+  fi
+  /run/current-system/sw/bin/darwin-rebuild build --flake .#{{config}}
 
 # enter dev shell
 dev:
@@ -51,5 +79,5 @@ skill-remove skill:
 skill-browse:
   @open "https://skills.sh"
 
-# install a skill and rebuild immediately
-skill-install repo skill: (skill-add repo skill) switch
+# install a skill and rebuild immediately (requires config)
+skill-install repo skill config: (skill-add repo skill) (switch config)

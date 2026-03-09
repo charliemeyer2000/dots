@@ -21,7 +21,7 @@
     };
 
     shellAliases = {
-      rebuild = "cd $DOTS_DIR && just switch";
+      rebuild = "echo 'Usage: rebuild <config>' && echo 'Example: rebuild darwin-personal' && echo '' && cd $DOTS_DIR && just switch";
       dots = "cd $DOTS_DIR";
       k = "kubectl";
       tf = "terraform";
@@ -35,7 +35,7 @@
       skill-search = "cd $DOTS_DIR && just skill-search";
       skill-list = "cd $DOTS_DIR && just skill-list";
       skill-remove = "cd $DOTS_DIR && just skill-remove";
-      skill-install = "cd $DOTS_DIR && just skill-install";
+      skill-install = "echo 'Usage: skill-install <repo> <skill> <config>' && echo 'Example: skill-install cursor/plugins deslop darwin-personal' && false";
       skills = "cd $DOTS_DIR && just skill-list";
     };
 

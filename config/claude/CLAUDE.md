@@ -23,7 +23,7 @@
 
 - nix-darwin + home-manager manages this machine
 - Config lives at `~/all/dots`
-- `just switch` to rebuild
+- `just switch <config>` to rebuild (e.g., `just switch darwin-personal`)
 - Secrets injected via 1Password `op inject` during activation
 
 ## Other machines

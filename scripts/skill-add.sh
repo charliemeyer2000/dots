@@ -41,4 +41,4 @@ mkdir -p "$SKILL_DIR"
 cp -r "$SKILL_PATH"/* "$SKILL_DIR/"
 
 echo "Added ${skill_name} to nix config"
-echo "Run 'just switch' to activate"
+echo "Run 'just switch <config>' to activate (e.g., just switch darwin-personal)"

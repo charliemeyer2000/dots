@@ -18,11 +18,11 @@ skills are vendored in `config/claude/skills/` and deployed to `~/.claude/skills
 # option 1: use the skills cli, then vendor into nix
 npx skills add owner/repo -g
 cp -r ~/.agents/skills/my-skill config/claude/skills/
-just switch
+just switch <config>
 
 # option 2: manually create one
 mkdir config/claude/skills/my-skill
-just switch
+just switch <config>
 ```
 
 **project-level skills** still work normally — `npx skills add owner/repo` (without `-g`) creates symlinks in your project's `.claude/skills/` pointing to `~/.agents/skills/`. this doesn't conflict with nix.
@@ -53,7 +53,8 @@ rm -rf /tmp/fonts
 ## after bootstrap
 
 1. `op signin`
-2. `just switch` (injects secrets)
+2. `just switch <config>` (injects secrets)
+   - Example: `just switch darwin-personal`
 3. `gh auth login`
 4. `tailscale up`
 5. import SSH keys to 1Password if new machine

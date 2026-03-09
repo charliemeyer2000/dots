@@ -46,12 +46,12 @@ dots/
 ## Key Concepts
 
 ### Dynamic Dots Directory
-The dots directory location is stored in `~/.config/dots/location` when running `just switch`. This allows the configuration to work regardless of where the repo is cloned. All aliases and commands use `$DOTS_DIR` which reads this file on shell startup.
+The dots directory location is stored in `~/.config/dots/location` when running `just switch <config>`. This allows the configuration to work regardless of where the repo is cloned. All aliases and commands use `$DOTS_DIR` which reads this file on shell startup.
 
 ### Secrets Management
 Secrets are managed via 1Password CLI (`op`):
 - Templates in `secrets/` reference 1Password items
-- On `just switch`, secrets are injected to `~/.env.local` if signed in
+- On `just switch <config>`, secrets are injected to `~/.env.local` if signed in
 - The `.env.local` file is sourced in zsh for environment variables
 - Never commit actual secrets - only templates
 
@@ -66,14 +66,17 @@ Claude Code skills are managed declaratively:
 
 All commands are in the `justfile`:
 
-- `just switch` - Rebuild and apply configuration (stores dots location)
+- `just switch <config>` - Rebuild and apply configuration (stores dots location)
+  - Example: `just switch darwin-personal`
+  - Running without a config will show available options
 - `just check` - Run flake checks and linters
 - `just fmt` - Format all nix files
 - `just dev` - Enter development shell
 - `just ros2` - Enter ROS2 development shell
 
 Aliases available after rebuild:
-- `rebuild` - Shorthand for `just switch`
+- `rebuild <config>` - Shorthand for `just switch <config>`
+  - Example: `rebuild darwin-personal`
 - `dots` - cd to dots directory
 - `cc` - Claude Code without permissions prompt
 - `skill-*` - Skill management commands
@@ -82,8 +85,9 @@ Aliases available after rebuild:
 
 1. **Making changes**: Edit nix files in appropriate module
 2. **Check syntax**: `just check` runs linters
-3. **Apply changes**: `just switch` or `rebuild`
-4. **New machine**: Clone repo, run `just switch`, sign into 1Password
+3. **Apply changes**: `just switch <config>` or `rebuild <config>`
+   - Example: `just switch darwin-personal`
+4. **New machine**: Clone repo, run `just switch <config>`, sign into 1Password
 
 ## Machine Configurations
 
