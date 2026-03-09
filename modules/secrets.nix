@@ -9,12 +9,8 @@
     else "charlie";
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
-  # On macOS, activation runs as root so we sudo back to charlie for desktop app integration.
-  # On Linux with a service account token, op runs directly (no desktop app needed).
   asCharlie = "sudo -u charlie HOME=${homeDir}";
   script = ''
-    # Support headless machines via OP_SERVICE_ACCOUNT_TOKEN.
-    # If the token file exists, export it so op cli uses it directly (no desktop app needed).
     if [ -f ${homeDir}/.config/op/service-account-token ]; then
       OP_SERVICE_ACCOUNT_TOKEN="$(cat ${homeDir}/.config/op/service-account-token)"
       export OP_SERVICE_ACCOUNT_TOKEN
@@ -35,7 +31,6 @@
     fi
   '';
 in {
-  # nix-darwin uses postActivation, NixOS uses a named activation script
   system.activationScripts =
     if pkgs.stdenv.isDarwin
     then {postActivation.text = script;}

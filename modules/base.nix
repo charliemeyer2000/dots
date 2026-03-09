@@ -1,7 +1,5 @@
 {pkgs, ...}: {
-  # Core packages installed on every host
   environment.systemPackages = with pkgs; [
-    # Shell tools
     git
     ripgrep
     fd
@@ -21,7 +19,7 @@
     nmap
     socat
 
-    # Dev tools
+    # Dev
     cmake
     graphviz
     pandoc
@@ -30,7 +28,7 @@
     ruff
     cppcheck
 
-    # Language runtimes & package managers
+    # Runtimes
     go
     rustup
     lua
@@ -40,7 +38,7 @@
     uv
     _1password-cli
 
-    # Cloud & infra
+    # Infra
     awscli2
     kubectl
     kubernetes-helm
@@ -54,6 +52,5 @@
     redis
   ];
 
-  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 }
