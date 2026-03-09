@@ -15,7 +15,6 @@
     bat
     just
     direnv
-    starship
     zoxide
     gh
     gum

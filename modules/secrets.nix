@@ -1,9 +1,4 @@
-{
-  pkgs,
-  config,
-  lib,
-  ...
-}: let
+{pkgs, ...}: let
   homeDir =
     if pkgs.stdenv.isDarwin
     then "/Users/charlie"
@@ -14,26 +9,29 @@
     else "charlie";
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
+  # On macOS, activation runs as root so we sudo back to charlie for desktop app integration.
+  # On Linux with a service account token, op runs directly (no desktop app needed).
   asCharlie = "sudo -u charlie HOME=${homeDir}";
   script = ''
-    if ${asCharlie} ${op} read "op://Personal/GitHub/token" &>/dev/null; then
-      echo "Injecting secrets via 1Password..."
-      ${asCharlie} ${op} inject -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local && \
-        chmod 600 ${homeDir}/.env.local && \
-        echo "  -> ~/.env.local injected" || \
-        echo "  -> ~/.env.local failed (check template references)"
-
-      # Only inject AWS if the template items exist
-      if ${asCharlie} ${op} inject -i ${dotsDir}/secrets/aws.tmpl 2>/dev/null | head -c1 | grep -q .; then
-        mkdir -p ${homeDir}/.aws
-        ${asCharlie} ${op} inject -i ${dotsDir}/secrets/aws.tmpl -o ${homeDir}/.aws/credentials
-        chmod 600 ${homeDir}/.aws/credentials
-        echo "  -> ~/.aws/credentials injected"
-      else
-        echo "  -> ~/.aws/credentials skipped (AWS items not in 1Password yet)"
-      fi
+    # Support headless machines via OP_SERVICE_ACCOUNT_TOKEN.
+    # If the token file exists, export it so op cli uses it directly (no desktop app needed).
+    if [ -f ${homeDir}/.config/op/service-account-token ]; then
+      OP_SERVICE_ACCOUNT_TOKEN="$(cat ${homeDir}/.config/op/service-account-token)"
+      export OP_SERVICE_ACCOUNT_TOKEN
+      OP_CMD="${op}"
+      echo "Using 1Password service account..."
     else
-      echo "1Password not signed in, skipping secrets injection."
+      OP_CMD="${asCharlie} ${op}"
+      echo "Using 1Password desktop app integration..."
+    fi
+
+    echo "Injecting secrets via 1Password..."
+    if $OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local; then
+      chown charlie:${group} ${homeDir}/.env.local
+      chmod 600 ${homeDir}/.env.local
+      echo "  -> ~/.env.local injected"
+    else
+      echo "1Password not signed in or inject failed, skipping secrets."
     fi
   '';
 in {

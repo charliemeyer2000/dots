@@ -58,11 +58,17 @@ case "$(uname -s)" in
     ;;
 esac
 
-# 5. Inject secrets if 1Password is available
-if command -v op &>/dev/null && op whoami &>/dev/null; then
-  echo "1Password detected — secrets were injected during activation."
+# 5. Secrets / 1Password setup
+if [ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]; then
+  echo "Service account token detected — saving for activation scripts..."
+  mkdir -p "$HOME/.config/op"
+  echo "$OP_SERVICE_ACCOUNT_TOKEN" > "$HOME/.config/op/service-account-token"
+  chmod 600 "$HOME/.config/op/service-account-token"
+  echo "Secrets were injected during activation."
+elif command -v op &>/dev/null; then
+  echo "1Password CLI found — secrets were injected during activation (if signed in)."
 else
-  echo "1Password not signed in. Run 'op signin' then 'just switch' to inject secrets."
+  echo "No 1Password available. Run 'just switch' after setting up 1Password to inject secrets."
 fi
 
 echo "=== bootstrap complete ==="

@@ -1,4 +1,5 @@
 audit
 audit.sh
 result
+.direnv
 secrets/.env.local

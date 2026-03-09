@@ -1,8 +1,16 @@
-{pkgs, ...}: {
+{...}: {
   programs.zsh = {
     enable = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
+    # Disable home-manager's built-in versions — OMZ plugins handle these
+    autosuggestion.enable = false;
+    syntaxHighlighting.enable = false;
+
+    oh-my-zsh = {
+      enable = true;
+      theme = "robbyrussell";
+      custom = "$HOME/.oh-my-zsh/custom";
+      plugins = ["git" "aws" "kubectl" "zsh-autosuggestions" "zsh-syntax-highlighting"];
+    };
 
     history = {
       size = 50000;
@@ -32,9 +40,6 @@
 
       # Nix system packages + user-local binaries
       export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:$HOME/.local/bin:$PATH"
-
-      # Starship prompt
-      eval "$(starship init zsh)"
 
       # zoxide (cd replacement)
       eval "$(zoxide init zsh)"
