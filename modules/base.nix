@@ -47,6 +47,7 @@
     kind
     colima
     docker-client
+    docker-buildx
     docker-compose
     cloudflared
     redis

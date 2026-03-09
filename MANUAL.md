@@ -6,6 +6,17 @@ Things that can't be managed by Nix. Install these by hand and document them her
 
 Install manually from the Mac App Store:
 - Xcode (for command line tools and iOS development)
+- Keynote
+
+## Apps Without Brew Casks
+
+These must be installed manually (no homebrew cask available):
+- **Ollama** — download from ollama.com
+- **Klack** — mechanical keyboard sounds
+- **VESC Tool** — VESC motor controller config
+- **UniFi** — Ubiquiti network management
+- **Logitech Options+** — Logitech peripheral config
+- **Cisco Secure Client** — VPN (usually managed by IT)
 
 ## App-Internal Configs
 
