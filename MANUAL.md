@@ -26,13 +26,17 @@ These store settings internally and can't be declaratively managed:
 - **Chrome** — profile/extensions via Google account sync
 - **1Password** — sign in via account credentials
 
-## ROS2 (if needed)
+## Fonts
 
-Requires SIP disabled on macOS. Not nixifiable.
+**Berkeley Mono** (used by Ghostty) must be installed manually — it's a paid font and can't be committed to a public repo. Copy the OTF/TTF files to `~/Library/Fonts/`.
+
+## ROS2
+
+Cannot be nix-managed on macOS/Apple Silicon (nix-ros-overlay only supports Linux). Built from source via colcon at `~/ros2_jazzy/`. Requires SIP disabled.
 
 ```bash
-# Follow official install guide for your platform
-# https://docs.ros.org/en/jazzy/Installation.html
+# Build from source: https://docs.ros.org/en/jazzy/Installation/Alternatives/macOS-Development-Setup.html
+# Source the workspace: source ~/ros2_jazzy/install/setup.zsh
 ```
 
 ## Kext-Based Installs

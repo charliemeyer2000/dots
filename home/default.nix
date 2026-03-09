@@ -5,6 +5,7 @@
     ./direnv.nix
     ./ssh.nix
     ./fonts.nix
+    ./ghostty.nix
     ./claude.nix
   ];
 

@@ -35,7 +35,6 @@
     go
     rustup
     lua
-    nodejs_22
     pnpm
     uv
     _1password-cli

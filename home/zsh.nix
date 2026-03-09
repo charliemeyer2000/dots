@@ -4,6 +4,15 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
 
+    history = {
+      size = 50000;
+      save = 50000;
+      ignoreDups = true;
+      ignoreAllDups = true;
+      expireDuplicatesFirst = true;
+      extended = true;
+    };
+
     shellAliases = {
       rebuild = "just switch";
       dots = "cd ~/all/dots";
@@ -21,13 +30,16 @@
       # Load secrets injected by op
       [ -f ~/.env.local ] && source ~/.env.local
 
+      # User-local binaries
+      export PATH="$HOME/.local/bin:$PATH"
+
       # Starship prompt
       eval "$(starship init zsh)"
 
       # zoxide (cd replacement)
       eval "$(zoxide init zsh)"
 
-      # NVM (until we migrate to nix-managed node)
+      # NVM
       export NVM_DIR="$HOME/.nvm"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
       [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
@@ -35,6 +47,7 @@
       # bun
       export BUN_INSTALL="$HOME/.bun"
       export PATH="$BUN_INSTALL/bin:$PATH"
+      [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
       # pnpm
       export PNPM_HOME="/Users/charlie/Library/pnpm"
@@ -53,6 +66,13 @@
 
       # TexLive
       export PATH="/usr/local/texlive/2025/bin/universal-darwin:$PATH"
+
+      # kubectl completions
+      if command -v kubectl &>/dev/null; then source <(kubectl completion zsh); fi
+
+      # terraform completions
+      autoload -U +X bashcompinit && bashcompinit
+      if command -v terraform &>/dev/null; then complete -o nospace -C terraform terraform; fi
 
       # ROS2 jazzy
       export OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3

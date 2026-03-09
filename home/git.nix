@@ -8,6 +8,7 @@
         signingkey = "~/.ssh/id_ed25519.pub";
       };
       gpg.format = "ssh";
+      gpg.ssh.program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
       commit.gpgsign = true;
       init.defaultBranch = "main";
       pull.rebase = true;
