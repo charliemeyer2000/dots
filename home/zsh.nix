@@ -30,6 +30,14 @@
       npm = "echo 'use pnpm instead' && false";
       pip = "echo 'use uv instead' && false";
       pip3 = "echo 'use uv instead' && false";
+
+      # Skill management
+      skill-add = "cd ~/all/dots && just skill-add";
+      skill-search = "cd ~/all/dots && just skill-search";
+      skill-list = "cd ~/all/dots && just skill-list";
+      skill-remove = "cd ~/all/dots && just skill-remove";
+      skill-install = "cd ~/all/dots && just skill-install";
+      skills = "cd ~/all/dots && just skill-list";
     };
 
     initContent = ''
