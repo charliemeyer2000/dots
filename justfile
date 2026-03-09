@@ -29,25 +29,25 @@ ros2:
 
 # === Skill Management ===
 
-# add a skill (e.g., just skill-add cursor/plugins deslop)
-skill-add owner_repo skill_name:
-  @./scripts/skill-add.sh {{owner_repo}} {{skill_name}}
+# add a skill (e.g., just skill-add 'cursor/plugins' deslop)
+skill-add repo skill:
+  @./scripts/skill-add.sh {{repo}} {{skill}}
 
-# search for skills in a repo
-skill-search owner_repo:
-  @./scripts/skill-search.sh {{owner_repo}}
+# search for skills in a repo (e.g., just skill-search 'cursor/plugins')
+skill-search repo:
+  @./scripts/skill-search.sh {{repo}}
 
 # list installed skills
 skill-list:
   @ls -1 config/claude/skills/ 2>/dev/null | sed 's/^/  - /' || echo "No skills installed"
 
 # remove a skill
-skill-remove skill_name:
-  @./scripts/skill-remove.sh {{skill_name}}
+skill-remove skill:
+  @./scripts/skill-remove.sh {{skill}}
 
 # browse skills online
 skill-browse:
   @open "https://skills.sh"
 
 # install a skill and rebuild immediately
-skill-install owner_repo skill_name: (skill-add owner_repo skill_name) switch
+skill-install repo skill: (skill-add repo skill) switch
