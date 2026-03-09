@@ -21,8 +21,8 @@
     };
 
     shellAliases = {
-      rebuild = "just switch";
-      dots = "cd ~/all/dots";
+      rebuild = "cd $DOTS_DIR && just switch";
+      dots = "cd $DOTS_DIR";
       k = "kubectl";
       tf = "terraform";
       cc = "claude --dangerously-skip-permissions";
@@ -31,18 +31,32 @@
       pip = "echo 'use uv instead' && false";
       pip3 = "echo 'use uv instead' && false";
 
-      # Skill management
-      skill-add = "cd ~/all/dots && just skill-add";
-      skill-search = "cd ~/all/dots && just skill-search";
-      skill-list = "cd ~/all/dots && just skill-list";
-      skill-remove = "cd ~/all/dots && just skill-remove";
-      skill-install = "cd ~/all/dots && just skill-install";
-      skills = "cd ~/all/dots && just skill-list";
+      skill-add = "cd $DOTS_DIR && just skill-add";
+      skill-search = "cd $DOTS_DIR && just skill-search";
+      skill-list = "cd $DOTS_DIR && just skill-list";
+      skill-remove = "cd $DOTS_DIR && just skill-remove";
+      skill-install = "cd $DOTS_DIR && just skill-install";
+      skills = "cd $DOTS_DIR && just skill-list";
     };
 
     initContent = ''
       unsetopt correct_all
       unsetopt correct
+
+      # Read dots directory from stored location (written by 'just switch')
+      if [ -f "$HOME/.config/dots/location" ]; then
+        export DOTS_DIR=$(cat "$HOME/.config/dots/location")
+      elif [ -d "$HOME/all/dots" ]; then
+        export DOTS_DIR="$HOME/all/dots"
+      else
+        # Try to find it using git
+        if command -v git &>/dev/null && git rev-parse --show-toplevel &>/dev/null 2>&1; then
+          local git_root=$(git rev-parse --show-toplevel)
+          if [ -f "$git_root/flake.nix" ]; then
+            export DOTS_DIR="$git_root"
+          fi
+        fi
+      fi
 
       [ -f ~/.env.local ] && source ~/.env.local
 

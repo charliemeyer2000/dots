@@ -13,6 +13,8 @@ check:
 
 # rebuild current machine
 switch:
+  @mkdir -p ~/.config/dots
+  @pwd > ~/.config/dots/location
   nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#darwin-personal
 
 # rebuild and show diff
