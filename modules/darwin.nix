@@ -22,5 +22,18 @@
       autoUpdate = true;
       cleanup = "none"; # switch to "zap" once cask list is complete
     };
+    taps = [
+      "hashicorp/tap"
+      "derailed/k9s"
+      "stripe/stripe-cli"
+      "withgraphite/tap"
+    ];
+    brews = [
+      "hashicorp/tap/terraform"
+      "derailed/k9s/k9s"
+      "stripe/stripe-cli/stripe"
+      "withgraphite/tap/graphite"
+      "qemu" # needed for colima/docker on arm64
+    ];
   };
 }
