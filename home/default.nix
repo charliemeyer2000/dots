@@ -3,6 +3,9 @@
     ./git.nix
     ./zsh.nix
     ./direnv.nix
+    ./ssh.nix
+    ./fonts.nix
+    ./claude.nix
   ];
 
   home.stateVersion = "24.11";
