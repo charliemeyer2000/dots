@@ -13,6 +13,7 @@
     just
     direnv
     starship
+    zoxide
     gh
   ];
 
