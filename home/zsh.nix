@@ -30,8 +30,8 @@
       # Load secrets injected by op
       [ -f ~/.env.local ] && source ~/.env.local
 
-      # User-local binaries
-      export PATH="$HOME/.local/bin:$PATH"
+      # Nix system packages + user-local binaries
+      export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:$HOME/.local/bin:$PATH"
 
       # Starship prompt
       eval "$(starship init zsh)"

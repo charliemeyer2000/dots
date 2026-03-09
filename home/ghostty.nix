@@ -1,9 +1,14 @@
-{...}: {
+{...}: let
+  # Berkeley Mono is preferred but requires manual install (paid font).
+  # JetBrainsMono Nerd Font is the nix-managed fallback.
+  # Change this if you don't have Berkeley Mono installed.
+  font = "Berkeley Mono";
+in {
   home.file.".config/ghostty/config".text = ''
-    font-family = Berkeley Mono
-    font-family-bold = Berkeley Mono
-    font-family-italic = Berkeley Mono
-    font-family-bold-italic = Berkeley Mono
+    font-family = ${font}
+    font-family-bold = ${font}
+    font-family-italic = ${font}
+    font-family-bold-italic = ${font}
 
     # Creating splits
     keybind = cmd+opt+\=new_split:right
