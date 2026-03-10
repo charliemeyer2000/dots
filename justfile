@@ -53,10 +53,6 @@ switch-dry config='':
 dev:
   nix develop
 
-# enter ROS2 dev shell
-ros2:
-  nix develop .#ros2
-
 # === Skill Management ===
 
 # add a skill (e.g., just skill-add 'cursor/plugins' deslop)

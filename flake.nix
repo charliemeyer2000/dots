@@ -21,11 +21,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-ros-overlay = {
-      url = "github:lopsided98/nix-ros-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # Automatically install and manage Homebrew on macOS
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
   };

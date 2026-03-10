@@ -31,12 +31,10 @@ dots/
 │   ├── base.nix      # Core packages for all machines
 │   ├── darwin.nix    # macOS-specific settings
 │   ├── apps.nix      # GUI apps via Homebrew casks
-│   ├── secrets.nix   # 1Password injection logic
-│   └── ros2.nix      # ROS2 development environment
+│   └── secrets.nix   # 1Password injection logic
 ├── parts/            # Flake-parts modules
 ├── scripts/          # Helper scripts
-│   ├── skill-*.sh    # Skill management scripts
-│   └── ros2-*.sh     # ROS2 setup scripts
+│   └── skill-*.sh    # Skill management scripts
 ├── secrets/          # 1Password templates (safe to commit)
 ├── flake.nix         # Flake entry point
 ├── justfile          # Task runner commands
@@ -72,7 +70,6 @@ All commands are in the `justfile`:
 - `just check` - Run flake checks and linters
 - `just fmt` - Format all nix files
 - `just dev` - Enter development shell
-- `just ros2` - Enter ROS2 development shell
 
 Aliases available after rebuild:
 - `rebuild <config>` - Shorthand for `just switch <config>`
@@ -130,7 +127,6 @@ macOS-specific configuration:
 - **Python**: System python3 + uv for project management
 - **Go**: Installed via nix
 - **Rust**: rustup managed by nix
-- **ROS2**: Built from source in `~/ros2_jazzy/`
 
 ## Testing & CI
 
@@ -146,7 +142,6 @@ Some things can't be automated:
 - Tailscale: Authenticate with `tailscale up`
 - SSH keys: Import to 1Password
 - Mac App Store apps: Install manually
-- ROS2: Requires SIP disabled on macOS
 
 ## Troubleshooting
 

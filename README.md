@@ -46,8 +46,6 @@ cp /tmp/fonts/**/*.{otf,ttf} ~/Library/Fonts/
 rm -rf /tmp/fonts
 ```
 
-**ROS2:** can't nix-manage on macOS/Apple Silicon. built from source at `~/ros2_jazzy/`, requires [SIP disabled](https://developer.apple.com/documentation/security/disabling-and-enabling-system-integrity-protection).
-
 **kext stuff:** hardware drivers / VPN clients with kernel extensions — install manually.
 
 ## after bootstrap

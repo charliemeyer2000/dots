@@ -1,5 +1,5 @@
 {
-  "model": "opus",
+  "model": "claude-opus-4-6",
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
@@ -9,8 +9,7 @@
   "skipDangerousModePermissionPrompt": true,
   "effortLevel": "high",
   "attribution": {
-    "commit": "feat: AI-assisted changes\n\nCo-Authored-By: Claude <ai@anthropic.com>",
-    "pr": ""
+    "commit": "feat: AI-assisted changes\n\nCo-Authored-By: Claude <ai@anthropic.com>"
   },
   "respectGitignore": true,
   "alwaysThinkingEnabled": true,

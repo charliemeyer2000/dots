@@ -39,24 +39,6 @@
       "steipete/tap/remindctl"
       "steipete/tap/summarize"
 
-      # ROS2 dependencies
-      "asio"
-      "assimp"
-      "bison"
-      "boost-python3"
-      "bullet"
-      "console_bridge"
-      "cunit"
-      "libpq"
-      "opencv"
-      "pcre"
-      "poco"
-      "poppler"
-      "pyqt@5"
-      "rapidjson"
-      "sip"
-      "spdlog"
-
       # Embedded tools
       "open-ocd"
       "stlink"
