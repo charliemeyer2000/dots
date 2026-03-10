@@ -1,6 +1,6 @@
 {pkgs, ...}: let
   # Import our custom ROS2 derivation
-  ros2-jazzy = pkgs.callPackage ../pkgs/ros2-jazzy.nix {};
+  ros2-jazzy = pkgs.callPackage ../pkgs/ros2-jazzy-full.nix {};
 in {
   # Install ROS2 system-wide
   environment.systemPackages = [ros2-jazzy];

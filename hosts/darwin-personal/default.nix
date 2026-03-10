@@ -4,7 +4,7 @@
     ../../modules/darwin.nix
     ../../modules/apps.nix
     ../../modules/secrets.nix
-    ../../modules/ros2.nix # ROS2 with pre-built packages
+    ../../modules/ros2.nix # ROS2 full derivation module
   ];
 
   system.primaryUser = "charlie";
