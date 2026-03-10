@@ -1,10 +1,10 @@
-{
+{...}: {
   imports = [
     ../../modules/base.nix
     ../../modules/darwin.nix
     ../../modules/apps.nix
     ../../modules/secrets.nix
-    ../../modules/ros2.nix
+    ../../modules/ros2.nix # ROS2 with pre-built packages
   ];
 
   system.primaryUser = "charlie";

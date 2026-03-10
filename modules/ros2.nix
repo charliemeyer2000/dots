@@ -1,61 +1,29 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
-  pythonWithRos2 = pkgs.python312.withPackages (ps:
-    with ps; [
-      pip
-      setuptools
-      wheel
-      numpy
-      lxml
-      pyyaml
-      pyparsing
-      cryptography
-      psutil
-      matplotlib
-    ]);
+{pkgs, ...}: let
+  # Import our custom ROS2 derivation
+  ros2-jazzy = pkgs.callPackage ../pkgs/ros2-jazzy.nix {};
 in {
-  environment.systemPackages = with pkgs;
-    [
-      cmake
-      ninja
-      colcon
-      pkg-config
-      openssl
-      eigen
-      tinyxml-2
-      asio
-      yaml-cpp
-      console-bridge
-      spdlog
-      gtest
-      poco
-      cppcheck
-      curl
-      libxml2
-      zlib
-      bzip2
-      lz4
-      git
-      pythonWithRos2
-    ]
-    ++ lib.optionals pkgs.stdenv.isDarwin [
-      libiconv
-    ];
+  # Install ROS2 system-wide
+  environment.systemPackages = [ros2-jazzy];
 
-  environment.variables =
-    {
-      ROS2_WS = "$HOME/ros2_jazzy";
-      OPENSSL_ROOT_DIR = "${pkgs.openssl.dev}";
-    }
-    // lib.optionalAttrs pkgs.stdenv.isDarwin {
-      DISABLE_SIP_WARNING = "1";
-    };
+  # Set up environment variables
+  environment.variables = {
+    ROS_DISTRO = "jazzy";
+    ROS_VERSION = "2";
+    ROS_PYTHON_VERSION = "3";
+  };
 
-  programs.zsh.interactiveShellInit = lib.mkIf config.programs.zsh.enable ''
-    alias ros2-activate="source $HOME/ros2_jazzy/install/setup.zsh 2>/dev/null || echo 'ROS2 not built yet. Run ros2-init first.'"
+  # Shell setup for interactive use
+  programs.zsh.interactiveShellInit = ''
+    # Source ROS2 setup if available
+    if [ -f "${ros2-jazzy}/setup.sh" ]; then
+      source "${ros2-jazzy}/setup.sh"
+    fi
+  '';
+
+  programs.bash.interactiveShellInit = ''
+    # Source ROS2 setup if available
+    if [ -f "${ros2-jazzy}/setup.sh" ]; then
+      source "${ros2-jazzy}/setup.sh"
+    fi
   '';
 }

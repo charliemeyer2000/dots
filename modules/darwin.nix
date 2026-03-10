@@ -12,7 +12,7 @@
   services.tailscale.enable = true;
 
   homebrew = {
-    enable = true;
+    enable = true; # Nix manages Homebrew - auto-installs on fresh machine
     onActivation = {
       autoUpdate = true;
       cleanup = "zap";
@@ -39,6 +39,7 @@
       "steipete/tap/remindctl"
       "steipete/tap/summarize"
 
+      # ROS2 dependencies
       "asio"
       "assimp"
       "bison"
@@ -56,14 +57,17 @@
       "sip"
       "spdlog"
 
+      # Embedded tools
       "open-ocd"
       "stlink"
       "qemu"
 
+      # Swift tools
       "swiftformat"
       "swiftlint"
       "xcodegen"
 
+      # Other utilities
       "gogcli"
       "groff"
       "kube-ps1"
