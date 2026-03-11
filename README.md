@@ -1,45 +1,83 @@
 # dots
 
-my nix configuration
+nix-darwin + home-manager configuration for macOS and Linux machines.
 
-## easy commands
+## commands
 
-rebuild
+```bash
+just switch <config>     # rebuild and apply (e.g., just switch darwin-personal)
+just switch-dry <config> # build without applying
+just check               # run flake checks + linters
+just fmt                 # format all nix files
+just dev                 # enter dev shell
+```
 
-other commands are in `justfile`
+aliases (available after rebuild):
 
-## claude code skills
+```bash
+rebuild <config>  # shorthand for just switch
+dots              # cd to dots directory
+cc                # claude --dangerously-skip-permissions
+k                 # kubectl
+tf                # terraform
+killport <port>   # kill process on port
+```
+
+`npm`, `pip`, and `pip3` are aliased to errors — use `pnpm` and `uv` instead.
+
+## claude code
+
+`claude-code` is nix-managed (via nixpkgs). the `claude` binary comes from the nix store, not a global npm install.
+
+settings and CLAUDE.md are deployed via home-manager (`home/claude.nix`):
+- `config/claude/settings.json` -> `~/.claude/settings.json`
+- `config/claude/CLAUDE.md` -> `~/.claude/CLAUDE.md`
+- `config/claude/skills/` -> `~/.claude/skills/`
+
+### skills
 
 skills are vendored in `config/claude/skills/` and deployed to `~/.claude/skills/` via home-manager.
 
-**add a new skill:**
-
 ```bash
-# option 1: use the skills cli, then vendor into nix
-npx skills add owner/repo -g
-cp -r ~/.agents/skills/my-skill config/claude/skills/
-just switch <config>
-
-# option 2: manually create one
-mkdir config/claude/skills/my-skill
-just switch <config>
+skill-add <owner/repo> <skill>    # download skill from github repo
+skill-search <owner/repo>         # list available skills in a repo
+skill-list                        # list installed skills (alias: skills)
+skill-remove <skill>              # remove a skill
+skill-install <repo> <skill> <config>  # add + rebuild in one step
+skill-browse                      # open skills.sh in browser
 ```
 
-**project-level skills** still work normally — `npx skills add owner/repo` (without `-g`) creates symlinks in your project's `.claude/skills/` pointing to `~/.agents/skills/`. this doesn't conflict with nix.
+after adding/removing a skill, run `just switch <config>` to deploy (or use `skill-install` to do it in one step).
 
-**updating skills:** re-run `npx skills update`, then re-copy from `~/.agents/skills/` into `config/claude/skills/`.
+## machine configurations
+
+| config | os | gui apps | secrets | notes |
+|---|---|---|---|---|
+| `darwin-personal` | macOS | yes (`apps.nix`) | yes | full setup |
+| `darwin-minimal` | macOS | no | yes | core tools only |
+| `linux-ec2` | Linux | no | yes | AWS EC2 instances |
+| `linux-hpc` | Linux | no | no | shared HPC nodes |
+
+## ssh hosts
+
+configured in `home/ssh.nix`, using 1Password SSH agent:
+
+- `workstation` — personal workstation (5090), via Tailscale
+- `jetson-nano` — Jetson Orin Nano, via Tailscale
+- `uva-hpc` — UVA HPC cluster (multiplexed)
+- `do-droplet` — DigitalOcean droplet
 
 ## manual stuff
 
-some things (specifically for mac) can't be nix-managed. install/configure by hand if you want:
+some things can't be nix-managed. install/configure by hand:
 
 **mac app store:** Xcode, Keynote
 
 **no brew cask:** Ollama, Klack, VESC Tool, UniFi, Logitech Options+, Cisco Secure Client
 
-**app-internal config:** Raycast (use built-in sync), Cursor (GitHub sync), Chrome (Google sync), 1Password (sign in)
+**app-internal config:** Raycast (built-in sync), Cursor (GitHub sync), Chrome (Google sync), 1Password (sign in)
 
-**fonts:** nix handles JetBrainsMono + FiraCode nerd fonts. for Berkeley Mono (paid):
+**fonts:** nix handles JetBrainsMono + FiraCode nerd fonts (`home/fonts.nix`). for Berkeley Mono (paid):
 ```bash
 gh repo clone (hidden)/fonts /tmp/fonts
 cp /tmp/fonts/**/*.{otf,ttf} ~/Library/Fonts/
@@ -52,7 +90,6 @@ rm -rf /tmp/fonts
 
 1. `op signin`
 2. `just switch <config>` (injects secrets)
-   - Example: `just switch darwin-personal`
 3. `gh auth login`
 4. `tailscale up`
 5. import SSH keys to 1Password if new machine
