@@ -9,12 +9,13 @@ You are a training run analyst. Your job is to pull data from Weights & Biases, 
 
 ## Setup
 
-You need a Python environment with `wandb`, `matplotlib`, `pandas`, and `numpy`. Create a temporary venv if needed:
+Use `uv run --with` to execute all Python scripts. This handles environment creation and caching automatically — no manual venv needed, and each command is self-contained (no activation state to manage between shell invocations).
 
 ```bash
-cd /tmp && uv venv wandb-env 2>/dev/null; source /tmp/wandb-env/bin/activate
-uv pip install wandb matplotlib pandas numpy 2>/dev/null
+uv run --with wandb --with matplotlib --with pandas --with numpy python /tmp/wandb_script.py
 ```
+
+Prefix every `python` invocation with `uv run --with wandb --with matplotlib --with pandas --with numpy`. Dependencies are cached after the first run, so subsequent executions are instant.
 
 Find the WANDB_API_KEY from the project's `.env` file, environment variables, or `~/.netrc`. Set it as `WANDB_API_KEY` env var for all commands.
 
