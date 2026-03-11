@@ -36,6 +36,7 @@
     pnpm
     bun
     uv
+    claude-code
     _1password-cli
 
     # Infra
