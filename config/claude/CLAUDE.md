@@ -6,6 +6,13 @@
 - If you're lost, always read documentation, or consult the user for guidance.
 - Read the AGENTS.md and CLAUDE.md
 
+## Documentation
+
+When reading documentation, always:
+- Check what version you are using to ensure the documentation you're reading aligns with the version of the package you're using. 
+- When fetching, always start by searching for the `llms.txt`. If the documentation supports it, fetch the `.md` version of docs rather than the regular docs. 
+- If you can't find docs, we suggest manually inspecting the installed package/tool for its generated code, or ask the user for guidance.
+
 
 ## Package Managers
 
