@@ -56,11 +56,10 @@ user_cache: Cache[int, str] = Cache()
 user_cache.set(1, "Alice")
 
 # Constrained TypeVar
-from numbers import Number
-NumT = TypeVar('NumT', bound=Number)
+NumT = TypeVar('NumT', int, float)
 
 def add_numbers(a: NumT, b: NumT) -> NumT:
-    return a + b  # type: ignore[return-value]
+    return a + b
 ```
 
 ## Protocol for Structural Typing
@@ -246,14 +245,17 @@ def safe_get(items: Sequence[T], index: int) -> T | None:
         return None
 
 # Sentinel value with typing
-from typing import Final
+from enum import Enum
 
-MISSING: Final = object()
+class _Missing(Enum):
+    MISSING = "MISSING"
 
-def get_value(key: str, default: T | type[MISSING] = MISSING) -> T:
-    if default is MISSING:
+MISSING = _Missing.MISSING
+
+def get_value(key: str, default: T | _Missing = MISSING) -> T:
+    if isinstance(default, _Missing):
         raise KeyError(key)
-    return default  # type: ignore[return-value]
+    return default
 ```
 
 ## Type Narrowing
@@ -284,7 +286,9 @@ def handle_mode(mode: Literal["read", "write"]) -> str:
         assert_never(mode)
 
 # Custom type guard
-def is_string_list(val: list[Any]) -> bool:
-    """Runtime check for list of strings."""
+from typing import TypeGuard
+
+def is_string_list(val: list[Any]) -> TypeGuard[list[str]]:
+    """Runtime check that narrows list[Any] to list[str]."""
     return all(isinstance(x, str) for x in val)
 ```

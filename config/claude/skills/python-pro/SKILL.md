@@ -4,13 +4,8 @@ description: Use when building Python 3.11+ applications requiring type safety, 
 license: MIT
 metadata:
   author: https://github.com/Jeffallan
-  version: "1.1.0"
+  version: "1.2.0"
   domain: language
-  triggers: Python development, type hints, async Python, pytest, mypy, dataclasses, Python best practices, Pythonic code
-  role: specialist
-  scope: implementation
-  output-format: code
-  related-skills: fastapi-expert, devops-engineer
 ---
 
 # Python Pro
@@ -23,8 +18,7 @@ Modern Python 3.11+ specialist focused on type-safe, async-first, production-rea
 - Implementing async/await patterns for I/O operations
 - Setting up pytest test suites with fixtures and mocking
 - Creating Pythonic code with comprehensions, generators, context managers
-- Building packages with Poetry and proper project structure
-- Performance optimization and profiling
+- Setting up projects with uv and pyproject.toml
 
 ## Core Workflow
 
@@ -47,7 +41,7 @@ Load detailed guidance based on context:
 | Async Patterns | `references/async-patterns.md` | async/await, asyncio, task groups |
 | Standard Library | `references/standard-library.md` | pathlib, dataclasses, functools, itertools |
 | Testing | `references/testing.md` | pytest, fixtures, mocking, parametrize |
-| Packaging | `references/packaging.md` | poetry, pip, pyproject.toml, distribution |
+| Packaging | `references/packaging.md` | uv, pyproject.toml, project setup |
 
 ## Constraints
 
@@ -60,6 +54,7 @@ Load detailed guidance based on context:
 - Async/await for I/O-bound operations
 - Dataclasses over manual __init__ methods
 - Context managers for resource handling
+- Use `uv` for all Python package management (never pip, poetry, or pipenv)
 
 ### MUST NOT DO
 - Skip type annotations on public APIs
@@ -69,6 +64,7 @@ Load detailed guidance based on context:
 - Use bare except clauses
 - Hardcode secrets or configuration
 - Use deprecated stdlib modules (use pathlib not os.path)
+- Use `# type: ignore` without a specific error code and justification
 
 ## Code Examples
 
@@ -164,14 +160,3 @@ Success: no issues found in 12 source files
 ```
 Any reported error (e.g., `error: Function is missing a return type annotation`) must be resolved before the implementation is considered complete.
 
-## Output Templates
-
-When implementing Python features, provide:
-1. Module file with complete type hints
-2. Test file with pytest fixtures
-3. Type checking confirmation (mypy --strict passes)
-4. Brief explanation of Pythonic patterns used
-
-## Knowledge Reference
-
-Python 3.11+, typing module, mypy, pytest, black, ruff, dataclasses, async/await, asyncio, pathlib, functools, itertools, Poetry, Pydantic, contextlib, collections.abc, Protocol

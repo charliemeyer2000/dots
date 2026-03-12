@@ -1,34 +1,61 @@
-# Python Packaging and Project Setup
+# Python Project Setup with uv
 
 ## Project Structure
 
 ```
 myproject/
 ├── pyproject.toml          # Project metadata and dependencies
-├── README.md               # Project description
-├── .gitignore             # Git ignore patterns
-├── .python-version        # Python version for pyenv
+├── README.md
+├── .python-version         # Pin Python version for uv
 ├── src/
 │   └── myproject/
-│       ├── __init__.py    # Package initialization
-│       ├── py.typed       # PEP 561 type marker
-│       ├── core.py        # Core functionality
-│       └── utils.py       # Utilities
+│       ├── __init__.py
+│       ├── py.typed         # PEP 561 type marker
+│       ├── core.py
+│       └── utils.py
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py        # Pytest configuration
-│   └── test_core.py       # Tests
+│   ├── conftest.py
+│   └── test_core.py
 └── docs/
-    └── index.md           # Documentation
+    └── index.md
 ```
 
-## Pyproject.toml Configuration
+## uv Commands
+
+```bash
+# Project setup
+uv init myproject              # Create new project
+uv init --lib myproject        # Create library project (src layout)
+
+# Dependencies
+uv add requests pydantic       # Add dependencies
+uv add --dev pytest mypy ruff  # Add dev dependencies
+uv remove requests             # Remove a dependency
+uv sync                        # Install/sync all dependencies
+uv lock                        # Update lockfile without installing
+
+# Running
+uv run pytest                  # Run command in project venv
+uv run python script.py        # Run script in project venv
+uv run --with httpx script.py  # Run with an extra ad-hoc dependency
+
+# Scripts (standalone, no project needed)
+uv run script.py               # Run a script with inline deps
+
+# Tools (global CLI tools)
+uv tool install ruff           # Install CLI tool globally
+uv tool run black .            # Run tool without installing (like npx)
+
+# Python version management
+uv python install 3.12         # Install a Python version
+uv python pin 3.12             # Pin version for project (.python-version)
+uv python list                 # List available/installed versions
+```
+
+## pyproject.toml Configuration
 
 ```toml
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "myproject"
 version = "0.1.0"
@@ -39,16 +66,6 @@ license = {text = "MIT"}
 authors = [
     {name = "Your Name", email = "you@example.com"}
 ]
-keywords = ["python", "package"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Typing :: Typed",
-]
-
 dependencies = [
     "requests>=2.31.0",
     "pydantic>=2.5.0",
@@ -62,25 +79,18 @@ dev = [
     "black>=23.11.0",
     "ruff>=0.1.6",
 ]
-docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.4.0",
-]
 
 [project.scripts]
 myproject = "myproject.cli:main"
 
-[project.urls]
-Homepage = "https://github.com/username/myproject"
-Documentation = "https://myproject.readthedocs.io"
-Repository = "https://github.com/username/myproject"
-Changelog = "https://github.com/username/myproject/blob/main/CHANGELOG.md"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 # Tool configurations
 [tool.black]
 line-length = 100
 target-version = ["py311"]
-include = '\.pyi?$'
 
 [tool.ruff]
 line-length = 100
@@ -94,10 +104,9 @@ select = [
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
 ]
-ignore = []
 
 [tool.ruff.per-file-ignores]
-"__init__.py" = ["F401"]  # Ignore unused imports in __init__.py
+"__init__.py" = ["F401"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -118,7 +127,6 @@ addopts = [
     "--strict-config",
     "--cov=myproject",
     "--cov-report=term-missing",
-    "--cov-report=html",
 ]
 testpaths = ["tests"]
 pythonpath = ["src"]
@@ -138,75 +146,27 @@ exclude_lines = [
 ]
 ```
 
-## Poetry Project Management
+## Inline Script Dependencies
 
-```toml
-# pyproject.toml for Poetry
-[tool.poetry]
-name = "myproject"
-version = "0.1.0"
-description = "A Python project"
-authors = ["Your Name <you@example.com>"]
-readme = "README.md"
-license = "MIT"
-packages = [{include = "myproject", from = "src"}]
+For standalone scripts that don't need a full project:
 
-[tool.poetry.dependencies]
-python = "^3.11"
-requests = "^2.31.0"
-pydantic = "^2.5.0"
+```python
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "httpx",
+#     "rich",
+# ]
+# ///
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-pytest-cov = "^4.1.0"
-mypy = "^1.7.0"
-black = "^23.11.0"
-ruff = "^0.1.6"
+import httpx
+from rich import print
 
-[tool.poetry.scripts]
-myproject = "myproject.cli:main"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+response = httpx.get("https://api.example.com")
+print(response.json())
 ```
 
-```bash
-# Poetry commands
-poetry init                    # Initialize new project
-poetry add requests            # Add dependency
-poetry add --group dev pytest  # Add dev dependency
-poetry install                 # Install dependencies
-poetry update                  # Update dependencies
-poetry shell                   # Activate virtual environment
-poetry run pytest              # Run command in venv
-poetry build                   # Build package
-poetry publish                 # Publish to PyPI
-poetry export -f requirements.txt --output requirements.txt
-```
-
-## Virtual Environments
-
-```bash
-# Using venv (built-in)
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\activate     # Windows
-
-# Install in editable mode
-pip install -e .
-pip install -e ".[dev]"    # With optional dependencies
-
-# Using virtualenv
-pip install virtualenv
-virtualenv venv
-source venv/bin/activate
-
-# Using pyenv for Python version management
-pyenv install 3.11.6
-pyenv local 3.11.6         # Set for current directory
-echo "3.11.6" > .python-version
-```
+Run with: `uv run script.py`
 
 ## Package __init__.py
 
@@ -219,30 +179,13 @@ from myproject.utils import helper_function
 
 __version__ = "0.1.0"
 __all__ = ["main_function", "CoreClass", "helper_function"]
-
-# Package-level configuration
-import logging
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 ```
 
 ## Type Stub Files (py.typed)
 
 ```python
 # src/myproject/py.typed
-# Empty file indicates package includes type hints
-
-# src/myproject/__init__.pyi (optional stub file)
-from typing import Any
-
-__version__: str
-
-def main_function(arg: str) -> dict[str, Any]: ...
-
-class CoreClass:
-    def __init__(self, name: str) -> None: ...
-    def process(self) -> str: ...
+# Empty file — indicates package includes type hints (PEP 561)
 ```
 
 ## CLI Entry Points
@@ -261,127 +204,12 @@ if __name__ == "__main__":
     main()
 ```
 
-## Requirements Files
-
-```bash
-# requirements.txt - Production dependencies
-requests>=2.31.0,<3.0.0
-pydantic>=2.5.0,<3.0.0
-
-# requirements-dev.txt - Development dependencies
--r requirements.txt
-pytest>=7.4.0
-pytest-cov>=4.1.0
-mypy>=1.7.0
-black>=23.11.0
-ruff>=0.1.6
-
-# Generate from Poetry
-poetry export -f requirements.txt --output requirements.txt --without-hashes
-poetry export -f requirements.txt --with dev --output requirements-dev.txt
-```
-
 ## Building and Distribution
 
 ```bash
-# Build package
-python -m build
-
-# Check package
-twine check dist/*
-
-# Upload to PyPI
-twine upload dist/*
-
-# Upload to Test PyPI
-twine upload --repository testpypi dist/*
-
-# Install from Test PyPI
-pip install --index-url https://test.pypi.org/simple/ myproject
-```
-
-## Setuptools Configuration (Legacy)
-
-```python
-# setup.py (if not using pyproject.toml)
-from setuptools import setup, find_packages
-
-setup(
-    name="myproject",
-    version="0.1.0",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
-    python_requires=">=3.11",
-    install_requires=[
-        "requests>=2.31.0",
-        "pydantic>=2.5.0",
-    ],
-    extras_require={
-        "dev": [
-            "pytest>=7.4.0",
-            "mypy>=1.7.0",
-        ],
-    },
-    entry_points={
-        "console_scripts": [
-            "myproject=myproject.cli:main",
-        ],
-    },
-)
-```
-
-## Manifest for Package Data
-
-```
-# MANIFEST.in
-include README.md
-include LICENSE
-include pyproject.toml
-recursive-include src/myproject *.py
-recursive-include src/myproject py.typed
-recursive-include tests *.py
-prune docs/_build
-```
-
-## Version Management
-
-```python
-# src/myproject/__version__.py
-__version__ = "0.1.0"
-
-# src/myproject/__init__.py
-from myproject.__version__ import __version__
-
-# Read version in pyproject.toml
-import tomli
-from pathlib import Path
-
-def get_version() -> str:
-    pyproject = Path(__file__).parent.parent / "pyproject.toml"
-    with open(pyproject, "rb") as f:
-        data = tomli.load(f)
-    return data["project"]["version"]
-```
-
-## Dependency Management Best Practices
-
-```python
-# Pin dependencies for applications
-requests==2.31.0
-pydantic==2.5.2
-
-# Use ranges for libraries
-requests>=2.31.0,<3.0.0
-pydantic>=2.5.0,<3.0.0
-
-# Lock files
-# Poetry: poetry.lock
-# pip: requirements.txt with exact versions
-pip freeze > requirements-lock.txt
-
-# Update dependencies
-poetry update
-pip install --upgrade -r requirements.txt
+uv build                       # Build sdist + wheel
+uv publish                     # Publish to PyPI
+uv publish --index testpypi    # Publish to Test PyPI
 ```
 
 ## CI/CD Integration
@@ -401,60 +229,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
     - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+      run: uv sync --all-extras
 
     - name: Run tests
-      run: |
-        pytest --cov --cov-report=xml
+      run: uv run pytest --cov --cov-report=xml
 
     - name: Type check
-      run: mypy src
+      run: uv run mypy src
 
     - name: Lint
       run: |
-        black --check src tests
-        ruff check src tests
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
-```
-
-## Pre-commit Hooks
-
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 23.11.0
-    hooks:
-      - id: black
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.6
-    hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-requests]
-```
-
-```bash
-# Install pre-commit
-pip install pre-commit
-pre-commit install
-
-# Run manually
-pre-commit run --all-files
+        uv run black --check src tests
+        uv run ruff check src tests
 ```

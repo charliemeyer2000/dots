@@ -128,13 +128,13 @@ def test_email_validation(email: str, valid: bool) -> None:
 
 # Parametrize with fixtures
 @pytest.fixture
-def user_factory():
+def user_factory() -> Callable[..., User]:
     def _make_user(name: str, active: bool = True) -> User:
         return User(name=name, active=active)
     return _make_user
 
 @pytest.mark.parametrize("name", ["Alice", "Bob", "Charlie"])
-def test_user_names(user_factory, name: str) -> None:
+def test_user_names(user_factory: Callable[..., User], name: str) -> None:
     user = user_factory(name)
     assert user.name == name
 ```
@@ -363,13 +363,13 @@ def test_user_creation(user: User) -> None:
 
 # Fixture factory pattern
 @pytest.fixture
-def user_factory(db_session: Session):
+def user_factory(db_session: Session) -> Iterator[Callable[..., User]]:
     created_users: list[User] = []
 
     def _create_user(
         name: str = "Test User",
         email: str | None = None,
-        **kwargs
+        **kwargs: Any,
     ) -> User:
         if email is None:
             email = f"{name.lower().replace(' ', '.')}@example.com"

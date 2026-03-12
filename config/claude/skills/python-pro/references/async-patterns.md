@@ -51,10 +51,14 @@ async def robust_processing(items: list[str]) -> tuple[list[str], list[Exception
     results: list[str] = []
     errors: list[Exception] = []
 
+    async def _process(item: str) -> None:
+        result = await process_item_safe(item)
+        results.append(result)
+
     try:
         async with TaskGroup() as tg:
             for item in items:
-                tg.create_task(process_item_safe(item))
+                tg.create_task(_process(item))
     except ExceptionGroup as eg:
         for exc in eg.exceptions:
             errors.append(exc)
@@ -65,6 +69,7 @@ async def robust_processing(items: list[str]) -> tuple[list[str], list[Exception
 ## Async Context Managers
 
 ```python
+from types import TracebackType
 from typing import Self
 from collections.abc import AsyncIterator
 
@@ -81,7 +86,7 @@ class AsyncDatabaseConnection:
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
-        exc_tb: Any,
+        exc_tb: TracebackType | None,
     ) -> None:
         if self._conn:
             await self._conn.close()
@@ -337,11 +342,7 @@ async def run_in_executor(func: Callable[..., T], *args: Any) -> T:
 
 # Run async code from sync context
 def sync_wrapper(coro: Coroutine[None, None, T]) -> T:
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+    return asyncio.run(coro)
 
 # Async wrapper for sync function
 def to_async(func: Callable[..., T]) -> Callable[..., Coroutine[None, None, T]]:
