@@ -66,7 +66,7 @@ Cancel jobs by ID or name.
 |------|-------------|
 | `-a, --all` | Cancel all active jobs |
 
-Automatically manages sibling strategies (no orphaned fan-out jobs).
+Automatically manages sibling strategies (no orphaned fan-out jobs). Also kills any active port forwards for the cancelled jobs.
 
 ## rv ssh
 
@@ -139,7 +139,7 @@ Port forwarding from compute nodes.
 |------|-------------|
 | `<port>` | Forward a specific port |
 | `--auto` | Auto-detect common services (Jupyter, TensorBoard, Ray) |
-| `-l, --list` | List active port forwards |
+| `-l, --list` | List active port forwards (also prunes forwards for dead jobs) |
 | `-s, --stop [port]` | Stop forwards (all or specific port) |
 | `--node <index>` | Forward from specific node in multi-node job |
 
@@ -170,12 +170,17 @@ With no flags, shows cost table for all GPU types. MIG is always free (0 SU).
 
 Run commands on the login node (no GPU allocation).
 
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--timeout <seconds>` | Max execution time | 120 |
+
 ```bash
 rv exec "ls /scratch/$USER/data"
 rv exec "du -sh /scratch/$USER/.rv/"
+rv exec --timeout 300 "uv pip install vllm"
 ```
 
-For quick file checks, listing dirs, verifying data exists before submitting a job.
+For quick file checks, listing dirs, verifying data exists before submitting a job. Use `--timeout` for slow operations like installing large packages.
 
 ## rv upgrade
 
