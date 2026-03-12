@@ -1,168 +1,197 @@
 # dots - Charlie's Nix Configuration
 
-This is Charlie's personal nix-darwin + home-manager configuration for macOS and Linux machines.
+Personal nix-darwin + home-manager configuration for macOS and Linux machines.
 
 ## Architecture
 
-- **Nix flakes** for reproducible builds and dependency management
+- **Nix flakes** with **flake-parts** for modular, reproducible builds
 - **nix-darwin** for macOS system configuration
-- **home-manager** for user-level dotfiles and applications
-- **1Password CLI** for secrets management (injected at activation time, never committed)
+- **home-manager** for user-level dotfiles, programs, and file management
+- **nix-homebrew** for declarative Homebrew/cask management on macOS
+- **1Password CLI** for secrets injection at activation time (never committed)
+- **Determinate Systems** manages the Nix daemon — all macOS hosts set `nix.enable = false`
 
 ## Repository Structure
 
 ```
 dots/
-├── config/           # Static configuration files
-│   ├── claude/       # Claude Code settings and skills
-│   └── ...
-├── home/             # Home-manager modules
-│   ├── default.nix   # Entry point that imports all modules
-│   ├── zsh.nix       # Shell config, aliases, PATH management
-│   ├── git.nix       # Git config with 1Password SSH signing
-│   ├── ghostty.nix   # Terminal emulator config
-│   └── ...
-├── hosts/            # Machine-specific configurations
-│   ├── darwin-personal/   # Personal Mac
-│   ├── darwin-minimal/    # Work Mac or minimal setup
-│   ├── linux-ec2/         # AWS EC2 instances
-│   └── linux-hpc/         # HPC cluster nodes
-├── modules/          # System modules
-│   ├── base.nix      # Core packages for all machines
-│   ├── darwin.nix    # macOS-specific settings
-│   ├── apps.nix      # GUI apps via Homebrew casks
-│   └── secrets.nix   # 1Password injection logic
-├── parts/            # Flake-parts modules
-├── scripts/          # Helper scripts
-│   └── skill-*.sh    # Skill management scripts
-├── secrets/          # 1Password templates (safe to commit)
-├── flake.nix         # Flake entry point
-├── justfile          # Task runner commands
-└── statix.toml       # Nix linter config
+├── flake.nix             # Flake entry point (inputs + flake-parts imports)
+├── justfile              # Task runner commands
+├── statix.toml           # Nix linter config (disables repeated_keys, empty_pattern)
+├── config/
+│   └── claude/
+│       ├── settings.json # Claude Code settings (model, plugins, effort)
+│       ├── CLAUDE.md     # Global Claude instructions
+│       └── skills/       # Claude Code skills (wandb-monitor, skill-creator, etc.)
+├── home/                 # Home-manager modules
+│   ├── default.nix       # Entry point — imports all modules below
+│   ├── zsh.nix           # Shell: aliases, PATH, env vars, oh-my-zsh
+│   ├── git.nix           # Git: 1Password SSH signing, gh credential helper
+│   ├── ssh.nix           # SSH: hosts, 1Password agent, ControlMaster
+│   ├── ghostty.nix       # Ghostty terminal: fonts, gruvbox theme, splits
+│   ├── claude.nix        # Deploys config/claude/ → ~/.claude/ via home-manager
+│   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
+│   └── direnv.nix        # direnv + nix-direnv for per-project shells
+├── hosts/                # Machine-specific configurations
+│   ├── darwin-personal/  # Full Mac: base + darwin + apps + secrets
+│   ├── darwin-minimal/   # Lean Mac: base + darwin + secrets (no GUI casks)
+│   ├── linux-ec2/        # EC2: base + secrets
+│   └── linux-hpc/        # HPC: base only (no secrets on shared nodes)
+├── modules/              # System-level modules
+│   ├── base.nix          # Packages for all machines
+│   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
+│   ├── apps.nix          # Homebrew casks (GUI apps, darwin-personal only)
+│   └── secrets.nix       # 1Password op inject logic (macOS + Linux)
+├── parts/                # Flake-parts modules
+│   ├── hosts.nix         # Machine definitions + home-manager/nix-homebrew wiring
+│   ├── formatter.nix     # alejandra (nix formatter)
+│   ├── checks.nix        # Pre-commit hooks (alejandra, deadnix, statix, shellcheck)
+│   └── devshell.nix      # Dev shell: alejandra, deadnix, statix, nil, just
+├── scripts/              # Skill management scripts (skill-add.sh, skill-search.sh, etc.)
+└── secrets/
+    └── secrets.zsh.tmpl  # 1Password template → ~/.env.local
 ```
+
+## Flake Inputs
+
+| Input | Source | Purpose |
+|-------|--------|---------|
+| nixpkgs | nixpkgs-unstable | Rolling release packages |
+| flake-parts | hercules-ci/flake-parts | Modular flake organization |
+| nix-darwin | LnL7/nix-darwin | macOS system configuration |
+| home-manager | nix-community/home-manager | User-level dotfiles |
+| pre-commit-hooks | cachix/pre-commit-hooks.nix | Git hook framework |
+| nix-homebrew | zhaofengli-wip/nix-homebrew | Declarative Homebrew on macOS |
+
+All inputs follow the root nixpkgs for consistency.
 
 ## Key Concepts
 
 ### Dynamic Dots Directory
-The dots directory location is stored in `~/.config/dots/location` when running `just switch <config>`. This allows the configuration to work regardless of where the repo is cloned. All aliases and commands use `$DOTS_DIR` which reads this file on shell startup.
+`just switch <config>` writes the repo path to `~/.config/dots/location`. On shell startup, zsh reads this into `$DOTS_DIR` (falls back to `~/all/dots`). All aliases and commands reference `$DOTS_DIR`.
 
 ### Secrets Management
-Secrets are managed via 1Password CLI (`op`):
-- Templates in `secrets/` reference 1Password items
-- On `just switch <config>`, secrets are injected to `~/.env.local` if signed in
-- The `.env.local` file is sourced in zsh for environment variables
-- Never commit actual secrets - only templates
+- Template: `secrets/secrets.zsh.tmpl` references 1Password items via `{{ op://vault/item/field }}`
+- On `just switch`, `op inject` fills the template → `~/.env.local` (mode 600)
+- zsh sources `~/.env.local` on startup
+- Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`
+- Supports both 1Password service account token (CI) and desktop app (interactive)
+- linux-hpc has no secrets module (shared nodes)
 
 ### Skills Management
 Claude Code skills are managed declaratively:
-- Stored in `config/claude/skills/`
-- Deployed to `~/.claude/skills/` via home-manager
+- Source of truth: `config/claude/skills/`
+- Deployed to `~/.claude/skills/` via home-manager (claude.nix)
 - Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`
-- Skills are portable across all machines
+- Portable across all machines
+
+### Host Composition
+
+```
+darwin-personal  = base + darwin + apps + secrets  (full setup)
+darwin-minimal   = base + darwin + secrets         (no GUI casks)
+linux-ec2        = base + secrets                  (cloud instance)
+linux-hpc        = base                            (minimal, no secrets)
+```
 
 ## Common Commands
 
-All commands are in the `justfile`:
+Justfile commands:
+- `just switch <config>` — Rebuild and apply (e.g., `just switch darwin-personal`)
+- `just switch-dry <config>` — Preview build without applying
+- `just check` — Run flake checks and linters
+- `just fmt` — Format all nix files with alejandra
+- `just dev` — Enter dev shell with nix tooling
 
-- `just switch <config>` - Rebuild and apply configuration (stores dots location)
-  - Example: `just switch darwin-personal`
-  - Running without a config will show available options
-- `just check` - Run flake checks and linters
-- `just fmt` - Format all nix files
-- `just dev` - Enter development shell
+Shell aliases (available after rebuild):
+- `rebuild <config>` — Shorthand for `just switch`
+- `dots` — cd to dots directory
+- `cc` — `claude --dangerously-skip-permissions`
+- `k` / `tf` — kubectl / terraform
+- `killport <port>` — Kill process on a port
+- `skill-add`, `skill-search`, `skill-list`, `skill-remove` — Skill management
 
-Aliases available after rebuild:
-- `rebuild <config>` - Shorthand for `just switch <config>`
-  - Example: `rebuild darwin-personal`
-- `dots` - cd to dots directory
-- `cc` - Claude Code without permissions prompt
-- `skill-*` - Skill management commands
+Blocked aliases (enforce correct tooling):
+- `npm` → error, use `pnpm`
+- `pip` / `pip3` → error, use `uv`
 
-## Development Workflow
+## Packages & Language Runtimes (base.nix)
 
-1. **Making changes**: Edit nix files in appropriate module
-2. **Check syntax**: `just check` runs linters
-3. **Apply changes**: `just switch <config>` or `rebuild <config>`
-   - Example: `just switch darwin-personal`
-4. **New machine**: Clone repo, run `just switch <config>`, sign into 1Password
+Installed on all machines:
 
-## Machine Configurations
+- **CLI tools**: git, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat
+- **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
+- **Languages**: go, rustup, lua, nodejs_22, pnpm, bun, uv
+- **AI**: claude-code
+- **Infra**: awscli2, kubectl, kubernetes-helm, kind, colima, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis
+- **Secrets**: _1password-cli
 
-- **darwin-personal**: Full setup with GUI apps, dev tools, secrets
-- **darwin-minimal**: Core tools and secrets, no GUI apps
-- **linux-ec2**: Linux cloud instances with secrets
-- **linux-hpc**: Shared HPC nodes without secrets
+Language management:
+- **Node.js**: nix (nodejs_22) + pnpm
+- **Python**: uv only (no system python3 — python comes as uv dependency)
+- **Go**: nix
+- **Rust**: rustup via nix
+- **Lua**: nix
 
-## Important Files
+## macOS Configuration (darwin.nix)
 
-### home/zsh.nix
-Shell configuration with:
-- Aliases for common commands
-- PATH management
-- CLAUDECODE unset (prevents nested sessions)
-- Dynamic DOTS_DIR loading
-
-### modules/secrets.nix
-1Password integration that:
-- Checks for service account token or desktop app
-- Injects secrets on activation if authenticated
-- Handles both macOS and Linux paths
-
-### modules/base.nix
-Core packages installed everywhere:
-- Development tools (git, ripgrep, fd, etc.)
-- Language runtimes (Go, Rust, Python, Node.js)
-- Cloud tools (AWS CLI, Terraform, kubectl)
-
-### modules/darwin.nix
-macOS-specific configuration:
-- System defaults (dock, keyboard, screenshots)
+- Dock: autohide, no recents
+- Keyboard: fast repeat (KeyRepeat=2, InitialKeyRepeat=15), no press-and-hold
+- Screenshots: saved to `~/Desktop/screenshots`
 - TouchID for sudo
-- Tailscale service
-- Homebrew packages and taps
+- Tailscale service enabled
+- Homebrew taps: hashicorp, k9s, stripe, graphite, ekristen, steipete
 
-## Language/Tool Management
+## SSH Hosts (ssh.nix)
 
-- **Node.js**: Managed by nix (nodejs_22)
-- **Python**: System python3 + uv for project management
-- **Go**: Installed via nix
-- **Rust**: rustup managed by nix
+| Host | Address | User | Notes |
+|------|---------|------|-------|
+| workstation | 100.97.247.28 | charlie | Tailscale, personal 5090 workstation |
+| jetson-nano | 100.95.16.119 | charlie | Tailscale, Jetson Orin Nano |
+| uva-hpc | login.hpc.virginia.edu | abs6bd | ControlMaster multiplexing |
+| do-droplet | 24.199.85.26 | root | DigitalOcean |
+
+All SSH uses 1Password agent (`IdentityAgent` → 1Password socket).
 
 ## Testing & CI
 
-- Pre-commit hooks via `pre-commit-hooks.nix`
-- Formatters: alejandra (nix), shellcheck (bash)
-- Linters: deadnix (unused code), statix (antipatterns)
-- CI runs on every push via GitHub Actions
+- Pre-commit hooks: alejandra, deadnix, statix, shellcheck (only work inside `nix develop`)
+- CI: GitHub Actions on push to main and all PRs
+  - `nix flake check` + `nix fmt -- --check .`
+  - Uses Determinate Systems nix-installer and magic-nix-cache
+
+## Development Workflow
+
+1. Edit nix files in the appropriate module
+2. `just check` to lint
+3. `just switch <config>` to apply (or `rebuild <config>`)
+4. New machine: clone repo → `just switch <config>` → sign into 1Password
 
 ## Manual Setup Required
 
-Some things can't be automated:
-- 1Password: Sign in with `op signin`
-- Tailscale: Authenticate with `tailscale up`
-- SSH keys: Import to 1Password
-- Mac App Store apps: Install manually
+- 1Password: `op signin`
+- Tailscale: `tailscale up`
+- SSH keys: import to 1Password
+- Mac App Store apps (Xcode, Keynote)
+- Berkeley Mono font (paid, manual install to ~/Library/Fonts/)
+- Apps without casks: Ollama, Klack, VESC Tool, UniFi, Logitech Options+
 
 ## Troubleshooting
 
 ### Nested Claude Code Sessions
-If you see "Claude Code cannot be launched inside another Claude Code session":
-- The fix is already applied - `CLAUDECODE` is unset in zshrc
-- Open a new terminal to apply
+`CLAUDECODE` is unset in zshrc. Open a new terminal if you see the nested session error.
 
 ### Secrets Not Loading
-- Ensure 1Password is signed in: `op signin`
-- Run `just switch` to re-inject secrets
-- Check `~/.env.local` exists and is sourced
+1. Sign into 1Password: `op signin`
+2. Rebuild: `just switch <config>`
+3. Verify `~/.env.local` exists and is sourced
 
-### Skill Commands Not Found
-- Run `rebuild` to apply latest aliases
-- Skills require dots directory to be set correctly
+### Pre-commit Hooks Failing
+Hooks only work inside `nix develop`. Outside that context they may hang or fail to find binaries.
 
 ## Contributing
 
-When making changes:
 1. Follow existing patterns in the appropriate module
-2. Run `just check` before committing
-3. Use conventional commits (feat:, fix:, chore:)
-4. Keep secrets in 1Password templates only
+2. `just check` before committing
+3. Conventional commits (feat:, fix:, chore:, docs:)
+4. Secrets in 1Password templates only — never commit actual values
