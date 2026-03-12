@@ -36,7 +36,7 @@ if [ -z "$SKILL_PATH" ]; then
     exit 1
 fi
 
-SKILL_DIR="config/claude/skills/${skill_name}"
+SKILL_DIR="config/agents/skills/${skill_name}"
 mkdir -p "$SKILL_DIR"
 cp -r "$SKILL_PATH"/* "$SKILL_DIR/"
 

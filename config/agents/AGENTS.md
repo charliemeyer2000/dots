@@ -4,7 +4,7 @@
 
 - Always **ultrathink** about the codebase, structure, patterns, existing files/utilities. Think - what's a high-quality, senior-engineer implementation for this? 
 - If you're lost, always read documentation, or consult the user for guidance.
-- Read the AGENTS.md and CLAUDE.md
+- Read the AGENTS.md (CLAUDE.md symlinks here)
 
 ## Documentation
 

@@ -65,7 +65,7 @@ skill-search repo:
 
 # list installed skills
 skill-list:
-  @ls -1 config/claude/skills/ 2>/dev/null | sed 's/^/  - /' || echo "No skills installed"
+  @ls -1 config/agents/skills/ 2>/dev/null | sed 's/^/  - /' || echo "No skills installed"
 
 # remove a skill
 skill-remove skill:

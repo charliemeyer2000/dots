@@ -6,7 +6,7 @@
     ./ssh.nix
     ./fonts.nix
     ./ghostty.nix
-    ./claude.nix
+    ./agents.nix
   ];
 
   home.stateVersion = "24.11";
