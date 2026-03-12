@@ -25,18 +25,23 @@ killport <port>   # kill process on port
 
 `npm`, `pip`, and `pip3` are aliased to errors — use `pnpm` and `uv` instead.
 
-## claude code
+## agent configuration
 
-`claude-code` is nix-managed (via nixpkgs). the `claude` binary comes from the nix store, not a global npm install.
+agent config is tool-agnostic, using the [AGENTS.md](https://agents-md.org) open standard:
 
-settings and CLAUDE.md are deployed via home-manager (`home/claude.nix`):
-- `config/claude/settings.json` -> `~/.claude/settings.json`
-- `config/claude/CLAUDE.md` -> `~/.claude/CLAUDE.md`
-- `config/claude/skills/` -> `~/.claude/skills/`
+- `config/agents/AGENTS.md` → `~/.agents/AGENTS.md` (global instructions)
+- `config/agents/skills/` → `~/.agents/skills/` (agent skills)
+- `config/claude/settings.json` → `~/.claude/settings.json` (claude-specific)
+
+claude code reads from `~/.claude/`, which symlinks into `~/.agents/`:
+- `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md`
+- `~/.claude/skills` → `~/.agents/skills`
+
+deployed via home-manager (`home/agents.nix`). any AGENTS.md-compatible coding agent can read from `~/.agents/` directly.
 
 ### skills
 
-skills are vendored in `config/claude/skills/` and deployed to `~/.claude/skills/` via home-manager.
+skills are vendored in `config/agents/skills/` and deployed to `~/.agents/skills/` via home-manager.
 
 ```bash
 skill-add <owner/repo> <skill>    # download skill from github repo
