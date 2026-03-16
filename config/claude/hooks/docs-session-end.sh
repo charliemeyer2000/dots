@@ -207,8 +207,11 @@ touch "$LOCKFILE"
 
 (
   cd "$GIT_ROOT"
-  nohup claude -p "$(cat "$PROMPT_FILE")" --dangerously-skip-permissions > "$LOG_FILE" 2>&1
-  rm -f "$PROMPT_FILE" "$LOCKFILE"
+  nohup claude -p "$(cat "$PROMPT_FILE")" --dangerously-skip-permissions --model claude-sonnet-4-6 > "$LOG_FILE" 2>&1
+  rm -f "$PROMPT_FILE"
+  # Do NOT remove lockfile here — the claude -p SessionEnd fires at roughly the
+  # same time, creating a race that causes an infinite loop. The 10-minute stale
+  # check (line 16) handles cleanup on the next real session end.
 
   CHANGED_DOCS=$(git diff --name-only 2>/dev/null | grep -E '\.(md|txt)$' || echo "")
   REPO_NAME=$(basename "$GIT_ROOT")
