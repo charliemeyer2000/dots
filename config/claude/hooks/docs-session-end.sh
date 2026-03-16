@@ -4,6 +4,19 @@
 
 set -euo pipefail
 
+# Prevent infinite loop: background claude -p triggers its own SessionEnd
+LOCKFILE="/tmp/claude-docs-hook.lock"
+if [ -f "$LOCKFILE" ]; then
+  # Stale lock check: remove if older than 10 minutes
+  if [[ "$(uname)" == "Darwin" ]]; then
+    lock_age=$(( $(date +%s) - $(stat -f %m "$LOCKFILE") ))
+  else
+    lock_age=$(( $(date +%s) - $(stat -c %Y "$LOCKFILE") ))
+  fi
+  [ "$lock_age" -lt 600 ] && exit 0
+  rm -f "$LOCKFILE"
+fi
+
 INPUT=$(cat)
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path')
 CWD=$(echo "$INPUT" | jq -r '.cwd')
@@ -190,10 +203,12 @@ notify() {
   fi
 }
 
+touch "$LOCKFILE"
+
 (
   cd "$GIT_ROOT"
   nohup claude -p "$(cat "$PROMPT_FILE")" --dangerously-skip-permissions > "$LOG_FILE" 2>&1
-  rm -f "$PROMPT_FILE"
+  rm -f "$PROMPT_FILE" "$LOCKFILE"
 
   CHANGED_DOCS=$(git diff --name-only 2>/dev/null | grep -E '\.(md|txt)$' || echo "")
   REPO_NAME=$(basename "$GIT_ROOT")
