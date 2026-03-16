@@ -12,7 +12,9 @@
     home = "/Users/charlie";
   };
 
-  nix.enable = false; # Determinate Systems manages the daemon
+  nix.enable = false;
   networking.hostName = "charlies-MacBook-Pro-2";
+  networking.computerName = "Charlie's MacBook Pro";
+  networking.localHostName = "charlies-MacBook-Pro-2";
   system.stateVersion = 6;
 }

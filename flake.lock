@@ -211,7 +211,46 @@
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs",
-        "pre-commit-hooks": "pre-commit-hooks"
+        "pre-commit-hooks": "pre-commit-hooks",
+        "rv": "rv",
+        "uvacompute": "uvacompute"
+      }
+    },
+    "rv": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1773632870,
+        "narHash": "sha256-lQwuR5ZCjhop3MAjnueHT62+3HuEvO4O+ZgwsxUayHQ=",
+        "owner": "charliemeyer2000",
+        "repo": "rivanna.dev",
+        "rev": "85bcb85455df0a6d57eef864753bfdf540b1884a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "rivanna.dev",
+        "type": "github"
+      }
+    },
+    "uvacompute": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1773628216,
+        "narHash": "sha256-svJXR0NK96Ccixsfp8VvfnUHHS+xfcDuSLqIbhRaPiw=",
+        "type": "tarball",
+        "url": "https://uvacompute.com/nix/flake.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://uvacompute.com/nix/flake.tar.gz"
       }
     }
   },

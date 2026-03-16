@@ -25,7 +25,8 @@ dots/
 │   │   ├── AGENTS.md     # Global agent instructions (deployed to ~/.agents/)
 │   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.)
 │   └── claude/
-│       └── settings.json # Claude Code-specific settings (model, plugins)
+│       ├── settings.json # Claude Code-specific settings (model, plugins, hooks)
+│       └── hooks/        # Claude Code hooks (deployed to ~/.claude/hooks/)
 ├── home/                 # Home-manager modules
 │   ├── default.nix       # Entry point — imports all modules below
 │   ├── zsh.nix           # Shell: aliases, PATH, env vars, oh-my-zsh
@@ -37,14 +38,13 @@ dots/
 │   └── direnv.nix        # direnv + nix-direnv for per-project shells
 ├── hosts/                # Machine-specific configurations
 │   ├── darwin-personal/  # Full Mac: base + darwin + apps + secrets
-│   ├── darwin-minimal/   # Lean Mac: base + darwin + secrets (no GUI casks)
-│   ├── linux-ec2/        # EC2: base + secrets
+│   ├── linux/            # Linux: base + secrets
 │   └── linux-hpc/        # HPC: base only (no secrets on shared nodes)
 ├── modules/              # System-level modules
 │   ├── base.nix          # Packages for all machines
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
 │   ├── apps.nix          # Homebrew casks (GUI apps, darwin-personal only)
-│   └── secrets.nix       # 1Password op inject logic (macOS + Linux)
+│   └── secrets.nix       # 1Password op inject + Tailscale OAuth auth (macOS + Linux)
 ├── parts/                # Flake-parts modules
 │   ├── hosts.nix         # Machine definitions + home-manager/nix-homebrew wiring
 │   ├── formatter.nix     # alejandra (nix formatter)
@@ -78,14 +78,28 @@ All inputs follow the root nixpkgs for consistency.
 - Template: `secrets/secrets.zsh.tmpl` references 1Password items via `{{ op://vault/item/field }}`
 - On `just switch`, `op inject` fills the template → `~/.env.local` (mode 600)
 - zsh sources `~/.env.local` on startup
-- Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`
+- Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`
 - Supports both 1Password service account token (CI) and desktop app (interactive)
 - linux-hpc has no secrets module (shared nodes)
+
+### Python via uv
+- No system python3 in base.nix — uv manages all Python versions
+- `uv run` / `uv sync` auto-download the required Python for a project
+- For ad-hoc use: `uv python install 3.13` then `uv run python script.py`
+- On macOS, `python3` may exist from Homebrew transitive dependencies — do not rely on it
+
+### Tailscale Authentication
+- Tailscale authenticates automatically on `just switch` via OAuth client credentials
+- OAuth client secret (never expires) stored in 1Password, injected at activation time
+- Devices authenticate with `tag:shared` (required for OAuth-based auth)
+- `tailscale up` is idempotent — re-auths if node key expired, no-op if current
+- No manual `tailscale up` needed on new machines (just sign into 1Password first)
 
 ### Agent Configuration
 Agent config is managed in a tool-agnostic way:
 - Source of truth: `config/agents/` (AGENTS.md + skills/)
 - Claude-specific settings: `config/claude/settings.json`
+- Claude hooks: `config/claude/hooks/` → `~/.claude/hooks/` (deployed with `executable = true`)
 - Deployed to `~/.agents/` via home-manager (agents.nix)
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md` (symlink)
 - `~/.claude/skills` → `~/.agents/skills` (symlink)
@@ -93,12 +107,20 @@ Agent config is managed in a tool-agnostic way:
 - Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`
 - Portable across all machines
 
+### Claude Code Hooks
+- `SessionEnd` hook: on session exit, spawns a background `claude -p` to review changes and update documentation if warranted
+- Hook script: `config/claude/hooks/docs-session-end.sh` (deployed to `~/.claude/hooks/`)
+- Uses git diff + session commit history to determine what changed
+- Skips trivial changes (<10 diff lines) and chat-only sessions
+- Project-specific instructions via `.claude/docs-update.json` (optional per-repo config)
+- Desktop notifications (macOS `osascript`, Linux `notify-send`) when the background update completes
+- Logs: `~/.claude/logs/docs-update-*.log`
+
 ### Host Composition
 
 ```
 darwin-personal  = base + darwin + apps + secrets  (full setup)
-darwin-minimal   = base + darwin + secrets         (no GUI casks)
-linux-ec2        = base + secrets                  (cloud instance)
+linux            = base + secrets                  (general linux)
 linux-hpc        = base                            (minimal, no secrets)
 ```
 
@@ -173,16 +195,25 @@ All SSH uses 1Password agent (`IdentityAgent` → 1Password socket).
 1. Edit nix files in the appropriate module
 2. `just check` to lint
 3. `just switch <config>` to apply (or `rebuild <config>`)
-4. New machine: clone repo → `just switch <config>` → sign into 1Password
+
+## New Machine Bootstrap
+
+Requires two passes — first installs packages (including 1Password CLI), second injects secrets.
+
+1. Install Nix: `curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install`
+2. Clone: `git clone https://github.com/charliemeyer2000/dots ~/all/dots && cd ~/all/dots`
+3. First build: `nix run nix-darwin -- switch --flake .#darwin-personal` (secrets fail gracefully)
+4. Sign into 1Password desktop app, then `op signin`
+5. Second build: `just switch darwin-personal` (secrets + Tailscale auth succeed)
 
 ## Manual Setup Required
 
-- 1Password: `op signin`
-- Tailscale: `tailscale up`
 - SSH keys: import to 1Password
-- Mac App Store apps (Xcode, Keynote)
+- Sign into Mac App Store (required for `mas` to install Xcode, Keynote, Klack)
+- macOS notification permissions: allow Script Editor (for hook notifications)
+- UniFi (iOS app on Mac — `mas` can't install these, get from App Store manually)
+- VESC Tool (direct download from vesc-project.com)
 - Berkeley Mono font (paid, manual install to ~/Library/Fonts/)
-- Apps without casks: Ollama, Klack, VESC Tool, UniFi, Logitech Options+
 
 ## Troubleshooting
 

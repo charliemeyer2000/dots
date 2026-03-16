@@ -37,6 +37,8 @@
     bun
     uv
     claude-code
+    uvacompute
+    rv
     _1password-cli
 
     # Infra

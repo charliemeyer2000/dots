@@ -29,6 +29,18 @@
       url = "github:ryoppippi/claude-code-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # UVACompute CLI
+    uvacompute = {
+      url = "https://uvacompute.com/nix/flake.tar.gz";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # rv CLI — GPU computing on Rivanna
+    rv = {
+      url = "github:charliemeyer2000/rivanna.dev";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs:

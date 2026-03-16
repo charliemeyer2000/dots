@@ -19,8 +19,7 @@ switch config='':
     echo ""
     echo "Available configurations:"
     echo "  - darwin-personal   # Full macOS setup with GUI apps"
-    echo "  - darwin-minimal    # Minimal macOS setup without GUI apps"
-    echo "  - linux-ec2         # AWS EC2 Linux instances"
+    echo "  - linux             # General Linux"
     echo "  - linux-hpc         # HPC cluster nodes"
     echo ""
     echo "Usage: just switch <config>"
@@ -29,7 +28,7 @@ switch config='':
   fi
   mkdir -p ~/.config/dots
   pwd > ~/.config/dots/location
-  nix flake update claude-code-overlay
+  nix flake update claude-code-overlay rv uvacompute
   nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
 
 # rebuild and show diff
@@ -40,8 +39,7 @@ switch-dry config='':
     echo ""
     echo "Available configurations:"
     echo "  - darwin-personal   # Full macOS setup with GUI apps"
-    echo "  - darwin-minimal    # Minimal macOS setup without GUI apps"
-    echo "  - linux-ec2         # AWS EC2 Linux instances"
+    echo "  - linux             # General Linux"
     echo "  - linux-hpc         # HPC cluster nodes"
     echo ""
     echo "Usage: just switch-dry <config>"

@@ -20,6 +20,8 @@
   overlayModule = {
     nixpkgs.overlays = [
       inputs.claude-code-overlay.overlays.default
+      inputs.uvacompute.overlays.default
+      inputs.rv.overlays.default
     ];
   };
 in {
@@ -37,24 +39,11 @@ in {
       ];
     };
 
-    darwinConfigurations.darwin-minimal = inputs.nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";
-      specialArgs = {inherit inputs;};
-      modules = [
-        ../hosts/darwin-minimal
-        inputs.home-manager.darwinModules.home-manager
-        inputs.nix-homebrew.darwinModules.nix-homebrew
-        hmModule
-        homebrewModule
-        overlayModule
-      ];
-    };
-
-    nixosConfigurations.linux-ec2 = inputs.nixpkgs.lib.nixosSystem {
+    nixosConfigurations.linux = inputs.nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = {inherit inputs;};
       modules = [
-        ../hosts/linux-ec2
+        ../hosts/linux
         inputs.home-manager.nixosModules.home-manager
         hmModule
         overlayModule

@@ -1,6 +1,33 @@
 # dots
 
-nix-darwin + home-manager configuration for macOS and Linux machines.
+my personal nix-darwin + home-manager configuration for macOS and Linux machines.
+
+## new mac setup
+
+Bootstrap requires two passes — the first installs everything (including 1Password CLI), the second injects secrets.
+
+```bash
+# 1. install nix
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+# 2. clone this repo (xcode git works, or: nix shell nixpkgs#git)
+git clone https://github.com/charliemeyer2000/dots ~/all/dots
+cd ~/all/dots
+
+# 3. first build — bootstraps nix-darwin, homebrew, all packages and apps
+#    secrets will fail gracefully (1Password not signed in yet)
+nix run nix-darwin -- switch --flake .#darwin-personal
+
+# 4. sign into 1Password (desktop app), then the CLI:
+op signin
+
+# 5. sign into Mac App Store (for Xcode, Keynote, Klack via mas)
+
+# 6. second build — secrets, tailscale auth, and App Store apps
+just switch darwin-personal
+```
+
+After step 5, open a new terminal. All aliases, secrets, and dotfiles are active.
 
 ## commands
 
@@ -32,12 +59,15 @@ agent config is tool-agnostic, using the [AGENTS.md](https://agents-md.org) open
 - `config/agents/AGENTS.md` → `~/.agents/AGENTS.md` (global instructions)
 - `config/agents/skills/` → `~/.agents/skills/` (agent skills)
 - `config/claude/settings.json` → `~/.claude/settings.json` (claude-specific)
+- `config/claude/hooks/` → `~/.claude/hooks/` (claude code hooks, deployed executable)
 
 claude code reads from `~/.claude/`, which symlinks into `~/.agents/`:
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md`
 - `~/.claude/skills` → `~/.agents/skills`
 
 deployed via home-manager (`home/agents.nix`). any AGENTS.md-compatible coding agent can read from `~/.agents/` directly.
+
+a `SessionEnd` hook spawns a background `claude -p` on session exit to review changes and update docs if needed. per-project config via `.claude/docs-update.json`. logs at `~/.claude/logs/`.
 
 ### skills
 
@@ -59,8 +89,7 @@ after adding/removing a skill, run `just switch <config>` to deploy (or use `ski
 | config | os | gui apps | secrets | notes |
 |---|---|---|---|---|
 | `darwin-personal` | macOS | yes (`apps.nix`) | yes | full setup |
-| `darwin-minimal` | macOS | no | yes | core tools only |
-| `linux-ec2` | Linux | no | yes | AWS EC2 instances |
+| `linux` | Linux | no | yes | general linux |
 | `linux-hpc` | Linux | no | no | shared HPC nodes |
 
 ## ssh hosts
@@ -76,9 +105,9 @@ configured in `home/ssh.nix`, using 1Password SSH agent:
 
 some things can't be nix-managed. install/configure by hand:
 
-**mac app store:** Xcode, Keynote
+**iOS apps on Mac (mas can't install):** UniFi
 
-**no brew cask:** Ollama, Klack, VESC Tool, UniFi, Logitech Options+, Cisco Secure Client
+**direct download:** VESC Tool (vesc-project.com)
 
 **app-internal config:** Raycast (built-in sync), Cursor (GitHub sync), Chrome (Google sync), 1Password (sign in)
 
@@ -88,13 +117,3 @@ gh repo clone (hidden)/fonts /tmp/fonts
 cp /tmp/fonts/**/*.{otf,ttf} ~/Library/Fonts/
 rm -rf /tmp/fonts
 ```
-
-**kext stuff:** hardware drivers / VPN clients with kernel extensions — install manually.
-
-## after bootstrap
-
-1. `op signin`
-2. `just switch <config>` (injects secrets)
-3. `gh auth login`
-4. `tailscale up`
-5. import SSH keys to 1Password if new machine
