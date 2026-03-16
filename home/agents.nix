@@ -9,6 +9,12 @@
   # Claude-specific settings
   home.file.".claude/settings.json".source = ../config/claude/settings.json;
 
+  # Claude hooks
+  home.file.".claude/hooks/docs-session-end.sh" = {
+    source = ../config/claude/hooks/docs-session-end.sh;
+    executable = true;
+  };
+
   # Symlink Claude paths → agent paths
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.agents/AGENTS.md";

@@ -65,6 +65,7 @@ dots/
 | home-manager | nix-community/home-manager | User-level dotfiles |
 | pre-commit-hooks | cachix/pre-commit-hooks.nix | Git hook framework |
 | nix-homebrew | zhaofengli-wip/nix-homebrew | Declarative Homebrew on macOS |
+| claude-code-overlay | ryoppippi/claude-code-overlay | Hourly-updated Claude Code CLI (official Anthropic binaries) |
 
 All inputs follow the root nixpkgs for consistency.
 
@@ -104,7 +105,7 @@ linux-hpc        = base                            (minimal, no secrets)
 ## Common Commands
 
 Justfile commands:
-- `just switch <config>` — Rebuild and apply (e.g., `just switch darwin-personal`)
+- `just switch <config>` — Update claude-code overlay, rebuild, and apply (e.g., `just switch darwin-personal`)
 - `just switch-dry <config>` — Preview build without applying
 - `just check` — Run flake checks and linters
 - `just fmt` — Format all nix files with alejandra
@@ -129,7 +130,7 @@ Installed on all machines:
 - **CLI tools**: git, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
 - **Languages**: go, rustup, lua, nodejs_22, pnpm, bun, uv
-- **AI**: claude-code
+- **AI**: claude-code (via claude-code-overlay, not nixpkgs)
 - **Infra**: awscli2, kubectl, kubernetes-helm, kind, colima, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis
 - **Secrets**: _1password-cli
 

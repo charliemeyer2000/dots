@@ -29,6 +29,7 @@ switch config='':
   fi
   mkdir -p ~/.config/dots
   pwd > ~/.config/dots/location
+  nix flake update claude-code-overlay
   nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
 
 # rebuild and show diff

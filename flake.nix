@@ -23,6 +23,12 @@
 
     # Automatically install and manage Homebrew on macOS
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
+
+    # Claude Code — hourly-updated overlay with official Anthropic binaries
+    claude-code-overlay = {
+      url = "github:ryoppippi/claude-code-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs:

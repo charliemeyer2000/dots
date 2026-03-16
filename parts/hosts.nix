@@ -15,6 +15,13 @@
       autoMigrate = true;
     };
   };
+
+  # Overlays applied to all hosts
+  overlayModule = {
+    nixpkgs.overlays = [
+      inputs.claude-code-overlay.overlays.default
+    ];
+  };
 in {
   flake = {
     darwinConfigurations.darwin-personal = inputs.nix-darwin.lib.darwinSystem {
@@ -26,6 +33,7 @@ in {
         inputs.nix-homebrew.darwinModules.nix-homebrew
         hmModule
         homebrewModule
+        overlayModule
       ];
     };
 
@@ -38,6 +46,7 @@ in {
         inputs.nix-homebrew.darwinModules.nix-homebrew
         hmModule
         homebrewModule
+        overlayModule
       ];
     };
 
@@ -48,6 +57,7 @@ in {
         ../hosts/linux-ec2
         inputs.home-manager.nixosModules.home-manager
         hmModule
+        overlayModule
       ];
     };
 
@@ -58,6 +68,7 @@ in {
         ../hosts/linux-hpc
         inputs.home-manager.nixosModules.home-manager
         hmModule
+        overlayModule
       ];
     };
   };
