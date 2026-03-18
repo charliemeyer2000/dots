@@ -37,6 +37,13 @@
       skill-remove = "cd $DOTS_DIR && just skill-remove";
       skill-install = "echo 'Usage: skill-install <repo> <skill> <config>' && echo 'Example: skill-install cursor/plugins deslop darwin-personal' && false";
       skills = "cd $DOTS_DIR && just skill-list";
+
+      vpn-on = "mullvad connect";
+      vpn-off = "mullvad disconnect";
+      vpn-status = "mullvad status && echo '---' && mullvad relay get";
+      vpn-us = "mullvad relay set location us && mullvad connect";
+      vpn-uk = "mullvad relay set location gb && mullvad connect";
+      vpn-eu = "mullvad relay set location de && mullvad connect";
     };
 
     initContent = ''

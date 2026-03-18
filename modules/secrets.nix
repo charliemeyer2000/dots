@@ -46,14 +46,18 @@
         fi
       fi
 
-      # Mullvad VPN: login and enable auto-connect
+      # Mullvad VPN: login, auto-connect, always-on (no lockdown — coexists with Tailscale)
       MULLVAD_BIN="/Applications/Mullvad VPN.app/Contents/Resources/mullvad"
       if [ -x "$MULLVAD_BIN" ] && [ -n "$MULLVAD_ACCOUNT_NUMBER" ]; then
         echo "Configuring Mullvad VPN..."
         ${asCharlie} "$MULLVAD_BIN" account login "$MULLVAD_ACCOUNT_NUMBER" 2>/dev/null
         ${asCharlie} "$MULLVAD_BIN" auto-connect set on 2>/dev/null
+        ${asCharlie} "$MULLVAD_BIN" lockdown-mode set off 2>/dev/null
+        ${asCharlie} "$MULLVAD_BIN" lan set allow 2>/dev/null
+        ${asCharlie} "$MULLVAD_BIN" relay set location us 2>/dev/null
+        ${asCharlie} "$MULLVAD_BIN" dns set default 2>/dev/null
         ${asCharlie} "$MULLVAD_BIN" connect 2>/dev/null
-        echo "  -> Mullvad VPN configured (auto-connect on)"
+        echo "  -> Mullvad VPN configured (auto-connect, US relay, LAN allowed)"
       fi
     fi
   '';

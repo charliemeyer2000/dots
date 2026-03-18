@@ -26,8 +26,8 @@
     autohide = true;
     show-recents = false;
     tilesize = 61;
-    minimize-to-application = true;
-    mineffect = "scale";
+    minimize-to-application = false;
+    mineffect = "genie";
     mru-spaces = false; # don't rearrange spaces based on recent use
     show-process-indicators = true;
     launchanim = false;
