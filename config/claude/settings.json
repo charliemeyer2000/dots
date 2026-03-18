@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
     "SessionEnd": [
       {
@@ -18,8 +19,7 @@
     "swift-lsp@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true,
-  "effortLevel": "max",
+  "effortLevel": "high",
   "attribution": {
     "commit": "feat: AI-assisted changes\n\nCo-Authored-By: Claude <ai@anthropic.com>"
   },
@@ -27,5 +27,5 @@
   "alwaysThinkingEnabled": true,
   "showTurnDuration": false,
   "spinnerTipsEnabled": false,
-  "terminalProgressBarEnabled": true,
+  "terminalProgressBarEnabled": true
 }

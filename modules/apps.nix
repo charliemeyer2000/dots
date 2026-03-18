@@ -39,6 +39,7 @@
     "wispr-flow"
 
     # Utilities
+    "mullvad-vpn"
     "atomic-wallet"
     "balenaetcher"
     "cleanshot"
