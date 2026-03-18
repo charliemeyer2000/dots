@@ -14,6 +14,7 @@
 
     # Dev
     "claude"
+    "db-browser-for-sqlite"
     "cursor"
     "docker-desktop"
     "figma"
