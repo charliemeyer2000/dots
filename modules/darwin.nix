@@ -142,8 +142,8 @@
 
   # ── Power ───────────────────────────────────────────────────────────
   power.sleep = {
-    display = 15;
-    computer = 30;
+    display = "never";
+    computer = "never";
   };
 
   # ── Security ────────────────────────────────────────────────────────
@@ -253,6 +253,26 @@
       "swiftformat"
       "swiftlint"
       "xcodegen"
+
+      # ROS2 Jazzy build deps
+      "asio"
+      "assimp"
+      "bison"
+      "bullet"
+      "console_bridge"
+      "cunit"
+      "eigen"
+      "log4cxx"
+      "opencv"
+      "openssl"
+      "orocos-kdl"
+      "pcre"
+      "poco"
+      "pyqt@5"
+      "qt@5"
+      "sip"
+      "spdlog"
+      "tinyxml2"
 
       # Other utilities
       "gogcli"
