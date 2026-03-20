@@ -6,7 +6,6 @@
     home-manager.users.charlie = import ../home;
   };
 
-  # nix-homebrew configuration for automatic Homebrew installation
   homebrewModule = {
     nix-homebrew = {
       enable = true;
@@ -16,13 +15,16 @@
     };
   };
 
-  # Overlays applied to all hosts
-  overlayModule = {
-    nixpkgs.overlays = [
-      inputs.claude-code-overlay.overlays.default
-      inputs.uvacompute.overlays.default
-      inputs.rv.overlays.default
-    ];
+  overlays = [
+    inputs.claude-code-overlay.overlays.default
+    inputs.uvacompute.overlays.default
+    inputs.rv.overlays.default
+  ];
+
+  pkgsLinux = import inputs.nixpkgs {
+    system = "x86_64-linux";
+    config.allowUnfree = true;
+    inherit overlays;
   };
 in {
   flake = {
@@ -35,29 +37,14 @@ in {
         inputs.nix-homebrew.darwinModules.nix-homebrew
         hmModule
         homebrewModule
-        overlayModule
+        {nixpkgs.overlays = overlays;}
       ];
     };
 
-    nixosConfigurations.linux = inputs.nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      specialArgs = {inherit inputs;};
+    homeConfigurations.workstation = inputs.home-manager.lib.homeManagerConfiguration {
+      pkgs = pkgsLinux;
       modules = [
-        ../hosts/linux
-        inputs.home-manager.nixosModules.home-manager
-        hmModule
-        overlayModule
-      ];
-    };
-
-    nixosConfigurations.linux-hpc = inputs.nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      specialArgs = {inherit inputs;};
-      modules = [
-        ../hosts/linux-hpc
-        inputs.home-manager.nixosModules.home-manager
-        hmModule
-        overlayModule
+        ../hosts/workstation
       ];
     };
   };

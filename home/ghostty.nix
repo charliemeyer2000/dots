@@ -1,5 +1,14 @@
-{...}: let
+{pkgs, ...}: let
   font = "Berkeley Mono"; # paid font, fallback: JetBrainsMono Nerd Font
+  inherit (pkgs.stdenv) isDarwin;
+  mod =
+    if isDarwin
+    then "cmd"
+    else "ctrl+shift";
+  modAlt =
+    if isDarwin
+    then "cmd+opt"
+    else "ctrl+alt";
 in {
   home.file.".config/ghostty/config".text = ''
     font-family = ${font}
@@ -32,23 +41,21 @@ in {
     selection-background = #504945
     selection-foreground = #ebdbb2
 
-    # Shift+Enter passes through naturally when not bound
+    keybind = ${modAlt}+\=new_split:right
+    keybind = ${modAlt}+-=new_split:down
 
-    keybind = cmd+opt+\=new_split:right
-    keybind = cmd+opt+-=new_split:down
+    keybind = ${mod}+h=goto_split:left
+    keybind = ${mod}+j=goto_split:down
+    keybind = ${mod}+k=goto_split:up
+    keybind = ${mod}+l=goto_split:right
 
-    keybind = cmd+h=goto_split:left
-    keybind = cmd+j=goto_split:down
-    keybind = cmd+k=goto_split:up
-    keybind = cmd+l=goto_split:right
+    keybind = ${modAlt}+h=resize_split:left,10
+    keybind = ${modAlt}+j=resize_split:down,10
+    keybind = ${modAlt}+k=resize_split:up,10
+    keybind = ${modAlt}+l=resize_split:right,10
 
-    keybind = cmd+opt+h=resize_split:left,10
-    keybind = cmd+opt+j=resize_split:down,10
-    keybind = cmd+opt+k=resize_split:up,10
-    keybind = cmd+opt+l=resize_split:right,10
-
-    keybind = cmd+opt+=equalize_splits
-    keybind = cmd+opt+enter=toggle_split_zoom
-    keybind = cmd+w=close_surface
+    keybind = ${modAlt}+=equalize_splits
+    keybind = ${modAlt}+enter=toggle_split_zoom
+    keybind = ${mod}+w=close_surface
   '';
 }

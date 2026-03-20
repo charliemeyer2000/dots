@@ -1,8 +1,13 @@
-{...}: {
+{pkgs, ...}: let
+  inherit (pkgs.stdenv) isDarwin;
+in {
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
-    includes = ["/Users/charlie/.colima/ssh_config"];
+    includes =
+      if isDarwin
+      then ["/Users/charlie/.colima/ssh_config"]
+      else [];
     matchBlocks = {
       workstation = {
         hostname = "100.97.247.28";
@@ -37,7 +42,10 @@
           TERM = "xterm-256color";
         };
         extraOptions = {
-          IdentityAgent = "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
+          IdentityAgent =
+            if isDarwin
+            then "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\""
+            else "\"~/.1password/agent.sock\"";
           AddKeysToAgent = "yes";
         };
       };

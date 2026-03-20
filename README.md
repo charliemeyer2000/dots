@@ -2,9 +2,9 @@
 
 my personal nix-darwin + home-manager configuration for macOS and Linux machines.
 
-## new mac setup
+## bootstrap
 
-Bootstrap requires two passes — the first installs everything (including 1Password CLI), the second injects secrets.
+### macOS
 
 ```bash
 # 1. install nix
@@ -27,16 +27,39 @@ op signin
 just switch darwin-personal
 ```
 
-After step 5, open a new terminal. All aliases, secrets, and dotfiles are active.
+### linux workstation
+
+```bash
+# 1. install nix
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+# 2. install 1Password GUI app (for SSH agent)
+# add 1Password apt repo, then: sudo apt install 1password
+
+# 3. clone this repo
+git clone https://github.com/charliemeyer2000/dots ~/all/dots
+cd ~/all/dots
+
+# 4. first build — secrets will fail gracefully (1Password not signed in yet)
+nix run home-manager -- switch --flake .#workstation -b bak
+
+# 5. sign into 1Password (desktop app), then the CLI:
+op signin
+
+# 6. second build — secrets + tailscale auth
+just switch workstation
+```
+
+after bootstrap, open a new terminal. all aliases, secrets, and dotfiles are active.
 
 ## commands
 
 ```bash
-just switch <config>     # rebuild and apply (e.g., just switch darwin-personal)
-just switch-dry <config> # build without applying
-just check               # run flake checks + linters
-just fmt                 # format all nix files
-just dev                 # enter dev shell
+just switch <config>         # rebuild and apply (auto-detects darwin vs home-manager)
+just switch-dry <config>     # preview build without applying
+just check                   # run flake checks + linters
+just fmt                     # format all nix files
+just dev                     # enter dev shell
 ```
 
 aliases (available after rebuild):
@@ -86,11 +109,10 @@ after adding/removing a skill, run `just switch <config>` to deploy (or use `ski
 
 ## machine configurations
 
-| config | os | gui apps | secrets | notes |
+| config | os | type | secrets | notes |
 |---|---|---|---|---|
-| `darwin-personal` | macOS | yes (`apps.nix`) | yes | full setup |
-| `linux` | Linux | no | yes | general linux |
-| `linux-hpc` | Linux | no | no | shared HPC nodes |
+| `darwin-personal` | macOS | nix-darwin | yes | full setup with GUI apps |
+| `workstation` | Linux (Ubuntu) | standalone home-manager | yes | RTX 5090 workstation, dotfiles + CLI packages |
 
 ## ssh hosts
 

@@ -11,7 +11,7 @@ fmt:
 check:
   nix flake check
 
-# rebuild machine with specified configuration
+# rebuild machine with specified configuration (auto-detects darwin vs home-manager)
 switch config='':
   #!/usr/bin/env bash
   if [[ -z "{{config}}" ]]; then
@@ -19,8 +19,7 @@ switch config='':
     echo ""
     echo "Available configurations:"
     echo "  - darwin-personal   # Full macOS setup with GUI apps"
-    echo "  - linux             # General Linux"
-    echo "  - linux-hpc         # HPC cluster nodes"
+    echo "  - workstation       # Linux workstation (standalone home-manager)"
     echo ""
     echo "Usage: just switch <config>"
     echo "Example: just switch darwin-personal"
@@ -29,24 +28,25 @@ switch config='':
   mkdir -p ~/.config/dots
   pwd > ~/.config/dots/location
   nix flake update claude-code-overlay rv uvacompute
-  nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
+  if [[ "$(uname)" == "Darwin" ]]; then
+    nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
+  else
+    home-manager switch --flake .#{{config}} -b bak
+  fi
 
-# rebuild and show diff
+# preview build without applying
 switch-dry config='':
   #!/usr/bin/env bash
   if [[ -z "{{config}}" ]]; then
     echo "Error: Configuration name required"
-    echo ""
-    echo "Available configurations:"
-    echo "  - darwin-personal   # Full macOS setup with GUI apps"
-    echo "  - linux             # General Linux"
-    echo "  - linux-hpc         # HPC cluster nodes"
-    echo ""
     echo "Usage: just switch-dry <config>"
-    echo "Example: just switch-dry darwin-personal"
     exit 1
   fi
-  /run/current-system/sw/bin/darwin-rebuild build --flake .#{{config}}
+  if [[ "$(uname)" == "Darwin" ]]; then
+    /run/current-system/sw/bin/darwin-rebuild build --flake .#{{config}}
+  else
+    home-manager build --flake .#{{config}}
+  fi
 
 # enter dev shell
 dev:

@@ -1,6 +1,6 @@
 # dots - Charlie's Nix Configuration
 
-Personal nix-darwin + home-manager configuration for macOS and Linux machines.
+Personal nix-darwin + home-manager configuration for macOS and Linux machines. Uses nix-darwin for macOS system config and standalone home-manager for Linux workstations (no NixOS).
 
 ## Architecture
 
@@ -38,13 +38,14 @@ dots/
 │   └── direnv.nix        # direnv + nix-direnv for per-project shells
 ├── hosts/                # Machine-specific configurations
 │   ├── darwin-personal/  # Full Mac: base + darwin + apps + secrets
-│   ├── linux/            # Linux: base + secrets
-│   └── linux-hpc/        # HPC: base only (no secrets on shared nodes)
+│   └── workstation/      # Linux workstation: standalone home-manager + secrets
 ├── modules/              # System-level modules
-│   ├── base.nix          # Packages for all machines
+│   ├── packages.nix      # Shared package list (used by base.nix and workstation)
+│   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
 │   ├── apps.nix          # Homebrew casks (GUI apps, darwin-personal only)
-│   └── secrets.nix       # 1Password op inject + Tailscale OAuth auth (macOS + Linux)
+│   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
+│   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── parts/                # Flake-parts modules
 │   ├── hosts.nix         # Machine definitions + home-manager/nix-homebrew wiring
 │   ├── formatter.nix     # alejandra (nix formatter)
@@ -66,6 +67,8 @@ dots/
 | pre-commit-hooks | cachix/pre-commit-hooks.nix | Git hook framework |
 | nix-homebrew | zhaofengli-wip/nix-homebrew | Declarative Homebrew on macOS |
 | claude-code-overlay | ryoppippi/claude-code-overlay | Hourly-updated Claude Code CLI (official Anthropic binaries) |
+| uvacompute | uvacompute.com/nix/flake.tar.gz | UVACompute CLI |
+| rv | charliemeyer2000/rivanna.dev | rv CLI — GPU job submission on Rivanna/Afton HPC |
 
 All inputs follow the root nixpkgs for consistency.
 
@@ -76,11 +79,11 @@ All inputs follow the root nixpkgs for consistency.
 
 ### Secrets Management
 - Template: `secrets/secrets.zsh.tmpl` references 1Password items via `{{ op://vault/item/field }}`
-- On `just switch`, `op inject` fills the template → `~/.env.local` (mode 600)
+- On rebuild (`just switch`), `op inject` fills the template → `~/.env.local` (mode 600)
 - zsh sources `~/.env.local` on startup
 - Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`
 - Supports both 1Password service account token (CI) and desktop app (interactive)
-- linux-hpc has no secrets module (shared nodes)
+- Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 
 ### Python via uv
 - No system python3 in base.nix — uv manages all Python versions
@@ -119,15 +122,16 @@ Agent config is managed in a tool-agnostic way:
 ### Host Composition
 
 ```
-darwin-personal  = base + darwin + apps + secrets  (full setup)
-linux            = base + secrets                  (general linux)
-linux-hpc        = base                            (minimal, no secrets)
+darwin-personal  = base + darwin + apps + secrets            (nix-darwin, full setup)
+workstation      = home + packages + hm-secrets              (standalone home-manager, Ubuntu 24.04)
 ```
+
+The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
 
 ## Common Commands
 
 Justfile commands:
-- `just switch <config>` — Update claude-code overlay, rebuild, and apply (e.g., `just switch darwin-personal`)
+- `just switch <config>` — Rebuild and apply (auto-detects darwin-rebuild vs home-manager)
 - `just switch-dry <config>` — Preview build without applying
 - `just check` — Run flake checks and linters
 - `just fmt` — Format all nix files with alejandra
@@ -145,15 +149,15 @@ Blocked aliases (enforce correct tooling):
 - `npm` → error, use `pnpm`
 - `pip` / `pip3` → error, use `uv`
 
-## Packages & Language Runtimes (base.nix)
+## Packages & Language Runtimes (packages.nix)
 
-Installed on all machines:
+Shared across all machines (via `modules/packages.nix`):
 
 - **CLI tools**: git, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
 - **Languages**: go, rustup, lua, nodejs_22, pnpm, bun, uv
-- **AI**: claude-code (via claude-code-overlay, not nixpkgs)
-- **Infra**: awscli2, kubectl, kubernetes-helm, kind, colima, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis
+- **AI/HPC**: claude-code (via claude-code-overlay), uvacompute, rv (UVA Rivanna job submission CLI)
+- **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, colima (macOS only)
 - **Secrets**: _1password-cli
 
 Language management:
@@ -194,9 +198,11 @@ All SSH uses 1Password agent (`IdentityAgent` → 1Password socket).
 
 1. Edit nix files in the appropriate module
 2. `just check` to lint
-3. `just switch <config>` to apply (or `rebuild <config>`)
+3. `just switch <config>` to apply — or `rebuild <config>`
 
 ## New Machine Bootstrap
+
+### macOS (nix-darwin)
 
 Requires two passes — first installs packages (including 1Password CLI), second injects secrets.
 
@@ -205,6 +211,15 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 3. First build: `nix run nix-darwin -- switch --flake .#darwin-personal` (secrets fail gracefully)
 4. Sign into 1Password desktop app, then `op signin`
 5. Second build: `just switch darwin-personal` (secrets + Tailscale auth succeed)
+
+### Linux Workstation (standalone home-manager)
+
+1. Install Nix: `curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install`
+2. Install 1Password GUI app (for SSH agent): add 1Password apt repo, `apt install 1password`
+3. Clone: `git clone https://github.com/charliemeyer2000/dots ~/all/dots && cd ~/all/dots`
+4. First run: `nix run home-manager -- switch --flake .#workstation -b bak` (secrets fail gracefully)
+5. Sign into 1Password desktop app, then `op signin`
+6. Second run: `just switch workstation` (secrets + Tailscale auth succeed)
 
 ## Manual Setup Required
 

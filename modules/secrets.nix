@@ -1,17 +1,12 @@
 {pkgs, ...}: let
-  homeDir =
-    if pkgs.stdenv.isDarwin
-    then "/Users/charlie"
-    else "/home/charlie";
-  group =
-    if pkgs.stdenv.isDarwin
-    then "staff"
-    else "charlie";
+  homeDir = "/Users/charlie";
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
   asCharlie = "sudo -u charlie HOME=${homeDir}";
-  script = ''
+  mullvadBin = "/Applications/Mullvad VPN.app/Contents/Resources/mullvad";
+in {
+  system.activationScripts.postActivation.text = ''
     if [ -f ${homeDir}/.config/op/service-account-token ]; then
       OP_SERVICE_ACCOUNT_TOKEN="$(cat ${homeDir}/.config/op/service-account-token)"
       export OP_SERVICE_ACCOUNT_TOKEN
@@ -24,7 +19,7 @@
 
     echo "Injecting secrets via 1Password..."
     if $OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local; then
-      chown charlie:${group} ${homeDir}/.env.local
+      chown charlie:staff ${homeDir}/.env.local
       chmod 600 ${homeDir}/.env.local
       echo "  -> ~/.env.local injected"
     else
@@ -47,23 +42,17 @@
       fi
 
       # Mullvad VPN: login, auto-connect, always-on (no lockdown — coexists with Tailscale)
-      MULLVAD_BIN="/Applications/Mullvad VPN.app/Contents/Resources/mullvad"
-      if [ -x "$MULLVAD_BIN" ] && [ -n "$MULLVAD_ACCOUNT_NUMBER" ]; then
+      if [ -x "${mullvadBin}" ] && [ -n "$MULLVAD_ACCOUNT_NUMBER" ]; then
         echo "Configuring Mullvad VPN..."
-        ${asCharlie} "$MULLVAD_BIN" account login "$MULLVAD_ACCOUNT_NUMBER" 2>/dev/null
-        ${asCharlie} "$MULLVAD_BIN" auto-connect set on 2>/dev/null
-        ${asCharlie} "$MULLVAD_BIN" lockdown-mode set off 2>/dev/null
-        ${asCharlie} "$MULLVAD_BIN" lan set allow 2>/dev/null
-        ${asCharlie} "$MULLVAD_BIN" relay set location us 2>/dev/null
-        ${asCharlie} "$MULLVAD_BIN" dns set default 2>/dev/null
-        ${asCharlie} "$MULLVAD_BIN" connect 2>/dev/null
+        ${asCharlie} "${mullvadBin}" account login "$MULLVAD_ACCOUNT_NUMBER" 2>/dev/null
+        ${asCharlie} "${mullvadBin}" auto-connect set on 2>/dev/null
+        ${asCharlie} "${mullvadBin}" lockdown-mode set off 2>/dev/null
+        ${asCharlie} "${mullvadBin}" lan set allow 2>/dev/null
+        ${asCharlie} "${mullvadBin}" relay set location us 2>/dev/null
+        ${asCharlie} "${mullvadBin}" dns set default 2>/dev/null
+        ${asCharlie} "${mullvadBin}" connect 2>/dev/null
         echo "  -> Mullvad VPN configured (auto-connect, US relay, LAN allowed)"
       fi
     fi
   '';
-in {
-  system.activationScripts =
-    if pkgs.stdenv.isDarwin
-    then {postActivation.text = script;}
-    else {secrets.text = script;};
 }

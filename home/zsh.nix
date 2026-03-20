@@ -1,4 +1,6 @@
-{...}: {
+{pkgs, ...}: let
+  inherit (pkgs.stdenv) isDarwin;
+in {
   programs.zsh = {
     enable = true;
     autosuggestion.enable = false; # OMZ plugins handle these
@@ -20,31 +22,37 @@
       extended = true;
     };
 
-    shellAliases = {
-      rebuild = "echo 'Usage: rebuild <config>' && echo 'Example: rebuild darwin-personal' && echo '' && cd $DOTS_DIR && just switch";
-      dots = "cd $DOTS_DIR";
-      k = "kubectl";
-      tf = "terraform";
-      cc = "claude --dangerously-skip-permissions";
-      killport = "f() { lsof -ti :$1 | xargs kill -9; }; f";
-      npm = "echo 'use pnpm instead' && false";
-      pip = "echo 'use uv instead' && false";
-      pip3 = "echo 'use uv instead' && false";
+    shellAliases =
+      {
+        rebuild = "echo 'Usage: rebuild <config>' && echo 'Example: rebuild darwin-personal' && echo '' && cd $DOTS_DIR && just switch";
+        dots = "cd $DOTS_DIR";
+        k = "kubectl";
+        tf = "terraform";
+        cc = "claude --dangerously-skip-permissions";
+        killport = "f() { lsof -ti :$1 | xargs kill -9; }; f";
+        npm = "echo 'use pnpm instead' && false";
+        pip = "echo 'use uv instead' && false";
+        pip3 = "echo 'use uv instead' && false";
 
-      skill-add = "cd $DOTS_DIR && just skill-add";
-      skill-search = "cd $DOTS_DIR && just skill-search";
-      skill-list = "cd $DOTS_DIR && just skill-list";
-      skill-remove = "cd $DOTS_DIR && just skill-remove";
-      skill-install = "echo 'Usage: skill-install <repo> <skill> <config>' && echo 'Example: skill-install cursor/plugins deslop darwin-personal' && false";
-      skills = "cd $DOTS_DIR && just skill-list";
-
-      vpn-on = "mullvad connect";
-      vpn-off = "mullvad disconnect";
-      vpn-status = "mullvad status && echo '---' && mullvad relay get";
-      vpn-us = "mullvad relay set location us && mullvad connect";
-      vpn-uk = "mullvad relay set location gb && mullvad connect";
-      vpn-eu = "mullvad relay set location de && mullvad connect";
-    };
+        skill-add = "cd $DOTS_DIR && just skill-add";
+        skill-search = "cd $DOTS_DIR && just skill-search";
+        skill-list = "cd $DOTS_DIR && just skill-list";
+        skill-remove = "cd $DOTS_DIR && just skill-remove";
+        skill-install = "echo 'Usage: skill-install <repo> <skill> <config>' && echo 'Example: skill-install cursor/plugins deslop darwin-personal' && false";
+        skills = "cd $DOTS_DIR && just skill-list";
+      }
+      // (
+        if isDarwin
+        then {
+          vpn-on = "mullvad connect";
+          vpn-off = "mullvad disconnect";
+          vpn-status = "mullvad status && echo '---' && mullvad relay get";
+          vpn-us = "mullvad relay set location us && mullvad connect";
+          vpn-uk = "mullvad relay set location gb && mullvad connect";
+          vpn-eu = "mullvad relay set location de && mullvad connect";
+        }
+        else {}
+      );
 
     initContent = ''
       unsetopt correct_all
@@ -58,14 +66,29 @@
 
       [ -f ~/.env.local ] && source ~/.env.local
 
-      export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:$HOME/.local/bin:$PATH"
+      ${
+        if isDarwin
+        then ''
+          export PATH="/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin:$HOME/.local/bin:$PATH"
+        ''
+        else ''
+          export PATH="$HOME/.nix-profile/bin:$HOME/.local/bin:$PATH"
+        ''
+      }
 
       unset CLAUDECODE
 
       eval "$(zoxide init zsh)"
 
-
-      export PNPM_HOME="$HOME/Library/pnpm"
+      ${
+        if isDarwin
+        then ''
+          export PNPM_HOME="$HOME/Library/pnpm"
+        ''
+        else ''
+          export PNPM_HOME="$HOME/.local/share/pnpm"
+        ''
+      }
       case ":$PATH:" in
         *":$PNPM_HOME:"*) ;;
         *) export PATH="$PNPM_HOME:$PATH" ;;
@@ -76,13 +99,25 @@
       fi
 
       export PATH="''${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
-      export PATH="/usr/local/texlive/2025/bin/universal-darwin:$PATH"
+      ${
+        if isDarwin
+        then ''
+          export PATH="/usr/local/texlive/2025/bin/universal-darwin:$PATH"
+        ''
+        else ""
+      }
 
       if command -v kubectl &>/dev/null; then source <(kubectl completion zsh); fi
       autoload -U +X bashcompinit && bashcompinit
       if command -v terraform &>/dev/null; then complete -o nospace -C terraform terraform; fi
 
-      export OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3
+      ${
+        if isDarwin
+        then ''
+          export OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3
+        ''
+        else ""
+      }
 
       [ -f "$HOME/Downloads/google-cloud-sdk/path.zsh.inc" ] && source "$HOME/Downloads/google-cloud-sdk/path.zsh.inc"
       [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc"

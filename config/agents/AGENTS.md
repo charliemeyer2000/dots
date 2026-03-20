@@ -28,9 +28,9 @@ When reading documentation, always:
 
 ## Environment
 
-- nix-darwin + home-manager manages this machine
 - Config lives at `~/all/dots`
-- `just switch <config>` to rebuild (e.g., `just switch darwin-personal`)
+- macOS: nix-darwin + home-manager — `just switch darwin-personal`
+- Linux workstation: standalone home-manager — `just switch workstation`
 - Secrets injected via 1Password `op inject` during activation
 
 ## Other machines
