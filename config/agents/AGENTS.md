@@ -16,7 +16,7 @@ When reading documentation, always:
 
 ## Package Managers
 
-- JS: use `pnpm`, never `npm`. node is managed by nvm, default version via nix.
+- JS/TS: use `pnpm`, never `npm`. node is managed by nvm, default version via nix.
 - Python: use `uv` for everything. `uv run` for scripts, `uv sync` for projects, `uv tool install` for global CLI tools. never `pip install`.
 - Rust: use `cargo` via `rustup`.
 

@@ -44,14 +44,17 @@ in {
       # Mullvad VPN: login, auto-connect, always-on (no lockdown — coexists with Tailscale)
       if [ -x "${mullvadBin}" ] && [ -n "$MULLVAD_ACCOUNT_NUMBER" ]; then
         echo "Configuring Mullvad VPN..."
-        ${asCharlie} "${mullvadBin}" account login "$MULLVAD_ACCOUNT_NUMBER" 2>/dev/null
-        ${asCharlie} "${mullvadBin}" auto-connect set on 2>/dev/null
-        ${asCharlie} "${mullvadBin}" lockdown-mode set off 2>/dev/null
-        ${asCharlie} "${mullvadBin}" lan set allow 2>/dev/null
-        ${asCharlie} "${mullvadBin}" relay set location us 2>/dev/null
-        ${asCharlie} "${mullvadBin}" dns set default 2>/dev/null
-        ${asCharlie} "${mullvadBin}" connect 2>/dev/null
-        echo "  -> Mullvad VPN configured (auto-connect, US relay, LAN allowed)"
+        if ${asCharlie} "${mullvadBin}" account login "$MULLVAD_ACCOUNT_NUMBER" 2>/dev/null \
+          && ${asCharlie} "${mullvadBin}" auto-connect set on 2>/dev/null \
+          && ${asCharlie} "${mullvadBin}" lockdown-mode set off 2>/dev/null \
+          && ${asCharlie} "${mullvadBin}" lan set allow 2>/dev/null \
+          && ${asCharlie} "${mullvadBin}" relay set location us 2>/dev/null \
+          && ${asCharlie} "${mullvadBin}" dns set default 2>/dev/null \
+          && ${asCharlie} "${mullvadBin}" connect 2>/dev/null; then
+          echo "  -> Mullvad VPN configured (auto-connect, US relay, LAN allowed)"
+        else
+          echo "  -> Mullvad VPN configuration failed (daemon may not be running yet)"
+        fi
       fi
     fi
   '';
