@@ -54,6 +54,11 @@ in {
         else {}
       );
 
+    sessionVariables = {
+      EDITOR = "vim";
+      VISUAL = "vim";
+    };
+
     initContent = ''
       unsetopt correct_all
       unsetopt correct
