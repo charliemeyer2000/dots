@@ -7,8 +7,8 @@
 
   home.file.".claude/settings.json".source = ../config/claude/settings.json;
 
-  home.file.".claude/hooks/docs-session-end.sh" = {
-    source = ../config/claude/hooks/docs-session-end.sh;
+  home.file.".claude/statusline.sh" = {
+    source = ../config/claude/statusline.sh;
     executable = true;
   };
 

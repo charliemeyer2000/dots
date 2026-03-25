@@ -1,18 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "hooks": {
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$HOME\"/.claude/hooks/docs-session-end.sh"
-          }
-        ]
-      }
-    ]
-  },
-  "model": "claude-opus-4-6",
+"model": "claude-opus-4-6",
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
@@ -28,5 +16,9 @@
   "alwaysThinkingEnabled": true,
   "showTurnDuration": false,
   "spinnerTipsEnabled": false,
-  "terminalProgressBarEnabled": true
+  "terminalProgressBarEnabled": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/statusline.sh\""
+  }
 }
