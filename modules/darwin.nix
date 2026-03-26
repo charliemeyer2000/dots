@@ -117,7 +117,7 @@
   # ── Global keyboard shortcuts ──────────────────────────────────
   system.defaults.CustomUserPreferences.NSGlobalDomain = {
     NSUserKeyEquivalents = {
-      Zoom = "~+";
+      Zoom = "~`";
     };
   };
 
