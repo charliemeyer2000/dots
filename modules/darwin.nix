@@ -4,6 +4,34 @@
   # The touch trick makes softwareupdate list CLT even if it normally wouldn't.
   # Tested on macOS Sequoia/Tahoe — grep parses "Label: Command Line Tools..." format.
   system.activationScripts.preActivation.text = ''
+    # Grant Hammerspoon accessibility via TCC with proper csreq (requires SIP disabled)
+    TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
+    HS_BUNDLE="org.hammerspoon.Hammerspoon"
+    HS_APP="/Applications/Hammerspoon.app"
+    if [ -f "$TCC_DB" ] && [ -d "$HS_APP" ]; then
+      CSREQ_TMP=$(/usr/bin/mktemp /tmp/hs_csreq.XXXXXX)
+      /usr/bin/codesign -dr - "$HS_APP" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+      if [ -s "$CSREQ_TMP" ]; then
+        CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
+        /usr/bin/sqlite3 "$TCC_DB" "DELETE FROM access WHERE client = '$HS_BUNDLE' AND service = 'kTCCServiceAccessibility';" 2>/dev/null || true
+        /usr/bin/sqlite3 "$TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('kTCCServiceAccessibility', '$HS_BUNDLE', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
+          echo "  -> Hammerspoon accessibility granted via TCC" || \
+          echo "  -> TCC insert failed (SIP may be enabled)"
+      else
+        echo "  -> Could not generate csreq for Hammerspoon"
+      fi
+      /bin/rm -f "$CSREQ_TMP"
+    fi
+
+    # Fix Homebrew prefix directories that may have wrong ownership
+    for dir in /opt/homebrew/var/log /opt/homebrew/var/run; do
+      if [ -d "$dir" ] && [ ! -w "$dir" ]; then
+        /usr/sbin/chown -R "$USER":admin "$dir"
+      fi
+    done
+    /bin/mkdir -p /opt/homebrew/var/log /opt/homebrew/var/run
+    /usr/sbin/chown -R "$USER":admin /opt/homebrew/var/log /opt/homebrew/var/run
+
     if ! /usr/sbin/pkgutil --pkg-info=com.apple.pkg.CLTools_Executables &>/dev/null; then
       echo "Installing Xcode Command Line Tools (this may take a few minutes)..."
       /usr/bin/touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
@@ -84,6 +112,13 @@
     # Spring-loading directories
     "com.apple.springing.enabled" = true;
     "com.apple.springing.delay" = 0.5;
+  };
+
+  # ── Global keyboard shortcuts ──────────────────────────────────
+  system.defaults.CustomUserPreferences.NSGlobalDomain = {
+    NSUserKeyEquivalents = {
+      Zoom = "~+";
+    };
   };
 
   # ── Screenshot ──────────────────────────────────────────────────────
@@ -203,6 +238,14 @@
       serviceConfig = {
         Program = "/usr/bin/open";
         ProgramArguments = ["/usr/bin/open" "-a" "Granola"];
+        RunAtLoad = true;
+        KeepAlive = false;
+      };
+    };
+    open-hammerspoon = {
+      serviceConfig = {
+        Program = "/usr/bin/open";
+        ProgramArguments = ["/usr/bin/open" "-a" "Hammerspoon"];
         RunAtLoad = true;
         KeepAlive = false;
       };

@@ -40,6 +40,7 @@
     "wispr-flow"
 
     # Utilities
+    "hammerspoon"
     "mullvad-vpn"
     "atomic-wallet"
     "balenaetcher"

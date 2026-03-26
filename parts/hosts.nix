@@ -3,7 +3,13 @@
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
     home-manager.backupFileExtension = "bak";
-    home-manager.users.charlie = import ../home;
+    home-manager.users.charlie = {
+      imports = [
+        (import ../home)
+        (import ../home/hammerspoon.nix)
+        inputs.vimessage.homeManagerModules.default
+      ];
+    };
   };
 
   homebrewModule = {

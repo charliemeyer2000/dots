@@ -41,6 +41,9 @@
       url = "github:charliemeyer2000/rivanna.dev";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # vimessage — vim hotkeys for Messages.app
+    vimessage.url = "github:charliemeyer2000/vimessage";
   };
 
   outputs = inputs:

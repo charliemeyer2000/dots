@@ -213,7 +213,8 @@
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
         "rv": "rv",
-        "uvacompute": "uvacompute"
+        "uvacompute": "uvacompute",
+        "vimessage": "vimessage"
       }
     },
     "rv": {
@@ -251,6 +252,21 @@
       "original": {
         "type": "tarball",
         "url": "https://uvacompute.com/nix/flake.tar.gz"
+      }
+    },
+    "vimessage": {
+      "locked": {
+        "lastModified": 1774484316,
+        "narHash": "sha256-ijRpPKtOp8mzApKg/GlP/SCzg5M89p9cYY6EcNQ905M=",
+        "owner": "charliemeyer2000",
+        "repo": "vimessage",
+        "rev": "379af95399a64ff3f43fa5daa8e80d89723ad647",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "vimessage",
+        "type": "github"
       }
     }
   },
