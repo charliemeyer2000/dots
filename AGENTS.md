@@ -25,8 +25,8 @@ dots/
 │   │   ├── AGENTS.md     # Global agent instructions (deployed to ~/.agents/)
 │   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.)
 │   └── claude/
-│       ├── settings.json # Claude Code-specific settings (model, plugins, hooks)
-│       └── hooks/        # Claude Code hooks (deployed to ~/.claude/hooks/)
+│       ├── settings.json # Claude Code-specific settings (model, plugins)
+│       └── statusline.sh # Claude Code statusline script
 ├── home/                 # Home-manager modules
 │   ├── default.nix       # Entry point — imports all modules below
 │   ├── zsh.nix           # Shell: aliases, PATH, env vars, oh-my-zsh
@@ -35,7 +35,8 @@ dots/
 │   ├── ghostty.nix       # Ghostty terminal: fonts, gruvbox theme, splits
 │   ├── agents.nix        # Deploys config/agents/ → ~/.agents/, symlinks ~/.claude/
 │   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
-│   └── direnv.nix        # direnv + nix-direnv for per-project shells
+│   ├── direnv.nix        # direnv + nix-direnv for per-project shells
+│   └── hammerspoon.nix   # Hammerspoon window management (macOS)
 ├── hosts/                # Machine-specific configurations
 │   ├── darwin-personal/  # Full Mac: base + darwin + apps + secrets
 │   └── workstation/      # Linux workstation: standalone home-manager + secrets
@@ -69,6 +70,7 @@ dots/
 | claude-code-overlay | ryoppippi/claude-code-overlay | Hourly-updated Claude Code CLI (official Anthropic binaries) |
 | uvacompute | uvacompute.com/nix/flake.tar.gz | UVACompute CLI |
 | rv | charliemeyer2000/rivanna.dev | rv CLI — GPU job submission on Rivanna/Afton HPC |
+| vimessage | charliemeyer2000/vimessage | Vim hotkeys for Messages.app (home-manager module) |
 
 All inputs follow the root nixpkgs for consistency.
 
@@ -102,22 +104,12 @@ All inputs follow the root nixpkgs for consistency.
 Agent config is managed in a tool-agnostic way:
 - Source of truth: `config/agents/` (AGENTS.md + skills/)
 - Claude-specific settings: `config/claude/settings.json`
-- Claude hooks: `config/claude/hooks/` → `~/.claude/hooks/` (deployed with `executable = true`)
 - Deployed to `~/.agents/` via home-manager (agents.nix)
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md` (symlink)
 - `~/.claude/skills` → `~/.agents/skills` (symlink)
 - Any AGENTS.md-compatible coding agent can read from `~/.agents/`
 - Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`
 - Portable across all machines
-
-### Claude Code Hooks
-- `SessionEnd` hook: on session exit, spawns a background `claude -p` to review changes and update documentation if warranted
-- Hook script: `config/claude/hooks/docs-session-end.sh` (deployed to `~/.claude/hooks/`)
-- Uses git diff + session commit history to determine what changed
-- Skips trivial changes (<10 diff lines) and chat-only sessions
-- Project-specific instructions via `.claude/docs-update.json` (optional per-repo config)
-- Desktop notifications (macOS `osascript`, Linux `notify-send`) when the background update completes
-- Logs: `~/.claude/logs/docs-update-*.log`
 
 ### Host Composition
 
@@ -225,7 +217,6 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 
 - SSH keys: import to 1Password
 - Sign into Mac App Store (required for `mas` to install Xcode, Keynote, Klack)
-- macOS notification permissions: allow Script Editor (for hook notifications)
 - UniFi (iOS app on Mac — `mas` can't install these, get from App Store manually)
 - VESC Tool (direct download from vesc-project.com)
 - Berkeley Mono font (paid, manual install to ~/Library/Fonts/)
