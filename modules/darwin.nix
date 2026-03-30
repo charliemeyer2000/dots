@@ -1,8 +1,16 @@
-{...}: {
-  # ── Xcode CLT (silent install if missing) ───────────────────────────
-  # Uses pkgutil (not xcode-select -p, which points to nix SDK on nix-darwin).
-  # The touch trick makes softwareupdate list CLT even if it normally wouldn't.
-  # Tested on macOS Sequoia/Tahoe — grep parses "Label: Command Line Tools..." format.
+{lib, ...}: let
+  loginApps = [
+    "Google Chrome"
+    "Raycast"
+    "Stats"
+    "Claude"
+    "Ghostty"
+    "CleanShot X"
+    "Granola"
+    "Hammerspoon"
+  ];
+in {
+  # ── Pre-activation: TCC, Homebrew dirs, Xcode CLT ─────────────────
   system.activationScripts.preActivation.text = ''
     # Grant Hammerspoon accessibility via TCC with proper csreq (requires SIP disabled)
     TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
@@ -185,72 +193,16 @@
   security.pam.services.sudo_local.touchIdAuth = true;
 
   # ── Login items (open at login) ──────────────────────────────────────
-  launchd.user.agents = {
-    open-chrome = {
-      serviceConfig = {
+  launchd.user.agents = builtins.listToAttrs (map (app: {
+      name = "open-${lib.strings.toLower (builtins.replaceStrings [" "] ["-"] app)}";
+      value.serviceConfig = {
         Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Google Chrome"];
+        ProgramArguments = ["/usr/bin/open" "-a" app];
         RunAtLoad = true;
         KeepAlive = false;
       };
-    };
-    open-raycast = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Raycast"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-    open-stats = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Stats"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-    open-claude = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Claude"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-    open-ghostty = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Ghostty"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-    open-cleanshot = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "CleanShot X"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-    open-granola = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Granola"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-    open-hammerspoon = {
-      serviceConfig = {
-        Program = "/usr/bin/open";
-        ProgramArguments = ["/usr/bin/open" "-a" "Hammerspoon"];
-        RunAtLoad = true;
-        KeepAlive = false;
-      };
-    };
-  };
+    })
+    loginApps);
 
   # ── Services ────────────────────────────────────────────────────────
   services.tailscale.enable = true;

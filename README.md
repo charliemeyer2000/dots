@@ -82,15 +82,12 @@ agent config is tool-agnostic, using the [AGENTS.md](https://agents-md.org) open
 - `config/agents/AGENTS.md` → `~/.agents/AGENTS.md` (global instructions)
 - `config/agents/skills/` → `~/.agents/skills/` (agent skills)
 - `config/claude/settings.json` → `~/.claude/settings.json` (claude-specific)
-- `config/claude/hooks/` → `~/.claude/hooks/` (claude code hooks, deployed executable)
 
 claude code reads from `~/.claude/`, which symlinks into `~/.agents/`:
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md`
 - `~/.claude/skills` → `~/.agents/skills`
 
 deployed via home-manager (`home/agents.nix`). any AGENTS.md-compatible coding agent can read from `~/.agents/` directly.
-
-a `SessionEnd` hook spawns a background `claude -p` on session exit to review changes and update docs if needed. per-project config via `.claude/docs-update.json`. logs at `~/.claude/logs/`.
 
 ### skills
 
