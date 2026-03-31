@@ -56,6 +56,7 @@ with pkgs;
     cloudflared
     tailscale
     redis
+    ollama
   ]
   ++ lib.optionals pkgs.stdenv.isDarwin [
     colima

@@ -45,8 +45,9 @@
     "balenaetcher"
     "cleanshot"
     "logi-options+"
-    "ollama-app"
+    # "ollama-app" # using CLI-only ollama from packages.nix
     "raspberry-pi-imager"
     "stats"
+    "hiddenbar"
   ];
 }

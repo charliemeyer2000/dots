@@ -44,10 +44,25 @@ in {
     grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
     grant_tcc kTCCServiceAccessibility com.logitech.Logi-Options "/Applications/Logi Options.app"
     grant_tcc kTCCServiceAccessibility com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_tcc kTCCServiceAccessibility com.henrikruscon.Klack "/Applications/Klack.app"
+    grant_tcc kTCCServiceAccessibility com.mitchellh.ghostty "/Applications/Ghostty.app"
+
+    # Input monitoring
     grant_tcc kTCCServiceListenEvent com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_tcc kTCCServiceListenEvent com.hnc.Discord "/Applications/Discord.app"
+    grant_tcc kTCCServiceListenEvent pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_tcc kTCCServicePostEvent com.henrikruscon.Klack "/Applications/Klack.app"
 
     # Screen capture
     grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceScreenCapture com.google.Chrome "/Applications/Google Chrome.app"
+    grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
+    grant_tcc kTCCServiceScreenCapture com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_tcc kTCCServiceScreenCapture us.zoom.xos "/Applications/zoom.us.app"
+
+    # Full disk access
+    grant_tcc kTCCServiceSystemPolicyAllFiles com.mitchellh.ghostty "/Applications/Ghostty.app"
 
     # User-level TCC permissions (microphone, bluetooth, audio capture)
     USER_TCC_DB="/Users/${user}/Library/Application Support/com.apple.TCC/TCC.db"
@@ -66,12 +81,41 @@ in {
       /bin/rm -f "$CSREQ_TMP"
     }
 
+    # Microphone
     grant_user_tcc kTCCServiceMicrophone com.electron.wispr-flow "/Applications/Wispr Flow.app"
     grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
+    grant_user_tcc kTCCServiceMicrophone com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceMicrophone com.hnc.Discord "/Applications/Discord.app"
+    grant_user_tcc kTCCServiceMicrophone com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_user_tcc kTCCServiceMicrophone us.zoom.xos "/Applications/zoom.us.app"
+    grant_user_tcc kTCCServiceMicrophone org.whispersystems.signal-desktop "/Applications/Signal.app"
+    grant_user_tcc kTCCServiceMicrophone pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_user_tcc kTCCServiceMicrophone com.todesktop.230313mzl4w4u92 "/Applications/Cursor.app"
+
+    # Camera
+    grant_user_tcc kTCCServiceCamera com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceCamera com.hnc.Discord "/Applications/Discord.app"
+    grant_user_tcc kTCCServiceCamera com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_user_tcc kTCCServiceCamera us.zoom.xos "/Applications/zoom.us.app"
+    grant_user_tcc kTCCServiceCamera org.whispersystems.signal-desktop "/Applications/Signal.app"
+
+    # Audio capture
     grant_user_tcc kTCCServiceAudioCapture com.granola.app "/Applications/Granola.app"
+
+    # Bluetooth
     grant_user_tcc kTCCServiceBluetoothAlways com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
-    grant_user_tcc kTCCServiceBluetoothAlways com.logitech.Logi-Options "/Applications/Logi Options.app"
     grant_user_tcc kTCCServiceBluetoothAlways eu.exelban.Stats "/Applications/Stats.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.mitchellh.ghostty "/Applications/Ghostty.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.openai.atlas "/Applications/ChatGPT Atlas.app"
+    grant_user_tcc kTCCServiceBluetoothAlways us.zoom.xos "/Applications/zoom.us.app"
+
+    # File/folder access
+    grant_user_tcc kTCCServiceSystemPolicyDownloadsFolder com.mitchellh.ghostty "/Applications/Ghostty.app"
+    grant_user_tcc kTCCServiceSystemPolicyDocumentsFolder com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_user_tcc kTCCServiceSystemPolicyRemovableVolumes io.balena.etcher "/Applications/balenaEtcher.app"
+    grant_user_tcc kTCCServiceSystemPolicyDocumentsFolder com.raspberrypi.rpi-imager "/Applications/Raspberry Pi Imager.app"
+    grant_user_tcc kTCCServiceSystemPolicyRemovableVolumes com.raspberrypi.rpi-imager "/Applications/Raspberry Pi Imager.app"
 
     # Fix Homebrew prefix directories that may have wrong ownership
     # NOTE: $USER is root during activation (runs via sudo), so we use the configured primaryUser
@@ -190,7 +234,49 @@ in {
   # ── Control Center ──────────────────────────────────────────────────
   system.defaults.controlcenter = {
     BatteryShowPercentage = true;
+    AirDrop = false;
+    Display = false;
+    FocusModes = false;
+    NowPlaying = false;
+    Sound = false;
+    Bluetooth = false;
   };
+
+  # ── Menu bar: Stats ────────────────────────────────────────────────
+  system.defaults.CustomUserPreferences."eu.exelban.Stats" = {
+    CPU_state = true;
+    CPU_widget = "mini";
+    RAM_state = true;
+    RAM_widget = "mini";
+    GPU_state = true;
+    GPU_widget = "mini";
+    Battery_state = true;
+    Battery_widget = "battery";
+    Network_state = false;
+    Disk_state = false;
+    Sensors_state = false;
+    Bluetooth_state = false;
+    Clock_state = false;
+    dockIcon = 0;
+    telemetry = 0;
+  };
+
+  # ── Menu bar: Hammerspoon ─────────────────────────────────────────
+  system.defaults.CustomUserPreferences."org.hammerspoon.Hammerspoon" = {
+    MJShowMenuIconKey = false;
+  };
+
+  # ── Menu bar: hide Zoom icon ─────────────────────────────────────
+  system.defaults.CustomUserPreferences."ZoomChat" = {
+    ZoomShowIconInMenuBar = false;
+  };
+
+  # ── Menu bar: hide Siri & Spotlight ────────────────────────────────
+  system.activationScripts.postActivation.text = ''
+    sudo -u ${user} defaults write com.apple.Siri StatusMenuVisible -bool false
+    sudo -u ${user} defaults write com.apple.Spotlight "NSStatusItem Visible Item-0" -bool false
+    killall SystemUIServer ControlCenter 2>/dev/null || true
+  '';
 
   # ── Login window ────────────────────────────────────────────────────
   system.defaults.loginwindow = {
