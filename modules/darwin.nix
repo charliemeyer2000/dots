@@ -1,4 +1,9 @@
-{lib, ...}: let
+{
+  lib,
+  config,
+  ...
+}: let
+  user = config.system.primaryUser;
   loginApps = [
     "Google Chrome"
     "Raycast"
@@ -12,33 +17,66 @@
 in {
   # ── Pre-activation: TCC, Homebrew dirs, Xcode CLT ─────────────────
   system.activationScripts.preActivation.text = ''
-    # Grant Hammerspoon accessibility via TCC with proper csreq (requires SIP disabled)
+    # Grant TCC permissions programmatically (requires SIP disabled)
     TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
-    HS_BUNDLE="org.hammerspoon.Hammerspoon"
-    HS_APP="/Applications/Hammerspoon.app"
-    if [ -f "$TCC_DB" ] && [ -d "$HS_APP" ]; then
-      CSREQ_TMP=$(/usr/bin/mktemp /tmp/hs_csreq.XXXXXX)
-      /usr/bin/codesign -dr - "$HS_APP" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+    grant_tcc() {
+      local service="$1" bundle="$2" app_path="$3"
+      if [ ! -f "$TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
+      CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
+      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
       if [ -s "$CSREQ_TMP" ]; then
         CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
-        /usr/bin/sqlite3 "$TCC_DB" "DELETE FROM access WHERE client = '$HS_BUNDLE' AND service = 'kTCCServiceAccessibility';" 2>/dev/null || true
-        /usr/bin/sqlite3 "$TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('kTCCServiceAccessibility', '$HS_BUNDLE', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
-          echo "  -> Hammerspoon accessibility granted via TCC" || \
-          echo "  -> TCC insert failed (SIP may be enabled)"
-      else
-        echo "  -> Could not generate csreq for Hammerspoon"
+        /usr/bin/sqlite3 "$TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
+        /usr/bin/sqlite3 "$TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
+          echo "  -> $(basename "$app_path") $service granted" || \
+          echo "  -> TCC grant failed for $(basename "$app_path") (SIP may be enabled)"
       fi
       /bin/rm -f "$CSREQ_TMP"
-    fi
+    }
+
+    # Accessibility
+    grant_tcc kTCCServiceAccessibility org.hammerspoon.Hammerspoon "/Applications/Hammerspoon.app"
+    grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
+    grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
+    grant_tcc kTCCServiceAccessibility com.electron.wispr-flow "/Applications/Wispr Flow.app"
+    grant_tcc kTCCServiceAccessibility com.hnc.Discord "/Applications/Discord.app"
+    grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
+    grant_tcc kTCCServiceAccessibility com.logitech.Logi-Options "/Applications/Logi Options.app"
+    grant_tcc kTCCServiceAccessibility com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_tcc kTCCServiceListenEvent com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+
+    # Screen capture
+    grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+
+    # User-level TCC permissions (microphone, bluetooth, audio capture)
+    USER_TCC_DB="/Users/${user}/Library/Application Support/com.apple.TCC/TCC.db"
+    grant_user_tcc() {
+      local service="$1" bundle="$2" app_path="$3"
+      if [ ! -f "$USER_TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
+      CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
+      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+      if [ -s "$CSREQ_TMP" ]; then
+        CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
+        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
+        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
+          echo "  -> $(basename "$app_path") $service granted (user)" || \
+          echo "  -> User TCC grant failed for $(basename "$app_path")"
+      fi
+      /bin/rm -f "$CSREQ_TMP"
+    }
+
+    grant_user_tcc kTCCServiceMicrophone com.electron.wispr-flow "/Applications/Wispr Flow.app"
+    grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
+    grant_user_tcc kTCCServiceAudioCapture com.granola.app "/Applications/Granola.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.logitech.Logi-Options "/Applications/Logi Options.app"
+    grant_user_tcc kTCCServiceBluetoothAlways eu.exelban.Stats "/Applications/Stats.app"
 
     # Fix Homebrew prefix directories that may have wrong ownership
-    for dir in /opt/homebrew/var/log /opt/homebrew/var/run; do
-      if [ -d "$dir" ] && [ ! -w "$dir" ]; then
-        /usr/sbin/chown -R "$USER":admin "$dir"
-      fi
-    done
+    # NOTE: $USER is root during activation (runs via sudo), so we use the configured primaryUser
     /bin/mkdir -p /opt/homebrew/var/log /opt/homebrew/var/run
-    /usr/sbin/chown -R "$USER":admin /opt/homebrew/var/log /opt/homebrew/var/run
+    /usr/sbin/chown -R ${user}:admin /opt/homebrew/var/log /opt/homebrew/var/run
 
     if ! /usr/sbin/pkgutil --pkg-info=com.apple.pkg.CLTools_Executables &>/dev/null; then
       echo "Installing Xcode Command Line Tools (this may take a few minutes)..."

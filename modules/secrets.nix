@@ -33,7 +33,7 @@ in {
       # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
       if [ -n "$TAILSCALE_OAUTH_CLIENT_SECRET" ]; then
         echo "Authenticating Tailscale..."
-        if ${tailscale} up --auth-key="''${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:shared 2>/dev/null; then
+        if ${tailscale} up --reset --auth-key="''${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:shared 2>/dev/null; then
           echo "  -> Tailscale authenticated"
         else
           echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
