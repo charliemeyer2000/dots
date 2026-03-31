@@ -56,6 +56,7 @@ in {
     # Screen capture
     grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceScreenCapture com.mitchellh.ghostty "/Applications/Ghostty.app"
     grant_tcc kTCCServiceScreenCapture com.google.Chrome "/Applications/Google Chrome.app"
     grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceScreenCapture com.tinyspeck.slackmacgap "/Applications/Slack.app"
