@@ -49,6 +49,8 @@ in {
 
     # Input monitoring
     grant_tcc kTCCServiceListenEvent com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_tcc kTCCServiceListenEvent com.logitech.manager.daemon "/Applications/Logi Options.app/Contents/Support/LogiMgrDaemon.app"
+    grant_tcc kTCCServiceListenEvent com.logitech.Logi-Options "/Applications/Logi Options.app"
     grant_tcc kTCCServiceListenEvent com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceListenEvent pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_tcc kTCCServicePostEvent com.henrikruscon.Klack "/Applications/Klack.app"
