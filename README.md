@@ -16,7 +16,7 @@ cd ~/all/dots
 
 # 3. first build — bootstraps nix-darwin, homebrew, all packages and apps
 #    secrets will fail gracefully (1Password not signed in yet)
-nix run nix-darwin -- switch --flake .#darwin-personal
+sudo nix run nix-darwin -- switch --flake .#darwin-personal
 
 # 4. sign into 1Password (desktop app), then the CLI:
 op signin
