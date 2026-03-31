@@ -10,7 +10,11 @@
   },
   "effortLevel": "high",
   "attribution": {
-    "commit": "feat: AI-assisted changes\n\nCo-Authored-By: Claude <ai@anthropic.com>"
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
   },
   "respectGitignore": true,
   "alwaysThinkingEnabled": true,
