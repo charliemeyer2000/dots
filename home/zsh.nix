@@ -28,7 +28,8 @@ in {
         dots = "cd $DOTS_DIR";
         k = "kubectl";
         tf = "terraform";
-        cc = "claude --dangerously-skip-permissions";
+        claude = "ANTHROPIC_API_KEY= command claude";
+        cc = "ANTHROPIC_API_KEY= command claude --dangerously-skip-permissions";
         dv = "devin --permission-mode bypass";
         killport = "f() { lsof -ti :$1 | xargs kill -9; }; f";
         npm = "echo 'use pnpm instead' && false";

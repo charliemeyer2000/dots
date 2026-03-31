@@ -19,7 +19,10 @@
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.agents/skills";
 
   # Devin CLI
-  home.file.".config/devin/config.json".source = ../config/devin/config.json;
+  home.file.".config/devin/config.json" = {
+    source = ../config/devin/config.json;
+    force = true;
+  };
   home.file.".config/devin/skills".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.agents/skills";
 }

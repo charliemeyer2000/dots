@@ -24,16 +24,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1774974425,
-        "narHash": "sha256-2XFHYBQ86awGtCUrJn8Ur7oTIFSlRgKP8f1cJseUR3o=",
+        "lastModified": 1774982429,
+        "narHash": "sha256-bSgyoy3xyWsZM5YGvHeM0j5i/0EqzIRUJd2T1SVkP8M=",
         "owner": "charliemeyer2000",
         "repo": "nix-claude-code",
-        "rev": "c3726733ef105bf806f6d411c26326db77380cb3",
+        "rev": "536dbc95a5ec9d64850649caa8437526acc99728",
         "type": "github"
       },
       "original": {
         "owner": "charliemeyer2000",
-        "ref": "fix/verify-binary-availability",
         "repo": "nix-claude-code",
         "type": "github"
       }

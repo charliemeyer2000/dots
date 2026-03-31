@@ -274,10 +274,11 @@ in {
     ZoomShowIconInMenuBar = false;
   };
 
-  # ── Menu bar: hide Siri & Spotlight ────────────────────────────────
+  # ── Menu bar: hide Siri & Spotlight, restart Stats ─────────────────
   system.activationScripts.postActivation.text = ''
     sudo -u ${user} defaults write com.apple.Siri StatusMenuVisible -bool false
     sudo -u ${user} defaults write com.apple.Spotlight "NSStatusItem Visible Item-0" -bool false
+    killall Stats 2>/dev/null && sudo -u ${user} open -a Stats || true
     killall SystemUIServer ControlCenter 2>/dev/null || true
   '';
 
