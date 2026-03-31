@@ -83,7 +83,7 @@ All inputs follow the root nixpkgs for consistency.
 - Template: `secrets/secrets.zsh.tmpl` references 1Password items via `{{ op://vault/item/field }}`
 - On rebuild (`just switch`), `op inject` fills the template → `~/.env.local` (mode 600)
 - zsh sources `~/.env.local` on startup
-- Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`
+- Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`, `MULLVAD_ACCOUNT_NUMBER`
 - Supports both 1Password service account token (CI) and desktop app (interactive)
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 
@@ -99,6 +99,13 @@ All inputs follow the root nixpkgs for consistency.
 - Devices authenticate with `tag:shared` (required for OAuth-based auth)
 - `tailscale up` is idempotent — re-auths if node key expired, no-op if current
 - No manual `tailscale up` needed on new machines (just sign into 1Password first)
+
+### Mullvad VPN
+- Two Mullvad integrations: Tailscale exit nodes (primary) and standalone Mullvad VPN app (fallback)
+- Tailscale + Mullvad exit nodes route traffic through Mullvad servers natively — no separate app needed
+- Standalone Mullvad VPN conflicts with Tailscale on macOS (aggressive firewall rules drop Tailscale traffic)
+- Mullvad is **not** auto-configured during rebuild — use shell aliases for manual control
+- Shell aliases: `vpn-on`, `vpn-off`, `vpn-status`, `vpn-us`, `vpn-uk`, `vpn-eu` (macOS only)
 
 ### Agent Configuration
 Agent config is managed in a tool-agnostic way:
@@ -136,6 +143,8 @@ Shell aliases (available after rebuild):
 - `k` / `tf` — kubectl / terraform
 - `killport <port>` — Kill process on a port
 - `skill-add`, `skill-search`, `skill-list`, `skill-remove` — Skill management
+- `vpn-on` / `vpn-off` / `vpn-status` — Mullvad VPN manual control (macOS only)
+- `vpn-us` / `vpn-uk` / `vpn-eu` — Connect Mullvad to specific regions (macOS only)
 
 Blocked aliases (enforce correct tooling):
 - `npm` → error, use `pnpm`

@@ -4,7 +4,6 @@
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
   asCharlie = "sudo -u charlie HOME=${homeDir}";
-  mullvadBin = "/Applications/Mullvad VPN.app/Contents/Resources/mullvad";
 in {
   system.activationScripts.postActivation.text = ''
     if [ -f ${homeDir}/.config/op/service-account-token ]; then
@@ -26,7 +25,7 @@ in {
       echo "1Password not signed in or inject failed, skipping secrets."
     fi
 
-    # Source injected secrets for Tailscale and Mullvad setup
+    # Source injected secrets for Tailscale setup
     if [ -f ${homeDir}/.env.local ]; then
       # shellcheck source=/dev/null
       . ${homeDir}/.env.local
@@ -38,22 +37,6 @@ in {
           echo "  -> Tailscale authenticated"
         else
           echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
-        fi
-      fi
-
-      # Mullvad VPN: login, auto-connect, always-on (no lockdown — coexists with Tailscale)
-      if [ -x "${mullvadBin}" ] && [ -n "$MULLVAD_ACCOUNT_NUMBER" ]; then
-        echo "Configuring Mullvad VPN..."
-        if ${asCharlie} "${mullvadBin}" account login "$MULLVAD_ACCOUNT_NUMBER" 2>/dev/null \
-          && ${asCharlie} "${mullvadBin}" auto-connect set on 2>/dev/null \
-          && ${asCharlie} "${mullvadBin}" lockdown-mode set off 2>/dev/null \
-          && ${asCharlie} "${mullvadBin}" lan set allow 2>/dev/null \
-          && ${asCharlie} "${mullvadBin}" relay set location us 2>/dev/null \
-          && ${asCharlie} "${mullvadBin}" dns set default 2>/dev/null \
-          && ${asCharlie} "${mullvadBin}" connect 2>/dev/null; then
-          echo "  -> Mullvad VPN configured (auto-connect, US relay, LAN allowed)"
-        else
-          echo "  -> Mullvad VPN configuration failed (daemon may not be running yet)"
         fi
       fi
     fi
