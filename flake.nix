@@ -25,8 +25,9 @@
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
 
     # Claude Code — hourly-updated overlay with official Anthropic binaries
+    # TODO: switch back to ryoppippi/claude-code-overlay after PR #31 merges
     claude-code-overlay = {
-      url = "github:ryoppippi/claude-code-overlay";
+      url = "github:charliemeyer2000/nix-claude-code/fix/verify-binary-availability";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
