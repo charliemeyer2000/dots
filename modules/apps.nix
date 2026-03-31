@@ -19,7 +19,6 @@
     "docker-desktop"
     "figma"
     "foxglove"
-    "ngrok"
     "quarto"
     "sublime-text"
     "yaak"

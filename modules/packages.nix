@@ -56,6 +56,7 @@ with pkgs;
     cloudflared
     tailscale
     redis
+    ngrok
   ]
   ++ lib.optionals pkgs.stdenv.isDarwin [
     colima

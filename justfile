@@ -29,7 +29,11 @@ switch config='':
   pwd > ~/.config/dots/location
   nix flake update claude-code-overlay rv uvacompute
   if [[ "$(uname)" == "Darwin" ]]; then
-    nix flake check && sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
+    nix flake check
+    sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}} || {
+      echo "Retrying darwin-rebuild (likely transient brew download failure)..." >&2
+      sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}}
+    }
   else
     home-manager switch --flake .#{{config}} -b bak
   fi

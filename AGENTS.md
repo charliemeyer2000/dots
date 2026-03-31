@@ -200,7 +200,7 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 
 1. Install Nix: `curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install`
 2. Clone: `git clone https://github.com/charliemeyer2000/dots ~/all/dots && cd ~/all/dots`
-3. First build: `nix run nix-darwin -- switch --flake .#darwin-personal` (secrets fail gracefully)
+3. First build: `sudo nix run nix-darwin -- switch --flake .#darwin-personal` (secrets fail gracefully)
 4. Sign into 1Password desktop app, then `op signin`
 5. Second build: `just switch darwin-personal` (secrets + Tailscale auth succeed)
 
@@ -230,6 +230,9 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 1. Sign into 1Password: `op signin`
 2. Rebuild: `just switch <config>`
 3. Verify `~/.env.local` exists and is sourced
+
+### Brew Bundle Failures
+`brew bundle` may report failure due to transient cask download errors (e.g. ngrok, claude). Successfully installed packages are unaffected. Re-run `just switch` to retry failed casks.
 
 ### Pre-commit Hooks Failing
 Hooks only work inside `nix develop`. Outside that context they may hang or fail to find binaries.
