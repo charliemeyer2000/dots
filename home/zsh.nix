@@ -95,10 +95,7 @@ in {
           export PNPM_HOME="$HOME/.local/share/pnpm"
         ''
       }
-      case ":$PATH:" in
-        *":$PNPM_HOME:"*) ;;
-        *) export PATH="$PNPM_HOME:$PATH" ;;
-      esac
+      export PATH="$PNPM_HOME:''${PATH//$PNPM_HOME:/}"
 
       if command -v go &>/dev/null; then
         export PATH="$PATH:$(go env GOPATH)/bin"
