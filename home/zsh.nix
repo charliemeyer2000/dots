@@ -29,7 +29,7 @@ in {
         k = "kubectl";
         tf = "terraform";
         cc = "claude --dangerously-skip-permissions";
-        dd = "devin --permission-mode bypass";
+        dv = "devin --permission-mode bypass";
         killport = "f() { lsof -ti :$1 | xargs kill -9; }; f";
         npm = "echo 'use pnpm instead' && false";
         pip = "echo 'use uv instead' && false";
