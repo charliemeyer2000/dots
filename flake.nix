@@ -30,6 +30,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Devin CLI — pre-built binaries
+    devin-cli-overlay = {
+      url = "github:charliemeyer2000/devin-cli-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # UVACompute CLI
     uvacompute = {
       url = "https://uvacompute.com/nix/flake.tar.gz";

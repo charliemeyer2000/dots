@@ -41,6 +41,7 @@ with pkgs;
     bun
     uv
     claude-code
+    devin-cli
     uvacompute
     rv
     _1password-cli

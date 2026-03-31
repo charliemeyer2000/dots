@@ -37,6 +37,26 @@
         "type": "github"
       }
     },
+    "devin-cli-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1774966112,
+        "narHash": "sha256-7p11YaSN+Tw5a8lE/l5n+1bqB4bzH5v6IFzdzPKgJDc=",
+        "owner": "charliemeyer2000",
+        "repo": "devin-cli-overlay",
+        "rev": "9cd673ce52d40c2ec4d9a0faf56a558dca17a29a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "devin-cli-overlay",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -206,6 +226,7 @@
     "root": {
       "inputs": {
         "claude-code-overlay": "claude-code-overlay",
+        "devin-cli-overlay": "devin-cli-overlay",
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",

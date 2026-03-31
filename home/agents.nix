@@ -5,6 +5,7 @@
     recursive = true;
   };
 
+  # Claude Code
   home.file.".claude/settings.json".source = ../config/claude/settings.json;
 
   home.file.".claude/statusline.sh" = {
@@ -15,5 +16,10 @@
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.agents/AGENTS.md";
   home.file.".claude/skills".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.agents/skills";
+
+  # Devin CLI
+  home.file.".config/devin/config.json".source = ../config/devin/config.json;
+  home.file.".config/devin/skills".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.agents/skills";
 }
