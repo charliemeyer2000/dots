@@ -70,14 +70,14 @@ in {
     # User-level TCC permissions (microphone, bluetooth, audio capture)
     USER_TCC_DB="/Users/${user}/Library/Application Support/com.apple.TCC/TCC.db"
     grant_user_tcc() {
-      local service="$1" bundle="$2" app_path="$3"
+      local service="$1" bundle="$2" app_path="$3" indirect_obj="''${4:-UNUSED}"
       if [ ! -f "$USER_TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
       CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
       /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
       if [ -s "$CSREQ_TMP" ]; then
         CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
         sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
-        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
+        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', '$indirect_obj', 0, 'UNUSED');" 2>/dev/null && \
           echo "  -> $(basename "$app_path") $service granted (user)" || \
           echo "  -> User TCC grant failed for $(basename "$app_path")"
       fi
@@ -112,6 +112,9 @@ in {
     grant_user_tcc kTCCServiceBluetoothAlways com.mitchellh.ghostty "/Applications/Ghostty.app"
     grant_user_tcc kTCCServiceBluetoothAlways com.openai.atlas "/Applications/ChatGPT Atlas.app"
     grant_user_tcc kTCCServiceBluetoothAlways us.zoom.xos "/Applications/zoom.us.app"
+
+    # Automation (Apple Events)
+    grant_user_tcc kTCCServiceAppleEvents com.mitchellh.ghostty "/Applications/Ghostty.app" com.apple.MobileSMS
 
     # File/folder access
     grant_user_tcc kTCCServiceSystemPolicyDownloadsFolder com.mitchellh.ghostty "/Applications/Ghostty.app"
