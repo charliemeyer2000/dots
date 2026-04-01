@@ -4,6 +4,9 @@
   ...
 }: let
   user = config.system.primaryUser;
+  hostname = config.networking.hostName;
+  maxFilesSoft = 65536;
+  maxFilesHard = 200000;
   loginApps = [
     "Google Chrome"
     "Raycast"
@@ -328,6 +331,20 @@ in {
 
   # ── Startup ─────────────────────────────────────────────────────────
   system.startup.chime = false;
+
+  # ── SMB / NetBIOS ──────────────────────────────────────────────────
+  system.defaults.smb = {
+    NetBIOSName = hostname;
+    ServerDescription = hostname;
+  };
+
+  # ── File descriptor limits ─────────────────────────────────────────
+  launchd.daemons."limit.maxfiles".serviceConfig = {
+    ProgramArguments = ["/bin/launchctl" "limit" "maxfiles" (toString maxFilesSoft) (toString maxFilesHard)];
+    RunAtLoad = true;
+    StandardErrorPath = "/var/log/limit.maxfiles.err";
+    StandardOutPath = "/var/log/limit.maxfiles.out";
+  };
 
   # ── Power ───────────────────────────────────────────────────────────
   power.sleep = {
