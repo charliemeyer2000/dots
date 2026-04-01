@@ -25,6 +25,7 @@ When reading documentation, always:
 - Use conventional commits (feat:, fix:, chore:, docs:)
 - Sign commits with 1Password SSH key (commit.gpgsign = true)
 - If signing hangs (non-interactive context), use `git -c commit.gpgsign=false commit`
+- Never add Co-Authored-By lines or any other attribution to commits or PRs
 
 ## Environment
 
