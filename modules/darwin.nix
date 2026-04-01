@@ -334,7 +334,7 @@ in {
 
   # ── SMB / NetBIOS ──────────────────────────────────────────────────
   system.defaults.smb = {
-    NetBIOSName = hostname;
+    NetBIOSName = builtins.substring 0 15 hostname;
     ServerDescription = hostname;
   };
 
@@ -342,6 +342,7 @@ in {
   launchd.daemons."limit.maxfiles".serviceConfig = {
     ProgramArguments = ["/bin/launchctl" "limit" "maxfiles" (toString maxFilesSoft) (toString maxFilesHard)];
     RunAtLoad = true;
+    KeepAlive = false;
     StandardErrorPath = "/var/log/limit.maxfiles.err";
     StandardOutPath = "/var/log/limit.maxfiles.out";
   };
