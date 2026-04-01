@@ -142,7 +142,7 @@ in {
         echo "  -> Xcode CLT not found in softwareupdate catalog"
         echo "  -> Falling back to GUI installer..."
         /usr/bin/xcode-select --install 2>/dev/null || true
-        echo "  -> Complete the GUI prompt, then re-run: just switch darwin-personal"
+        echo "  -> Complete the GUI prompt, then re-run: just switch <config>"
       fi
       /bin/rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
     fi
