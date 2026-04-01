@@ -323,7 +323,6 @@ in {
     allowSleepByPowerButton = false;
   };
   power.restartAfterFreeze = true;
-  power.restartAfterPowerFailure = true;
 
   # ── Security ────────────────────────────────────────────────────────
   security.pam.services.sudo_local.touchIdAuth = true;
