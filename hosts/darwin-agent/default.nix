@@ -13,8 +13,8 @@
   };
 
   nix.enable = false;
-  networking.hostName = "charlie-m4pro";
-  networking.computerName = "Charlie's M4 Pro";
-  networking.localHostName = "charlie-m4pro";
+  networking.hostName = "charlie-m1pro";
+  networking.computerName = "Charlie's M1 Pro";
+  networking.localHostName = "charlie-m1pro";
   system.stateVersion = 6;
 }
