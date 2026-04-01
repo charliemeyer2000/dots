@@ -286,6 +286,20 @@ in {
     pmset -a standby 0 autopoweroff 0 hibernatemode 0 disablesleep 1
   '';
 
+  # ── Privacy: disable Apple ad tracking ───────────────────────────────
+  system.defaults.CustomUserPreferences."com.apple.AdLib" = {
+    allowApplePersonalizedAdvertising = false;
+    allowIdentifierForAdvertising = false;
+    forceLimitAdTracking = true;
+    personalizedAdsMigrated = false;
+  };
+
+  # ── Prevent .DS_Store on network/USB volumes ───────────────────────
+  system.defaults.CustomUserPreferences."com.apple.desktopservices" = {
+    DSDontWriteNetworkStores = true;
+    DSDontWriteUSBStores = true;
+  };
+
   # ── Login window ────────────────────────────────────────────────────
   system.defaults.loginwindow = {
     GuestEnabled = false;
