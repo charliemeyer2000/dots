@@ -47,7 +47,7 @@ dots/
 │   ├── packages.nix      # Shared package list (used by base.nix and workstation)
 │   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
-│   ├── apps.nix          # Homebrew casks (GUI apps, darwin-personal only)
+│   ├── apps.nix          # Homebrew casks (GUI apps, shared by all darwin hosts)
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── parts/                # Flake-parts modules
