@@ -5,103 +5,72 @@ description: Submit GPU jobs to UVA's Rivanna/Afton HPC cluster using the rv CLI
 
 # rv CLI — HPC GPU Job Submission
 
-rv runs locally on your machine and orchestrates GPU jobs on UVA's Rivanna/Afton HPC over SSH. No SLURM scripts needed — rv handles partition selection, dependency installation, file sync, and job lifecycle.
+rv runs locally and orchestrates GPU jobs on UVA's Rivanna/Afton HPC over SSH. No SLURM scripts needed — rv handles partition selection, dependency installation, file sync, and job lifecycle.
 
-## Critical Rules
+## The Three Things That Break Jobs
 
-These are the most common sources of bugs when working with rv. Every piece of advice in this skill flows from real failure modes.
+Almost every rv failure traces back to one of these. Internalize them before writing any rv command.
 
-### Argument ordering
+### 1. rv flags go before the command
 
-rv flags go BEFORE the command. Getting this wrong silently passes flags to the user's script instead of rv — a nasty silent bug.
+rv flags and your script's flags share the same command line. If rv flags come after the script name, they silently pass to your script instead — rv never sees them.
 
 ```bash
-# Correct
+# Correct — rv sees -g 4 and -t a100
 rv run -g 4 -t a100 python train.py --lr 0.001
 
-# WRONG — -g 4 gets passed to Python, rv allocates default (1) GPU
+# Wrong — rv gets 1 default GPU; Python gets -g 4 and -t a100 as unknown args
 rv run python train.py -g 4 -t a100
 ```
 
-### Virtual environment management
+### 2. Use relative paths for your scripts
 
-rv auto-manages Python venvs. It detects `requirements.txt` or `pyproject.toml`, creates a persistent venv at `/scratch/{user}/.rv/envs/{project}/{branch}/`, and installs deps via `uv pip install`. Two-phase install: login node handles most packages; compute node handles CUDA-dependent ones (flash-attn, auto-gptq, mamba-ssm, etc.).
+rv syncs your project to the cluster and runs your command inside a snapshot of it. Relative paths resolve against this snapshot, which means the venv is active and your dependencies are available.
 
-**Do:**
-- Let rv handle deps automatically
-- Add `pip install` calls mid-script if needed (installs into the active venv)
-- Keep a `requirements.txt` or `pyproject.toml` with your dependencies
+Absolute script paths bypass this entirely — the system's `torchrun` or `python` (Python 3.6, no packages) may run instead, causing `ModuleNotFoundError` for everything.
 
-**Do not:**
-- Use `uv sync`, `uv run`, or create manual venvs — these conflict with rv's venv
-- `unset VIRTUAL_ENV` — breaks the active environment
-- Use `conda` — rv uses uv exclusively
-
-**Bash vs Python**: Commands starting with `python` or `python3` get automatic dependency management. Shell commands like `rv run "bash train.sh"` or `rv run "make train"` skip it entirely. If wrapping Python in a shell script, manage deps yourself inside the script or ensure the command starts with `python`.
-
-### Output persistence
-
-Each job runs in an immutable snapshot that gets pruned after 7 days. Files written to relative paths are ephemeral.
-
-Persist outputs by writing to:
-- `os.environ["RV_OUTPUT_DIR"]` — persistent output directory
-- `os.environ["RV_CHECKPOINT_DIR"]` — checkpoint dir, keyed by job name for cross-run resume
-- Absolute `/scratch/` paths
-- Or use `rv run --output model.pt,results/` to copy specific relative paths out of the snapshot
-
-Never write important data to:
-- Relative paths (land in pruned snapshots)
-- `/tmp/` (node-local, lost when job ends)
-
-### File sync
-
-Only git-tracked files are transferred to the cluster. Use `.rvignore` for additional exclusions. Non-git projects fall back to `.gitignore` filtering. Large data files should already be on `/scratch/` or `/standard/` — don't try to sync them.
-
-## Common Workflows
-
-### Quick test on free GPU
 ```bash
-rv run --mig python train.py
-```
-MIG slices (10 GB VRAM) are free and instant. Always validate your pipeline here first before requesting expensive GPUs.
+# Correct — resolves within the workspace snapshot
+rv run -t a100 -- torchrun --nproc_per_node=4 train.py
+rv run python eval.py --config configs/eval.yaml
 
-### Single GPU training
-```bash
-rv run -g 1 -t a6000 python train.py
+# Wrong — bypasses workspace, likely uses system Python 3.6
+rv run torchrun /scratch/user/sft/train_sft.py
 ```
 
-### Multi-GPU (single node)
+Absolute paths are fine for **data** (datasets, model weights on `/scratch/`), just not for scripts.
+
+### 3. rv manages your Python — don't fight it
+
+rv creates a persistent venv at `/scratch/{user}/.rv/envs/{project}/{branch}/` with Python 3.12, installs deps from your `requirements.txt` or `pyproject.toml` via `uv pip install`, and activates it in every job. The system Python on Rivanna is 3.6 and cannot run modern ML code.
+
+The venv's `python`, `torchrun`, `pip`, and all entry points are on PATH automatically. Don't create manual venvs, use `uv sync`/`uv run`, or `conda` — they conflict with rv's environment. Don't `pip install` via `rv exec` either (exec runs on the login node without the venv).
+
+For the full dependency lifecycle (two-phase install, shell vs Python commands, troubleshooting), read `references/dependencies.md`.
+
+## Commands
+
+### Submit and run
 ```bash
-rv run -g 2 -t a6000 -- torchrun --nproc_per_node=2 train.py
+rv run -t a100 python train.py                    # batch job (returns immediately)
+rv run -t a100 -f python train.py                  # batch + follow logs
+rv run --mig python train.py                       # free MIG test (10 GB, instant)
+rv run -g 2 -t a6000 -- torchrun --nproc_per_node=2 train.py   # multi-GPU
+rv run -g 4 -t a100 --single-node python generate.py           # inference (no multi-node)
+rv run --output ./artifacts ./results python train.py           # persist relative paths
+rv up -g 1 -t a6000                                # interactive shell
 ```
 
-### Multi-GPU (may span multiple nodes)
-```bash
-rv run -g 4 -t a100 -- torchrun --nproc_per_node=2 train.py
-```
-rv handles srun + torchrun coordination across nodes automatically.
-
-### Inference (force single node)
-```bash
-rv run -g 4 -t a100 --single-node python generate.py
-```
-Use `--single-node` because `device_map="auto"` only works within one node — it cannot shard across nodes.
-
-### Interactive shell
-```bash
-rv up -g 1 -t a6000
-```
-
-### Monitor and manage jobs
+### Monitor and manage
 ```bash
 rv ps                    # active jobs
 rv ps -a                 # include completed/failed (last 7 days)
 rv logs                  # stdout of most recent job
 rv logs --err            # stderr — check here first for errors
 rv logs -f               # tail/follow live logs
-rv gpu                   # nvidia-smi for most recent job
-rv status                # full dashboard: connection, storage, jobs, GPU availability
-rv stop <id-or-name>     # cancel a job
+rv gpu                   # nvidia-smi for most recent running job
+rv status                # dashboard: connection, storage, jobs, GPU availability
+rv stop <id-or-name>     # cancel a job (strategy-group-aware)
 rv stop -a               # cancel all jobs
 ```
 
@@ -113,135 +82,85 @@ rv forward -l            # list active forwards
 rv forward -s            # stop all forwards
 ```
 
-### File transfer
+### Files and environment
 ```bash
 rv sync push             # push local → cluster (git-aware)
 rv sync pull             # pull cluster → local
-rv sync watch            # auto-push on local changes
+rv env set KEY VALUE     # set env var for all future jobs
+rv env import .env       # bulk import from dotenv
+rv cost -g 2 -t a100 --time 3h   # estimate SU cost
 ```
 
-### Environment variables
-```bash
-rv env set WANDB_PROJECT my-experiment
-rv env import .env       # import from dotenv file
-rv env list
-rv env rm KEY
-```
+See `references/commands.md` for the full flag reference.
 
-### Cost estimation
-```bash
-rv cost -g 2 -t a100 --time 3:00:00    # specific estimate
-rv cost                                  # show all GPU types
-```
-
-## GPU Selection Guide
+## GPU Selection
 
 | Type | VRAM | SU/GPU-hr | Best For |
 |------|------|-----------|----------|
-| mig | 10 GB | FREE | Testing pipelines, small inference |
-| a6000 | 48 GB | 142.73 | General training, medium models |
-| a100_80 | 80 GB | 508.89 | Large models, multi-node (NVLink + InfiniBand) |
-| h200 | 141 GB | 816.67 | Largest models |
+| mig | 10 GB | FREE | Pipeline validation, small inference |
+| a6000 | 48 GB | 143 | General training, medium models |
+| a100_80 | 80 GB | 509 | Large models, multi-node (NVLink + InfiniBand) |
+| h200 | 141 GB | 817 | Largest models, fastest |
 
-Memory estimation:
-- **Inference**: `params × bytes_per_param × 1.1` (e.g., 7B model in FP16 = ~15 GB)
-- **Training**: `params × bytes_per_param × 4` (model + gradients + optimizer states)
-- **System memory**: auto-calculated by rv; override with `--mem 200G` if needed (rule of thumb: 2-3x total VRAM)
+Memory rules of thumb:
+- **Inference**: `params × bytes_per_param × 1.1` (7B in FP16 ≈ 15 GB)
+- **Training**: `params × bytes_per_param × 4` (7B in FP16 ≈ 56 GB)
+- **System memory**: auto-calculated; override with `--mem 200G` if needed
 
-Run `rv cost` or `rv status` for full GPU table and live availability.
+Always validate on MIG first (`rv run --mig ...`) — it's free and instant.
+
+## Output Persistence
+
+Jobs run inside snapshots that get pruned after 7 days. Write important data to persistent locations:
+
+- `os.environ["RV_OUTPUT_DIR"]` — per-job persistent output directory
+- `os.environ["RV_CHECKPOINT_DIR"]` — keyed by job name, so same `--name` shares checkpoints across runs
+- Absolute `/scratch/` paths
+- `rv run --output model.pt,results/` — copies relative paths out of the snapshot after completion
+
+Never write important data to relative paths (pruned) or `/tmp/` (node-local, lost at job end).
 
 ## Smart Allocator
 
-rv doesn't submit to a single partition. It:
-1. Probes all partitions for GPU availability and queue depth
-2. Generates all compatible strategies (GPU type, partition, single/multi-node, backfill, checkpoint-restart)
-3. Ranks by estimated wait time and cost
-4. Submits top strategies simultaneously — first to RUNNING wins, rest cancelled
+rv doesn't submit to a single partition. It probes all partitions, generates compatible strategies, ranks by estimated wait time and cost, and submits the top strategies simultaneously — first to start wins, rest are cancelled. Preview with `rv run --dry-run`.
 
-Preview strategies with `rv up --dry-run` or `rv run --dry-run`.
-
-The default walltime of **2:59:00** maximizes backfill eligibility — sub-3-hour jobs fit into scheduling gaps that longer jobs can't. Only increase walltime if your job genuinely needs it.
+The default walltime of **2:59:00** is intentional — sub-3h jobs qualify for backfill scheduling, which often means near-instant allocation.
 
 ## Checkpoint-Restart
 
-For jobs exceeding available backfill windows, rv decomposes into backfill-sized segments:
-- Sends `SIGUSR1` ~10 minutes before each segment expires
-- Your code must catch this signal and save a checkpoint
-- rv auto-resubmits, tracking cumulative time via `RV_TOTAL_ELAPSED`
-- Same `--name` shares the checkpoint directory for seamless resume
+For jobs exceeding backfill windows, rv decomposes into backfill-sized segments. It sends `SIGUSR1` ~10 minutes before each segment expires — your code catches this, saves a checkpoint, and exits. rv auto-resubmits with the same `--name`, so `RV_CHECKPOINT_DIR` is shared for seamless resume.
 
-```python
-import signal, os, torch
+See `references/gpu-training.md` for the implementation pattern (SIGUSR1 handler + resume logic).
 
-checkpoint_dir = os.environ["RV_CHECKPOINT_DIR"]
-should_stop = False
+## Environment
 
-def handle_preempt(signum, frame):
-    global should_stop
-    should_stop = True
-
-signal.signal(signal.SIGUSR1, handle_preempt)
-
-# Resume from checkpoint
-ckpt_path = os.path.join(checkpoint_dir, "latest.pt")
-start_epoch = 0
-if os.path.exists(ckpt_path):
-    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    model.load_state_dict(ckpt["model"])
-    optimizer.load_state_dict(ckpt["optimizer"])
-    start_epoch = ckpt["epoch"] + 1
-
-for epoch in range(start_epoch, num_epochs):
-    train_one_epoch(model, optimizer, dataloader)
-    torch.save({
-        "model": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-        "epoch": epoch,
-    }, ckpt_path)
-    if should_stop:
-        break  # rv will resubmit automatically
-```
-
-## Auto-Set Environment Variables
-
-Every rv job gets these — don't set them yourself:
+Every rv job automatically gets:
+- `PYTHONUNBUFFERED=1` — real-time stdout
 - `OMP_NUM_THREADS` — matched to allocated CPUs
-- `PYTHONUNBUFFERED=1` — immediate stdout flushing
-- `HF_HOME`, `TORCH_HOME`, `TRITON_CACHE_DIR`, `WANDB_DIR`, `VLLM_CACHE_DIR` — all on scratch
-- `RV_CHECKPOINT_DIR` — persistent, keyed by job name
-- `RV_OUTPUT_DIR` — persistent output location
-- `RV_TOTAL_ELAPSED` — cumulative time across checkpoint-restart segments
+- `HF_HOME`, `TORCH_HOME`, `TRITON_CACHE_DIR`, `WANDB_DIR` — all on scratch
+- `RV_OUTPUT_DIR`, `RV_CHECKPOINT_DIR`, `RV_TOTAL_ELAPSED`
 
-User-managed env vars via `rv env set/import/list/rm` are injected into every job.
+User env vars (`rv env set/import`) are injected into every job across all projects. Use them for credentials (HF_TOKEN, WANDB_API_KEY), not experiment config.
 
-## Configuration
+Config lives at `~/.rv/config.toml` — defaults for walltime, GPU type, AI job naming, email notifications, shared HF cache, scratch keepalive.
 
-Config at `~/.rv/config.toml`. Key settings:
-- `defaults.time` — walltime (default 2:59:00, keep under 3h for backfill)
-- `defaults.gpu_type` — default GPU
-- `defaults.ai_naming` — auto-generate creative job names
-- `notifications.enabled` + `notifications.email` — email on COMPLETED/FAILED/TIMEOUT
-- `shared.hf_cache` — shared lab HuggingFace cache path
-- `scratch_keepalive.enabled` — touches files daily to prevent 90-day scratch purge (default true)
+## Writing Training Scripts
 
-## Writing Training Scripts for rv
+When helping users write scripts for rv:
 
-When helping users write training scripts that will run via rv:
-
-1. **Use `RV_OUTPUT_DIR` and `RV_CHECKPOINT_DIR`** for all persistent I/O
-2. **Don't hardcode paths** — use `os.environ` for rv-provided variables
-3. **Add SIGUSR1 handling** if the job might use checkpoint-restart (any job over ~3 hours)
-4. **Keep a `requirements.txt`** in the project root with all dependencies
-5. **For torchrun scripts**, accept `--local_rank` / use `LOCAL_RANK` env var
-6. **Log to wandb/stdout** — rv captures stdout/stderr automatically
-7. **Test on MIG first** — `rv run --mig python train.py` (free, instant)
+1. Use `RV_OUTPUT_DIR` and `RV_CHECKPOINT_DIR` for persistent I/O — don't hardcode paths
+2. Keep a `requirements.txt` in the project root with all dependencies
+3. Add SIGUSR1 handling if the job might exceed 3 hours (checkpoint-restart)
+4. For torchrun, accept `--local_rank` / use `LOCAL_RANK` env var
+5. Test on MIG first — `rv run --mig python train.py`
 
 ## Reference Files
 
-Load these for deeper context:
+Load these for deeper context when needed:
 
 | Topic | Reference | When to Load |
 |-------|-----------|--------------|
-| Full command reference | `references/commands.md` | User needs detailed flags for specific commands |
-| GPU training patterns | `references/gpu-training.md` | DDP, FSDP, multi-node, mixed precision, RLHF |
+| Dependencies & environment | `references/dependencies.md` | ModuleNotFoundError, venv issues, GLIBCXX errors, dep install failures |
+| Full command reference | `references/commands.md` | Detailed flags for specific commands |
+| GPU training patterns | `references/gpu-training.md` | DDP, FSDP, multi-node, mixed precision, checkpoint-restart code, RLHF |
 | Troubleshooting | `references/troubleshooting.md` | Debugging failed, hanging, or OOM jobs |

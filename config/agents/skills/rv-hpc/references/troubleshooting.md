@@ -179,18 +179,56 @@ Rule of thumb: system memory should be 2-3x total VRAM. Common causes:
 
 ## Dependency Issues
 
-### Wrong Python/CUDA version
-rv uses the system Python and CUDA on the cluster. Check with:
-```bash
-rv exec "python --version"
-rv exec "nvidia-smi"  # shows CUDA driver version (login node)
+### ModuleNotFoundError — wrong Python or missing venv
+
+The most common cause is **not using the venv**. This happens when:
+- You used an absolute path to a script outside the workspace (e.g., `torchrun /scratch/.../train.py`)
+- You ran via `rv exec` instead of `rv run` (exec runs on login node without venv)
+- You manually installed into the system Python 3.6 instead of the venv
+
+**Diagnosis:** Add this to your script:
+```python
+import sys
+print(f"executable: {sys.executable}", flush=True)
 ```
+
+| sys.executable shows | Cause | Fix |
+|---------------------|-------|-----|
+| `/usr/bin/python3` or `/usr/bin/python3.6` | System Python, venv not activated | Use `rv run` with relative script paths |
+| `~/.local/bin/python` | User-installed Python | Same — use `rv run` |
+| `/scratch/.../.rv/envs/.../bin/python` | Correct venv, package genuinely missing | Add package to requirements.txt |
+
+### Wrong Python/CUDA version
+rv loads Python 3.12 and CUDA 12.8 via `module load`. Check with:
+```bash
+rv exec "module load cuda/12.8.0 miniforge/24.11.3-py3.12 && python --version"
+```
+
+### GLIBCXX_3.4.29 not found
+
+```
+ImportError: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.29' not found
+```
+
+The system's libstdc++ is too old for packages compiled against newer GCC. Fix by pointing to a newer GCC's libraries:
+```bash
+rv env set LD_LIBRARY_PATH /apps/software/standard/core/gcc/14.2.0/lib64
+```
+Verify the path exists: `rv exec "ls /apps/software/standard/core/gcc/14.2.0/lib64/libstdc++.so*"`
 
 ### Package conflicts
 rv uses `uv pip install` from `requirements.txt` or `pyproject.toml`. If deps conflict:
 - Pin specific versions in `requirements.txt`
 - Use `rv exec "pip list"` to check what's installed in the venv
 - CUDA-dependent packages install on compute nodes — errors only show up at job runtime
+
+### Phase 2 install failures (CUDA packages)
+
+CUDA-dependent packages (flash-attn, auto-gptq, mamba-ssm) install on the compute node in phase 2. If they fail:
+- Check `rv logs <id> --err` for the actual error
+- Pin a compatible version: `flash-attn==2.5.8` instead of just `flash-attn`
+- Ensure torch is listed before CUDA-dependent packages in requirements.txt (phase 2 needs torch importable to compile against)
+- Some packages need specific CUDA versions — check compatibility
 
 ### Stale venv
 If you've significantly changed deps and the venv seems stale:
@@ -199,8 +237,24 @@ rv exec "rm -rf /scratch/$USER/.rv/envs/{project}/{branch}"
 ```
 Next `rv run` will create a fresh venv.
 
+### Don't pip install into the system Python
+**Never do this:**
+```bash
+rv exec "pip install torch"
+rv exec "pip3 install transformers"
+rv exec "/usr/bin/pip install ..."
+```
+The system Python is 3.6 and cannot run modern ML code. These commands also often fail due to permissions. Instead, add deps to your `requirements.txt` or `pyproject.toml` and let rv manage the venv.
+
+If you need to install something interactively:
+```bash
+rv up --mig
+# now you're in a shell with the venv activated
+pip install some-package  # installs into rv's venv
+```
+
 ### Manual dependency management in shell commands
-Shell commands (`rv run "bash train.sh"`) skip auto dep management. Inside your script:
+Shell commands (`rv run "bash train.sh"`) skip auto dep management but the venv IS active. Inside your script:
 ```bash
 #!/bin/bash
 pip install -r requirements.txt  # installs into rv's active venv
