@@ -283,6 +283,7 @@ in {
     sudo -u ${user} defaults write com.apple.Spotlight "NSStatusItem Visible Item-0" -bool false
     killall Stats 2>/dev/null && sudo -u ${user} open -a Stats || true
     killall SystemUIServer ControlCenter 2>/dev/null || true
+    pmset -a standby 0 autopoweroff 0 hibernatemode 0 disablesleep 1
   '';
 
   # ── Login window ────────────────────────────────────────────────────
@@ -318,7 +319,11 @@ in {
   power.sleep = {
     display = "never";
     computer = "never";
+    harddisk = "never";
+    allowSleepByPowerButton = false;
   };
+  power.restartAfterFreeze = true;
+  power.restartAfterPowerFailure = true;
 
   # ── Security ────────────────────────────────────────────────────────
   security.pam.services.sudo_local.touchIdAuth = true;
