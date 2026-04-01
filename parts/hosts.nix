@@ -48,6 +48,19 @@ in {
       ];
     };
 
+    darwinConfigurations.darwin-agent = inputs.nix-darwin.lib.darwinSystem {
+      system = "aarch64-darwin";
+      specialArgs = {inherit inputs;};
+      modules = [
+        ../hosts/darwin-agent
+        inputs.home-manager.darwinModules.home-manager
+        inputs.nix-homebrew.darwinModules.nix-homebrew
+        hmModule
+        homebrewModule
+        {nixpkgs.overlays = overlays;}
+      ];
+    };
+
     homeConfigurations.workstation = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = pkgsLinux;
       modules = [

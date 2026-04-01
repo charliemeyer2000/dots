@@ -264,11 +264,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1773632870,
-        "narHash": "sha256-lQwuR5ZCjhop3MAjnueHT62+3HuEvO4O+ZgwsxUayHQ=",
+        "lastModified": 1775054070,
+        "narHash": "sha256-RmD1hP3gA3VxVV7x0kqRxvy1kV6NqDQ2F0yBMYZsA1k=",
         "owner": "charliemeyer2000",
         "repo": "rivanna.dev",
-        "rev": "85bcb85455df0a6d57eef864753bfdf540b1884a",
+        "rev": "2738f63ed5174a549cbc486a585f7ffef6402dd3",
         "type": "github"
       },
       "original": {

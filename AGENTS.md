@@ -40,13 +40,14 @@ dots/
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
 │   └── hammerspoon.nix   # Hammerspoon window management (macOS)
 ├── hosts/                # Machine-specific configurations
-│   ├── darwin-personal/  # Full Mac: base + darwin + apps + secrets
+│   ├── darwin-personal/  # M4 Pro MacBook Pro: base + darwin + apps + secrets
+│   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): base + darwin + apps + secrets
 │   └── workstation/      # Linux workstation: standalone home-manager + secrets
 ├── modules/              # System-level modules
 │   ├── packages.nix      # Shared package list (used by base.nix and workstation)
 │   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
-│   ├── apps.nix          # Homebrew casks (GUI apps, darwin-personal only)
+│   ├── apps.nix          # Homebrew casks (GUI apps, shared by all darwin hosts)
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── parts/                # Flake-parts modules
@@ -127,7 +128,8 @@ Agent config is managed in a tool-agnostic way:
 ### Host Composition
 
 ```
-darwin-personal  = base + darwin + apps + secrets            (nix-darwin, full setup)
+darwin-personal  = base + darwin + apps + secrets            (nix-darwin, M4 Pro MacBook Pro)
+darwin-agent     = base + darwin + apps + secrets            (nix-darwin, M1 Pro MacBook Pro, always-on)
 workstation      = home + packages + hm-secrets              (standalone home-manager, Ubuntu 24.04)
 ```
 
