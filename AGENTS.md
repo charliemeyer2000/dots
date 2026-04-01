@@ -206,8 +206,11 @@ All SSH uses 1Password agent (`IdentityAgent` → 1Password socket).
 
 - Pre-commit hooks: alejandra, deadnix, statix, shellcheck (only work inside `nix develop`)
 - CI: GitHub Actions on push to main and all PRs
-  - `nix flake check` + `nix fmt -- --check .`
+  - `check` job (ubuntu): `nix flake check` + `nix fmt -- --check .`
+  - `build-darwin` job (macos): `nix build .#darwinConfigurations.darwin-personal.system`
   - Uses Determinate Systems nix-installer and magic-nix-cache
+  - Concurrency: stale PR runs cancelled automatically
+- Dependabot: weekly auto-bumps for GitHub Actions versions
 
 ## Development Workflow
 
