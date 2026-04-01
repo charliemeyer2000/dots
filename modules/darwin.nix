@@ -287,7 +287,7 @@ in {
   '';
 
   # ── Privacy: disable Apple ad tracking ───────────────────────────────
-  system.defaults.CustomSystemPreferences."com.apple.AdLib" = {
+  system.defaults.CustomUserPreferences."com.apple.AdLib" = {
     allowApplePersonalizedAdvertising = false;
     allowIdentifierForAdvertising = false;
     forceLimitAdTracking = true;
