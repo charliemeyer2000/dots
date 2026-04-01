@@ -24,16 +24,18 @@ dots/
 │   ├── agents/
 │   │   ├── AGENTS.md     # Global agent instructions (deployed to ~/.agents/)
 │   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.)
-│   └── claude/
-│       ├── settings.json # Claude Code-specific settings (model, plugins)
-│       └── statusline.sh # Claude Code statusline script
+│   ├── claude/
+│   │   ├── settings.json # Claude Code-specific settings (model, plugins)
+│   │   └── statusline.sh # Claude Code statusline script
+│   └── devin/
+│       └── config.json   # Devin CLI config (reads from claude, shares skills)
 ├── home/                 # Home-manager modules
 │   ├── default.nix       # Entry point — imports all modules below
 │   ├── zsh.nix           # Shell: aliases, PATH, env vars, oh-my-zsh
 │   ├── git.nix           # Git: 1Password SSH signing, gh credential helper
 │   ├── ssh.nix           # SSH: hosts, 1Password agent, ControlMaster
 │   ├── ghostty.nix       # Ghostty terminal: fonts, gruvbox theme, splits
-│   ├── agents.nix        # Deploys config/agents/ → ~/.agents/, symlinks ~/.claude/
+│   ├── agents.nix        # Deploys config/agents/ → ~/.agents/, symlinks ~/.claude/ + ~/.config/devin/
 │   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
 │   └── hammerspoon.nix   # Hammerspoon window management (macOS)
@@ -67,7 +69,8 @@ dots/
 | home-manager | nix-community/home-manager | User-level dotfiles |
 | pre-commit-hooks | cachix/pre-commit-hooks.nix | Git hook framework |
 | nix-homebrew | zhaofengli-wip/nix-homebrew | Declarative Homebrew on macOS |
-| claude-code-overlay | ryoppippi/claude-code-overlay | Hourly-updated Claude Code CLI (official Anthropic binaries) |
+| claude-code-overlay | sadjow/claude-code-nix | Nix overlay for Claude Code CLI (official Anthropic binaries) |
+| devin-cli-overlay | charliemeyer2000/devin-cli-overlay | Nix overlay for Devin CLI |
 | uvacompute | uvacompute.com/nix/flake.tar.gz | UVACompute CLI |
 | rv | charliemeyer2000/rivanna.dev | rv CLI — GPU job submission on Rivanna/Afton HPC |
 | vimessage | charliemeyer2000/vimessage | Vim hotkeys for Messages.app (home-manager module) |
@@ -111,11 +114,14 @@ All inputs follow the root nixpkgs for consistency.
 Agent config is managed in a tool-agnostic way:
 - Source of truth: `config/agents/` (AGENTS.md + skills/)
 - Claude-specific settings: `config/claude/settings.json`
+- Devin-specific settings: `config/devin/config.json` (reads rules from claude config)
 - Deployed to `~/.agents/` via home-manager (agents.nix)
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md` (symlink)
 - `~/.claude/skills` → `~/.agents/skills` (symlink)
+- `~/.config/devin/config.json` ← `config/devin/config.json` (copied)
+- `~/.config/devin/skills` → `~/.agents/skills` (symlink)
 - Any AGENTS.md-compatible coding agent can read from `~/.agents/`
-- Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`
+- Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`, `skill-browse`, `skill-install`
 - Portable across all machines
 
 ### Host Composition
@@ -135,14 +141,22 @@ Justfile commands:
 - `just check` — Run flake checks and linters
 - `just fmt` — Format all nix files with alejandra
 - `just dev` — Enter dev shell with nix tooling
+- `just skill-add <repo> <skill>` — Add a skill from a GitHub repo
+- `just skill-search <repo>` — Search for skills in a GitHub repo
+- `just skill-list` — List installed skills
+- `just skill-remove <skill>` — Remove a skill
+- `just skill-browse` — Open skills.sh in browser
+- `just skill-install <repo> <skill> <config>` — Add a skill and rebuild
 
 Shell aliases (available after rebuild):
 - `rebuild <config>` — Shorthand for `just switch`
 - `dots` — cd to dots directory
 - `cc` — `claude --dangerously-skip-permissions`
+- `dv` — `devin --permission-mode bypass`
 - `k` / `tf` — kubectl / terraform
 - `killport <port>` — Kill process on a port
 - `skill-add`, `skill-search`, `skill-list`, `skill-remove` — Skill management
+- `skill-install`, `skill-browse`, `skills` — Install skills, browse skills.sh, list installed
 - `vpn-on` / `vpn-off` / `vpn-status` — Mullvad VPN manual control (macOS only)
 - `vpn-us` / `vpn-uk` / `vpn-eu` — Connect Mullvad to specific regions (macOS only)
 
@@ -157,8 +171,8 @@ Shared across all machines (via `modules/packages.nix`):
 - **CLI tools**: git, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
 - **Languages**: go, rustup, lua, nodejs_22, pnpm, bun, uv
-- **AI/HPC**: claude-code (via claude-code-overlay), uvacompute, rv (UVA Rivanna job submission CLI)
-- **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, colima (macOS only)
+- **AI/HPC**: claude-code (via claude-code-overlay), devin-cli (via devin-cli-overlay), uvacompute, rv (UVA Rivanna job submission CLI)
+- **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, ollama, colima (macOS only)
 - **Secrets**: _1password-cli
 
 Language management:
@@ -175,7 +189,7 @@ Language management:
 - Screenshots: saved to `~/Desktop/screenshots`
 - TouchID for sudo
 - Tailscale service enabled
-- Homebrew taps: hashicorp, k9s, stripe, graphite, ekristen, steipete
+- Homebrew taps: cirruslabs/cli, hashicorp, k9s, stripe, graphite, ekristen, steipete
 
 ## SSH Hosts (ssh.nix)
 
