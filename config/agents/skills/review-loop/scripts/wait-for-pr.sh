@@ -23,7 +23,7 @@ for i in $(seq 1 "$MAX"); do
 
   # Count lines that contain an actual check status (pass, fail, pending, etc.).
   # If zero, checks haven't been registered yet — keep waiting.
-  check_count=$(echo "$output" | grep -cE "pass|fail|pending|skipping|cancel" || true)
+  check_count=$(echo "$output" | grep -cwE "pass|fail|pending|skipping|cancel" || true)
   if [ "$check_count" -eq 0 ]; then
     echo "Poll $i/$MAX: no checks registered yet — sleeping ${INTERVAL}s..."
     sleep "$INTERVAL"
