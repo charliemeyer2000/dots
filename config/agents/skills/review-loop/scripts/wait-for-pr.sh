@@ -15,8 +15,8 @@ set -euo pipefail
 #   2 — timed out waiting
 
 PR="${1:?Usage: wait-for-pr.sh <PR_NUMBER> [MAX_ATTEMPTS] [INTERVAL_SECS]}"
-MAX="${2:-40}"       # 40 × 30s = 20 min default
-INTERVAL="${3:-30}"
+MAX="${2:-10}"       # 10 × 120s = 20 min default
+INTERVAL="${3:-120}"
 
 for i in $(seq 1 "$MAX"); do
   output=$(gh pr checks "$PR" 2>&1) || true

@@ -24,10 +24,11 @@ Run the bundled script from this skill's directory. It blocks in the shell until
 bash "<skill-dir>/scripts/wait-for-pr.sh" "$PR"
 ```
 
-Default: 40 polls × 30 s = 20 min timeout. Override with positional args:
+Default: 10 polls × 2 min = 20 min timeout. Most AI reviewers finish in ~8 min for an average PR, so this gives plenty of headroom. Override with positional args if you can tell the PR is unusually large or small:
 
 ```bash
-bash "<skill-dir>/scripts/wait-for-pr.sh" "$PR" 60 15   # 60 polls, 15s apart
+bash "<skill-dir>/scripts/wait-for-pr.sh" "$PR" 20 120  # large PR: 40 min
+bash "<skill-dir>/scripts/wait-for-pr.sh" "$PR" 5 60    # tiny PR: 5 min
 ```
 
 The script prints a final summary: which checks passed/failed and a `RESULT:` line.
