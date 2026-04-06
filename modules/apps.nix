@@ -37,6 +37,7 @@
     "memo"
     "notion"
     "wispr-flow"
+    "zotero"
 
     # Utilities
     "hammerspoon"
