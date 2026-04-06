@@ -54,7 +54,7 @@ Ignore comments from the PR author (yourself). Focus on comments from AI reviewe
 For each piece of unresolved feedback:
 
 - If the feedback is valid: fix the code
-- If the feedback is wrong or not applicable: reply explaining why with `gh api -X POST "repos/${REPO}/pulls/${PR_NUM}/comments/{comment_id}/replies" -f body="..."`
+- If the feedback is wrong or not applicable: reply explaining why with `gh api -X POST "repos/${REPO}/pulls/${PR_NUM}/comments/${comment_id}/replies" -f body="..."`
 
 ### Step 4: Push fixes
 
@@ -76,7 +76,7 @@ Print a one-line summary: how many rounds, what was changed, final check status.
 
 ## Important
 
-- **Never use `sleep` to poll.** Use `gh pr checks --watch` or run checks in background.
+- **Prefer `gh pr checks --watch` over `sleep` polling.** Only fall back to a `sleep` loop if `--watch` is unavailable.
 - `gh pr reviews` is NOT a valid command — always use `gh api` for review data.
 - Keep track of which comments you've already addressed (by ID or timestamp) so you don't re-process them.
 - If you've completed 5 rounds, warn the user and ask whether to keep going.
