@@ -1,21 +1,82 @@
 ---
 name: review-loop
-description: Monitor a PR for AI reviewer comments, address them, and push until approved. Use when the user says "handle reviews", "review loop", "wait for reviewers", or after creating a PR that has CI/AI reviewers configured.
+description: Monitor a PR for CI checks and AI reviewer comments, address them, and push until approved. Use when the user says "handle reviews", "review loop", "wait for reviewers", or after creating a PR that has CI/AI reviewers configured.
 ---
 
 # PR Review Loop
 
-Repeatedly check for reviewer comments on the current PR, address them, and push until there's nothing left.
+Wait for CI checks and AI reviewers to finish on a PR, address their feedback, push fixes, and repeat until everything passes with no unresolved comments.
+
+## Setup
+
+Get the repo and PR number:
+
+```bash
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+PR_NUM=$(gh pr view --json number -q .number)
+```
 
 ## Loop
 
-1. Get the current PR number (`gh pr view --json number -q .number`)
-2. Wait for pending reviews to complete — poll `gh pr checks` and `gh pr reviews` every 30 seconds until new comments appear or all checks pass
-3. Read review comments (`gh api repos/{owner}/{repo}/pulls/{number}/comments`)
-4. For each unresolved comment: fix the code if the feedback is valid, or reply explaining why no change is needed
-5. Commit, push
-6. Go to step 2
+### Step 1: Wait for checks to finish
 
-## Exit
+Use `gh pr checks` with `--watch` to block until all checks complete:
 
-Stop when a polling cycle returns no new comments and all checks pass. Print a one-line summary of how many rounds and what changed.
+```bash
+gh pr checks "$PR_NUM" --watch --fail-fast 2>&1
+```
+
+`--watch` blocks until checks finish — do NOT use `sleep` to poll manually. If `--watch` times out or isn't available, fall back to a shell loop:
+
+```bash
+while gh pr checks "$PR_NUM" 2>&1 | grep -q "pending"; do sleep 30; done
+```
+
+### Step 2: Collect review feedback
+
+Once checks are done, fetch all review comments and reviews:
+
+```bash
+# PR review comments (inline code comments)
+gh api "repos/${REPO}/pulls/${PR_NUM}/comments" --jq '.[] | {id: .id, user: .user.login, path: .path, line: .line, body: .body, created_at: .created_at}'
+
+# PR reviews (top-level approve/request-changes/comment)
+gh api "repos/${REPO}/pulls/${PR_NUM}/reviews" --jq '.[] | {id: .id, user: .user.login, state: .state, body: .body, submitted_at: .submitted_at}'
+
+# Issue-level comments (general discussion)
+gh api "repos/${REPO}/issues/${PR_NUM}/comments" --jq '.[] | {id: .id, user: .user.login, body: .body, created_at: .created_at}'
+```
+
+Ignore comments from the PR author (yourself). Focus on comments from AI reviewers (e.g. devin, coderabbit, copilot) and human reviewers.
+
+### Step 3: Address feedback
+
+For each piece of unresolved feedback:
+
+- If the feedback is valid: fix the code
+- If the feedback is wrong or not applicable: reply explaining why with `gh api -X POST "repos/${REPO}/pulls/${PR_NUM}/comments/{comment_id}/replies" -f body="..."`
+
+### Step 4: Push fixes
+
+If you made changes, commit and push:
+
+```bash
+git add -A && git commit -m "fix: address review feedback" && git push
+```
+
+Then go back to **Step 1**.
+
+### Step 5: Exit
+
+Stop looping when:
+- All checks pass, AND
+- No new unresolved review comments since last push
+
+Print a one-line summary: how many rounds, what was changed, final check status.
+
+## Important
+
+- **Never use `sleep` to poll.** Use `gh pr checks --watch` or run checks in background.
+- `gh pr reviews` is NOT a valid command — always use `gh api` for review data.
+- Keep track of which comments you've already addressed (by ID or timestamp) so you don't re-process them.
+- If you've completed 5 rounds, warn the user and ask whether to keep going.
