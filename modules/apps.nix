@@ -14,6 +14,7 @@
 
     # Dev
     "claude"
+    "ngrok"
     "db-browser-for-sqlite"
     "cursor"
     "docker-desktop"

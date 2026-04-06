@@ -3,5 +3,8 @@
     "claude": true,
     "cursor": false,
     "windsurf": false
+  },
+  "agent": {
+    "model": "claude-opus-4-6-thinking-1m"
   }
 }
