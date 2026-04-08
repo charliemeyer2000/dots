@@ -253,6 +253,7 @@
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
         "rv": "rv",
+        "sf-cli-overlay": "sf-cli-overlay",
         "uvacompute": "uvacompute",
         "vimessage": "vimessage"
       }
@@ -274,6 +275,26 @@
       "original": {
         "owner": "charliemeyer2000",
         "repo": "rivanna.dev",
+        "type": "github"
+      }
+    },
+    "sf-cli-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775603902,
+        "narHash": "sha256-FN2xhM7FRylcXc/FlMxAEKKkIgdlEP2k7vwX92Phe1s=",
+        "owner": "charliemeyer2000",
+        "repo": "sf-cli-overlay",
+        "rev": "286d1f40735eef6256808d3e10a5ad705a8485bd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "sf-cli-overlay",
         "type": "github"
       }
     },

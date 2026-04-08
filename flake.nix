@@ -36,6 +36,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # SF Compute CLI — pre-built binaries
+    sf-cli-overlay = {
+      url = "github:charliemeyer2000/sf-cli-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # UVACompute CLI
     uvacompute = {
       url = "https://uvacompute.com/nix/flake.tar.gz";
