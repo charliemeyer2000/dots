@@ -255,7 +255,8 @@
         "rv": "rv",
         "sf-cli-overlay": "sf-cli-overlay",
         "uvacompute": "uvacompute",
-        "vimessage": "vimessage"
+        "vimessage": "vimessage",
+        "voiceink-overlay": "voiceink-overlay"
       }
     },
     "rv": {
@@ -320,8 +321,8 @@
         ]
       },
       "locked": {
-        "lastModified": 1774236862,
-        "narHash": "sha256-AZ+EupbLL2tCTYeFyXVc8EPUfD/3WIowDwTZ73ZoBzg=",
+        "lastModified": 1775704531,
+        "narHash": "sha256-OzNDFB09YkVYrpEylQpLqliC5/qI+MZ/nsKT0wnOOB8=",
         "type": "tarball",
         "url": "https://uvacompute.com/nix/flake.tar.gz"
       },
@@ -342,6 +343,26 @@
       "original": {
         "owner": "charliemeyer2000",
         "repo": "vimessage",
+        "type": "github"
+      }
+    },
+    "voiceink-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775864346,
+        "narHash": "sha256-cE08L4JGPE9a2GWsCvOV3eJRLiOiCq81j+uTKjI3Mww=",
+        "owner": "charliemeyer2000",
+        "repo": "voiceink-overlay",
+        "rev": "f23474599afac470c420617fe949e60b0588f9a7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "voiceink-overlay",
         "type": "github"
       }
     }
