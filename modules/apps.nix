@@ -37,7 +37,7 @@
     "linear-linear"
     "memo"
     "notion"
-    "wispr-flow"
+    # voiceink — managed via voiceink-overlay (nix, not brew)
     "zotero"
 
     # Utilities

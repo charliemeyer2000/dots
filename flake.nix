@@ -42,6 +42,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # VoiceInk — local dictation app (pre-built from fork)
+    voiceink-overlay = {
+      url = "github:charliemeyer2000/voiceink-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # UVACompute CLI
     uvacompute = {
       url = "https://uvacompute.com/nix/flake.tar.gz";

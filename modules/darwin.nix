@@ -42,7 +42,7 @@ in {
     grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
     grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
     grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
-    grant_tcc kTCCServiceAccessibility com.electron.wispr-flow "/Applications/Wispr Flow.app"
+    grant_tcc kTCCServiceAccessibility com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
     grant_tcc kTCCServiceAccessibility com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
     grant_tcc kTCCServiceAccessibility com.logitech.Logi-Options "/Applications/Logi Options.app"
@@ -88,7 +88,7 @@ in {
     }
 
     # Microphone
-    grant_user_tcc kTCCServiceMicrophone com.electron.wispr-flow "/Applications/Wispr Flow.app"
+    grant_user_tcc kTCCServiceMicrophone com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
     grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
     grant_user_tcc kTCCServiceMicrophone com.google.Chrome "/Applications/Google Chrome.app"
     grant_user_tcc kTCCServiceMicrophone com.hnc.Discord "/Applications/Discord.app"
