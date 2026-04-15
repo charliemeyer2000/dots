@@ -1,9 +1,9 @@
 {...}: {
-  homebrew.masApps = {
-    "Keynote" = 361285480;
-    "Klack" = 6446206067;
-    "Xcode" = 497799835;
-  };
+  # masApps disabled — brew bundle's mas integration is broken with mas 6.0.1
+  # (brew bundle can't install any mas app, even already-installed ones).
+  # Keynote (361285480), Klack (6446206067), and Xcode (497799835) are
+  # installed manually via the App Store.
+  homebrew.masApps = {};
 
   homebrew.casks = [
     # Core
