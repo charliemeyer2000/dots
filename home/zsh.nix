@@ -3,14 +3,13 @@
 in {
   programs.zsh = {
     enable = true;
-    autosuggestion.enable = false; # OMZ plugins handle these
-    syntaxHighlighting.enable = false;
+    autosuggestion.enable = true;
+    syntaxHighlighting.enable = true;
 
     oh-my-zsh = {
       enable = true;
       theme = "robbyrussell";
-      custom = "$HOME/.oh-my-zsh/custom";
-      plugins = ["git" "aws" "kubectl" "zsh-autosuggestions" "zsh-syntax-highlighting"];
+      plugins = ["git" "aws" "kubectl"];
     };
 
     history = {
