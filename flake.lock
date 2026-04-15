@@ -353,11 +353,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1775872730,
-        "narHash": "sha256-gW/hA0A62VW1l+9qQmL3km8UyN5Hu2qaInExi2J6aHw=",
+        "lastModified": 1776217731,
+        "narHash": "sha256-XzDgGuAy2KUu23kJTyvACWx1p7aqKbNv1iruN/4x2es=",
         "owner": "charliemeyer2000",
         "repo": "voiceink-overlay",
-        "rev": "b371bd925c95ad246f9ffbe12194927daa42f204",
+        "rev": "855daa1d55bd666b85981dfc126c8e8e5c3f1ff7",
         "type": "github"
       },
       "original": {

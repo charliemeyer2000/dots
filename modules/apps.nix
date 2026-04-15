@@ -1,6 +1,6 @@
 {...}: {
   homebrew.masApps = {
-    "Keynote" = 409183694;
+    "Keynote" = 361285480;
     "Klack" = 6446206067;
     "Xcode" = 497799835;
   };
