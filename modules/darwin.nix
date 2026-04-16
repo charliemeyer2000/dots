@@ -18,114 +18,8 @@
     "Hammerspoon"
   ];
 in {
-  # ── Pre-activation: TCC, Homebrew dirs, Xcode CLT ─────────────────
+  # ── Pre-activation: Homebrew dirs, Xcode CLT ───────────────────────
   system.activationScripts.preActivation.text = ''
-    # Grant TCC permissions programmatically (requires SIP disabled)
-    TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
-    grant_tcc() {
-      local service="$1" bundle="$2" app_path="$3"
-      if [ ! -f "$TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
-      CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
-      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
-      if [ -s "$CSREQ_TMP" ]; then
-        CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
-        /usr/bin/sqlite3 "$TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
-        /usr/bin/sqlite3 "$TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
-          echo "  -> $(basename "$app_path") $service granted" || \
-          echo "  -> TCC grant failed for $(basename "$app_path") (SIP may be enabled)"
-      fi
-      /bin/rm -f "$CSREQ_TMP"
-    }
-
-    # Accessibility
-    grant_tcc kTCCServiceAccessibility org.hammerspoon.Hammerspoon "/Applications/Hammerspoon.app"
-    grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
-    grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
-    grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
-    grant_tcc kTCCServiceAccessibility com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
-    grant_tcc kTCCServiceAccessibility com.hnc.Discord "/Applications/Discord.app"
-    grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
-    grant_tcc kTCCServiceAccessibility com.logitech.Logi-Options "/Applications/Logi Options.app"
-    grant_tcc kTCCServiceAccessibility com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
-    grant_tcc kTCCServiceAccessibility com.henrikruscon.Klack "/Applications/Klack.app"
-    grant_tcc kTCCServiceAccessibility com.mitchellh.ghostty "/Applications/Ghostty.app"
-
-    # Input monitoring
-    grant_tcc kTCCServiceListenEvent com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
-    grant_tcc kTCCServiceListenEvent com.logitech.manager.daemon "/Applications/Logi Options.app/Contents/Support/LogiMgrDaemon.app"
-    grant_tcc kTCCServiceListenEvent com.logitech.Logi-Options "/Applications/Logi Options.app"
-    grant_tcc kTCCServiceListenEvent com.hnc.Discord "/Applications/Discord.app"
-    grant_tcc kTCCServiceListenEvent pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
-    grant_tcc kTCCServicePostEvent com.henrikruscon.Klack "/Applications/Klack.app"
-
-    # Screen capture
-    grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
-    grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
-    grant_tcc kTCCServiceScreenCapture com.mitchellh.ghostty "/Applications/Ghostty.app"
-    grant_tcc kTCCServiceScreenCapture com.google.Chrome "/Applications/Google Chrome.app"
-    grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
-    grant_tcc kTCCServiceScreenCapture com.tinyspeck.slackmacgap "/Applications/Slack.app"
-    grant_tcc kTCCServiceScreenCapture us.zoom.xos "/Applications/zoom.us.app"
-
-    # Full disk access
-    grant_tcc kTCCServiceSystemPolicyAllFiles com.mitchellh.ghostty "/Applications/Ghostty.app"
-
-    # User-level TCC permissions (microphone, bluetooth, audio capture)
-    USER_TCC_DB="/Users/${user}/Library/Application Support/com.apple.TCC/TCC.db"
-    grant_user_tcc() {
-      local service="$1" bundle="$2" app_path="$3" indirect_obj="''${4:-UNUSED}"
-      if [ ! -f "$USER_TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
-      CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
-      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
-      if [ -s "$CSREQ_TMP" ]; then
-        CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
-        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
-        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', '$indirect_obj', 0, 'UNUSED');" 2>/dev/null && \
-          echo "  -> $(basename "$app_path") $service granted (user)" || \
-          echo "  -> User TCC grant failed for $(basename "$app_path")"
-      fi
-      /bin/rm -f "$CSREQ_TMP"
-    }
-
-    # Microphone
-    grant_user_tcc kTCCServiceMicrophone com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
-    grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
-    grant_user_tcc kTCCServiceMicrophone com.google.Chrome "/Applications/Google Chrome.app"
-    grant_user_tcc kTCCServiceMicrophone com.hnc.Discord "/Applications/Discord.app"
-    grant_user_tcc kTCCServiceMicrophone com.tinyspeck.slackmacgap "/Applications/Slack.app"
-    grant_user_tcc kTCCServiceMicrophone us.zoom.xos "/Applications/zoom.us.app"
-    grant_user_tcc kTCCServiceMicrophone org.whispersystems.signal-desktop "/Applications/Signal.app"
-    grant_user_tcc kTCCServiceMicrophone pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
-    grant_user_tcc kTCCServiceMicrophone com.todesktop.230313mzl4w4u92 "/Applications/Cursor.app"
-
-    # Camera
-    grant_user_tcc kTCCServiceCamera com.google.Chrome "/Applications/Google Chrome.app"
-    grant_user_tcc kTCCServiceCamera com.hnc.Discord "/Applications/Discord.app"
-    grant_user_tcc kTCCServiceCamera com.tinyspeck.slackmacgap "/Applications/Slack.app"
-    grant_user_tcc kTCCServiceCamera us.zoom.xos "/Applications/zoom.us.app"
-    grant_user_tcc kTCCServiceCamera org.whispersystems.signal-desktop "/Applications/Signal.app"
-
-    # Audio capture
-    grant_user_tcc kTCCServiceAudioCapture com.granola.app "/Applications/Granola.app"
-
-    # Bluetooth
-    grant_user_tcc kTCCServiceBluetoothAlways com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
-    grant_user_tcc kTCCServiceBluetoothAlways eu.exelban.Stats "/Applications/Stats.app"
-    grant_user_tcc kTCCServiceBluetoothAlways com.google.Chrome "/Applications/Google Chrome.app"
-    grant_user_tcc kTCCServiceBluetoothAlways com.mitchellh.ghostty "/Applications/Ghostty.app"
-    grant_user_tcc kTCCServiceBluetoothAlways com.openai.atlas "/Applications/ChatGPT Atlas.app"
-    grant_user_tcc kTCCServiceBluetoothAlways us.zoom.xos "/Applications/zoom.us.app"
-
-    # Automation (Apple Events)
-    grant_user_tcc kTCCServiceAppleEvents com.mitchellh.ghostty "/Applications/Ghostty.app" com.apple.MobileSMS
-
-    # File/folder access
-    grant_user_tcc kTCCServiceSystemPolicyDownloadsFolder com.mitchellh.ghostty "/Applications/Ghostty.app"
-    grant_user_tcc kTCCServiceSystemPolicyDocumentsFolder com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
-    grant_user_tcc kTCCServiceSystemPolicyRemovableVolumes io.balena.etcher "/Applications/balenaEtcher.app"
-    grant_user_tcc kTCCServiceSystemPolicyDocumentsFolder com.raspberrypi.rpi-imager "/Applications/Raspberry Pi Imager.app"
-    grant_user_tcc kTCCServiceSystemPolicyRemovableVolumes com.raspberrypi.rpi-imager "/Applications/Raspberry Pi Imager.app"
-
     # Fix Homebrew prefix directories that may have wrong ownership
     # NOTE: $USER is root during activation (runs via sudo), so we use the configured primaryUser
     /bin/mkdir -p /opt/homebrew/var/log /opt/homebrew/var/run
@@ -280,8 +174,118 @@ in {
     ZoomShowIconInMenuBar = false;
   };
 
-  # ── Menu bar: hide Siri & Spotlight, restart Stats ─────────────────
+  # ── Post-activation: TCC grants, menu bar, Stats, power ──────────
+  # TCC grants run AFTER app installation so code signatures match the
+  # new binaries. Running in preActivation would extract csreq from the
+  # OLD binary, causing permissions to silently break on rebuild.
   system.activationScripts.postActivation.text = ''
+    # ── TCC permissions (requires SIP disabled) ──
+    TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
+    grant_tcc() {
+      local service="$1" bundle="$2" app_path="$3"
+      if [ ! -f "$TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
+      CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
+      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+      if [ -s "$CSREQ_TMP" ]; then
+        CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
+        /usr/bin/sqlite3 "$TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
+        /usr/bin/sqlite3 "$TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', 'UNUSED', 0, 'UNUSED');" 2>/dev/null && \
+          echo "  -> $(basename "$app_path") $service granted" || \
+          echo "  -> TCC grant failed for $(basename "$app_path") (SIP may be enabled)"
+      fi
+      /bin/rm -f "$CSREQ_TMP"
+    }
+
+    # Accessibility
+    grant_tcc kTCCServiceAccessibility org.hammerspoon.Hammerspoon "/Applications/Hammerspoon.app"
+    grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
+    grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
+    grant_tcc kTCCServiceAccessibility com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
+    grant_tcc kTCCServiceAccessibility com.hnc.Discord "/Applications/Discord.app"
+    grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
+    grant_tcc kTCCServiceAccessibility com.logitech.Logi-Options "/Applications/Logi Options.app"
+    grant_tcc kTCCServiceAccessibility com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_tcc kTCCServiceAccessibility com.henrikruscon.Klack "/Applications/Klack.app"
+    grant_tcc kTCCServiceAccessibility com.mitchellh.ghostty "/Applications/Ghostty.app"
+
+    # Input monitoring
+    grant_tcc kTCCServiceListenEvent com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_tcc kTCCServiceListenEvent com.logitech.manager.daemon "/Applications/Logi Options.app/Contents/Support/LogiMgrDaemon.app"
+    grant_tcc kTCCServiceListenEvent com.logitech.Logi-Options "/Applications/Logi Options.app"
+    grant_tcc kTCCServiceListenEvent com.hnc.Discord "/Applications/Discord.app"
+    grant_tcc kTCCServiceListenEvent pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_tcc kTCCServicePostEvent com.henrikruscon.Klack "/Applications/Klack.app"
+
+    # Screen capture
+    grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceScreenCapture com.mitchellh.ghostty "/Applications/Ghostty.app"
+    grant_tcc kTCCServiceScreenCapture com.google.Chrome "/Applications/Google Chrome.app"
+    grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
+    grant_tcc kTCCServiceScreenCapture com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_tcc kTCCServiceScreenCapture us.zoom.xos "/Applications/zoom.us.app"
+
+    # Full disk access
+    grant_tcc kTCCServiceSystemPolicyAllFiles com.mitchellh.ghostty "/Applications/Ghostty.app"
+
+    # User-level TCC permissions (microphone, bluetooth, audio capture)
+    USER_TCC_DB="/Users/${user}/Library/Application Support/com.apple.TCC/TCC.db"
+    grant_user_tcc() {
+      local service="$1" bundle="$2" app_path="$3" indirect_obj="''${4:-UNUSED}"
+      if [ ! -f "$USER_TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
+      CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
+      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+      if [ -s "$CSREQ_TMP" ]; then
+        CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
+        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
+        sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "INSERT INTO access (service, client, client_type, auth_value, auth_reason, auth_version, csreq, indirect_object_identifier, flags, boot_uuid) VALUES ('$service', '$bundle', 0, 2, 3, 1, X'$CSREQ_HEX', '$indirect_obj', 0, 'UNUSED');" 2>/dev/null && \
+          echo "  -> $(basename "$app_path") $service granted (user)" || \
+          echo "  -> User TCC grant failed for $(basename "$app_path")"
+      fi
+      /bin/rm -f "$CSREQ_TMP"
+    }
+
+    # Microphone
+    grant_user_tcc kTCCServiceMicrophone com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
+    grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
+    grant_user_tcc kTCCServiceMicrophone com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceMicrophone com.hnc.Discord "/Applications/Discord.app"
+    grant_user_tcc kTCCServiceMicrophone com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_user_tcc kTCCServiceMicrophone us.zoom.xos "/Applications/zoom.us.app"
+    grant_user_tcc kTCCServiceMicrophone org.whispersystems.signal-desktop "/Applications/Signal.app"
+    grant_user_tcc kTCCServiceMicrophone pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_user_tcc kTCCServiceMicrophone com.todesktop.230313mzl4w4u92 "/Applications/Cursor.app"
+
+    # Camera
+    grant_user_tcc kTCCServiceCamera com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceCamera com.hnc.Discord "/Applications/Discord.app"
+    grant_user_tcc kTCCServiceCamera com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_user_tcc kTCCServiceCamera us.zoom.xos "/Applications/zoom.us.app"
+    grant_user_tcc kTCCServiceCamera org.whispersystems.signal-desktop "/Applications/Signal.app"
+
+    # Audio capture
+    grant_user_tcc kTCCServiceAudioCapture com.granola.app "/Applications/Granola.app"
+
+    # Bluetooth
+    grant_user_tcc kTCCServiceBluetoothAlways com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_user_tcc kTCCServiceBluetoothAlways eu.exelban.Stats "/Applications/Stats.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.mitchellh.ghostty "/Applications/Ghostty.app"
+    grant_user_tcc kTCCServiceBluetoothAlways com.openai.atlas "/Applications/ChatGPT Atlas.app"
+    grant_user_tcc kTCCServiceBluetoothAlways us.zoom.xos "/Applications/zoom.us.app"
+
+    # Automation (Apple Events)
+    grant_user_tcc kTCCServiceAppleEvents com.mitchellh.ghostty "/Applications/Ghostty.app" com.apple.MobileSMS
+
+    # File/folder access
+    grant_user_tcc kTCCServiceSystemPolicyDownloadsFolder com.mitchellh.ghostty "/Applications/Ghostty.app"
+    grant_user_tcc kTCCServiceSystemPolicyDocumentsFolder com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
+    grant_user_tcc kTCCServiceSystemPolicyRemovableVolumes io.balena.etcher "/Applications/balenaEtcher.app"
+    grant_user_tcc kTCCServiceSystemPolicyDocumentsFolder com.raspberrypi.rpi-imager "/Applications/Raspberry Pi Imager.app"
+    grant_user_tcc kTCCServiceSystemPolicyRemovableVolumes com.raspberrypi.rpi-imager "/Applications/Raspberry Pi Imager.app"
+
+    # ── Menu bar, Stats, power ──
     sudo -u ${user} defaults write com.apple.Siri StatusMenuVisible -bool false
     sudo -u ${user} defaults write com.apple.Spotlight "NSStatusItem Visible Item-0" -bool false
     killall Stats 2>/dev/null && sudo -u ${user} open -a Stats || true
