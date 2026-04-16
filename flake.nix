@@ -42,9 +42,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # VoiceInk — local dictation app (pre-built from fork)
+    # VoiceInk — local dictation app (pre-built from fork, nix overlay in-repo)
     voiceink-overlay = {
-      url = "github:charliemeyer2000/voiceink-overlay";
+      url = "github:charliemeyer2000/VoiceInk?dir=nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
