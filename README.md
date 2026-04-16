@@ -68,26 +68,28 @@ aliases (available after rebuild):
 rebuild <config>  # shorthand for just switch
 dots              # cd to dots directory
 cc                # claude --dangerously-skip-permissions
+dv                # devin --permission-mode bypass
 k                 # kubectl
 tf                # terraform
 killport <port>   # kill process on port
+vpn-on / vpn-off  # mullvad manual control (macOS)
 ```
 
 `npm`, `pip`, and `pip3` are aliased to errors — use `pnpm` and `uv` instead.
 
 ## agent configuration
 
-agent config is tool-agnostic, using the [AGENTS.md](https://agents-md.org) open standard:
+agent config uses the [AGENTS.md](https://agents-md.org) open standard — source of truth is `config/agents/`, deployed to `~/.agents/` via `home/agents.nix`:
 
 - `config/agents/AGENTS.md` → `~/.agents/AGENTS.md` (global instructions)
-- `config/agents/skills/` → `~/.agents/skills/` (agent skills)
-- `config/claude/settings.json` → `~/.claude/settings.json` (claude-specific)
+- `config/agents/skills/` → `~/.agents/skills/`
+- `config/claude/settings.json` → `~/.claude/settings.json`
+- `config/devin/config.json` → `~/.config/devin/config.json`
 
-claude code reads from `~/.claude/`, which symlinks into `~/.agents/`:
+tool-specific dirs symlink into `~/.agents/`:
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md`
 - `~/.claude/skills` → `~/.agents/skills`
-
-deployed via home-manager (`home/agents.nix`). any AGENTS.md-compatible coding agent can read from `~/.agents/` directly.
+- `~/.config/devin/skills` → `~/.agents/skills`
 
 ### skills
 
@@ -106,10 +108,11 @@ after adding/removing a skill, run `just switch <config>` to deploy (or use `ski
 
 ## machine configurations
 
-| config | os | type | secrets | notes |
-|---|---|---|---|---|
-| `darwin-personal` | macOS | nix-darwin | yes | full setup with GUI apps |
-| `workstation` | Linux (Ubuntu) | standalone home-manager | yes | RTX 5090 workstation, dotfiles + CLI packages |
+| config | host | type | notes |
+|---|---|---|---|
+| `darwin-personal` | M4 Pro MacBook Pro | nix-darwin | daily driver, full GUI apps |
+| `darwin-agent` | M1 Pro MacBook Pro | nix-darwin | always-on agent, never sleeps |
+| `workstation` | Ubuntu, RTX 5090 | standalone home-manager | dotfiles + CLI only (no NixOS) |
 
 ## ssh hosts
 
@@ -124,15 +127,12 @@ configured in `home/ssh.nix`, using 1Password SSH agent:
 
 some things can't be nix-managed. install/configure by hand:
 
-**iOS apps on Mac (mas can't install):** UniFi
-
-**direct download:** VESC Tool (vesc-project.com)
-
-**app-internal config:** Raycast (built-in sync), Cursor (GitHub sync), Chrome (Google sync), 1Password (sign in)
-
-**fonts:** nix handles JetBrainsMono + FiraCode nerd fonts (`home/fonts.nix`). for Berkeley Mono (paid):
-```bash
-gh repo clone (hidden)/fonts /tmp/fonts
-cp /tmp/fonts/**/*.{otf,ttf} ~/Library/Fonts/
-rm -rf /tmp/fonts
-```
+- **iOS apps on Mac (mas can't install):** UniFi
+- **direct download:** VESC Tool (vesc-project.com)
+- **app-internal config:** Raycast, Cursor, Chrome, 1Password (all have built-in sync — just sign in)
+- **Berkeley Mono font** (paid, not in nix):
+  ```bash
+  gh repo clone (hidden)/fonts /tmp/fonts
+  cp /tmp/fonts/**/*.{otf,ttf} ~/Library/Fonts/
+  rm -rf /tmp/fonts
+  ```
