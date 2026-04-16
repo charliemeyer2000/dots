@@ -267,6 +267,17 @@ in {
     # Audio capture
     grant_user_tcc kTCCServiceAudioCapture com.granola.app "/Applications/Granola.app"
 
+    # Screen & System Audio Recording (macOS 15+ uses kTCCServiceLiverpool
+    # in the user TCC DB instead of kTCCServiceScreenCapture in the system DB)
+    grant_user_tcc kTCCServiceLiverpool com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
+    grant_user_tcc kTCCServiceLiverpool pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
+    grant_user_tcc kTCCServiceLiverpool com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_user_tcc kTCCServiceLiverpool com.mitchellh.ghostty "/Applications/Ghostty.app"
+    grant_user_tcc kTCCServiceLiverpool com.google.Chrome "/Applications/Google Chrome.app"
+    grant_user_tcc kTCCServiceLiverpool com.hnc.Discord "/Applications/Discord.app"
+    grant_user_tcc kTCCServiceLiverpool com.tinyspeck.slackmacgap "/Applications/Slack.app"
+    grant_user_tcc kTCCServiceLiverpool us.zoom.xos "/Applications/zoom.us.app"
+
     # Bluetooth
     grant_user_tcc kTCCServiceBluetoothAlways com.logi.cp-dev-mgr "/Library/Application Support/Logitech.localized/LogiOptionsPlus/logioptionsplus_agent.app"
     grant_user_tcc kTCCServiceBluetoothAlways eu.exelban.Stats "/Applications/Stats.app"
