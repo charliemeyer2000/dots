@@ -185,7 +185,7 @@ in {
       local service="$1" bundle="$2" app_path="$3"
       if [ ! -f "$TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
       CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
-      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed -n 's/^.*designated => //p' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
       if [ -s "$CSREQ_TMP" ]; then
         CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
         /usr/bin/sqlite3 "$TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
@@ -235,7 +235,7 @@ in {
       local service="$1" bundle="$2" app_path="$3" indirect_obj="''${4:-UNUSED}"
       if [ ! -f "$USER_TCC_DB" ] || [ ! -d "$app_path" ]; then return; fi
       CSREQ_TMP=$(/usr/bin/mktemp /tmp/tcc_csreq.XXXXXX)
-      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed 's/^designated => //' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
+      /usr/bin/codesign -dr - "$app_path" 2>&1 | /usr/bin/sed -n 's/^.*designated => //p' | /usr/bin/csreq -r- -b "$CSREQ_TMP" 2>/dev/null || true
       if [ -s "$CSREQ_TMP" ]; then
         CSREQ_HEX=$(/usr/bin/xxd -p "$CSREQ_TMP" | /usr/bin/tr -d '\n')
         sudo -u ${user} /usr/bin/sqlite3 "$USER_TCC_DB" "DELETE FROM access WHERE client = '$bundle' AND service = '$service';" 2>/dev/null || true
