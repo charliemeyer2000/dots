@@ -354,11 +354,11 @@
       },
       "locked": {
         "dir": "nix",
-        "lastModified": 1776291482,
-        "narHash": "sha256-Thcs+I/zo/kuVE+n+WEgjjWVrlpKclXcYJBnS8qEOOg=",
+        "lastModified": 1776307819,
+        "narHash": "sha256-cL4jP69EEkIsxYKzRPT7VI0OQaOySE073ZZIhI876BI=",
         "owner": "charliemeyer2000",
         "repo": "VoiceInk",
-        "rev": "e37f20ac5324851949d86a1773b1af0a965be932",
+        "rev": "0940a87924558d718075054ae938e5d326f854fe",
         "type": "github"
       },
       "original": {
