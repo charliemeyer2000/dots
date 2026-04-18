@@ -217,7 +217,11 @@ in {
     grant_tcc kTCCServiceListenEvent pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_tcc kTCCServicePostEvent com.henrikruscon.Klack "/Applications/Klack.app"
 
-    # Screen capture
+    # Screen capture — ScreenCaptureKit / SCShareableContent / CGDisplay* still
+    # gate on kTCCServiceScreenCapture (system DB) on macOS 15. Apps that are
+    # ad-hoc signed by nix (e.g. VoiceInk) MUST be re-granted here on every
+    # rebuild, otherwise their stored csreq points at the old cdhash and tccd
+    # fails the match with "Failed to match existing code requirement".
     grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
     grant_tcc kTCCServiceScreenCapture com.mitchellh.ghostty "/Applications/Ghostty.app"
@@ -225,6 +229,7 @@ in {
     grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceScreenCapture com.tinyspeck.slackmacgap "/Applications/Slack.app"
     grant_tcc kTCCServiceScreenCapture us.zoom.xos "/Applications/zoom.us.app"
+    grant_tcc kTCCServiceScreenCapture com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
 
     # Full disk access
     grant_tcc kTCCServiceSystemPolicyAllFiles com.mitchellh.ghostty "/Applications/Ghostty.app"
@@ -267,8 +272,10 @@ in {
     # Audio capture
     grant_user_tcc kTCCServiceAudioCapture com.granola.app "/Applications/Granola.app"
 
-    # Screen & System Audio Recording (macOS 15+ uses kTCCServiceLiverpool
-    # in the user TCC DB instead of kTCCServiceScreenCapture in the system DB)
+    # System audio capture for ScreenCaptureKit (distinct from kTCCServiceScreenCapture
+    # above — that one covers screen video). Liverpool is the user-DB service that
+    # gates SCStreamConfiguration audio capture on macOS 15+. Kept in sync for apps
+    # that may capture system audio alongside screen video.
     grant_user_tcc kTCCServiceLiverpool com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
     grant_user_tcc kTCCServiceLiverpool pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_user_tcc kTCCServiceLiverpool com.anthropic.claudefordesktop "/Applications/Claude.app"
