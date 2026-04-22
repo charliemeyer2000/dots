@@ -17,6 +17,7 @@
     "ngrok"
     "db-browser-for-sqlite"
     "cursor"
+    "windsurf"
     "docker-desktop"
     "figma"
     "foxglove"

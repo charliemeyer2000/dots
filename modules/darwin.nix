@@ -426,7 +426,6 @@ in {
       "steipete/tap/oracle"
       "steipete/tap/peekaboo"
       "steipete/tap/remindctl"
-      "steipete/tap/summarize"
 
       # Embedded tools
       "open-ocd"
