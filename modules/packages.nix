@@ -5,6 +5,7 @@
 with pkgs;
   [
     git
+    git-lfs
     ripgrep
     fd
     fzf
@@ -16,7 +17,7 @@ with pkgs;
     tmux
     bat
     just
-    direnv
+    (direnv.overrideAttrs (_: {doCheck = false;}))
     zoxide
     gh
     gum
