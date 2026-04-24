@@ -44,6 +44,7 @@
     # Utilities
     "hammerspoon"
     "mullvad-vpn"
+    "cloudflare-warp"
     "atomic-wallet"
     "balenaetcher"
     "cleanshot"
