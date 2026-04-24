@@ -5,6 +5,7 @@
 with pkgs;
   [
     git
+    git-lfs
     ripgrep
     fd
     fzf
@@ -16,7 +17,8 @@ with pkgs;
     tmux
     bat
     just
-    direnv
+    # TODO: remove doCheck override once upstream direnv tests pass in nixpkgs.
+    (direnv.overrideAttrs (_: {doCheck = false;}))
     zoxide
     gh
     gum
