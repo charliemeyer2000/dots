@@ -110,6 +110,7 @@ All inputs follow the root nixpkgs for consistency.
 - Standalone Mullvad VPN conflicts with Tailscale on macOS (aggressive firewall rules drop Tailscale traffic)
 - Mullvad is **not** auto-configured during rebuild — use shell aliases for manual control
 - Shell aliases: `vpn-on`, `vpn-off`, `vpn-status`, `vpn-us`, `vpn-uk`, `vpn-eu` (macOS only)
+- Cloudflare WARP (installed as a cask) also runs a system-level tunnel — only run one VPN at a time (WARP, Mullvad, or Tailscale exit node) to avoid routing conflicts
 
 ### Agent Configuration
 Agent config is managed in a tool-agnostic way:
