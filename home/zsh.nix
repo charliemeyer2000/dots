@@ -1,4 +1,8 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  onePasswordAgentSocket,
+  ...
+}: let
   inherit (pkgs.stdenv) isDarwin;
 in {
   programs.zsh = {
@@ -81,6 +85,8 @@ in {
           export PATH="$HOME/.nix-profile/bin:$HOME/.local/bin:$PATH"
         ''
       }
+
+      export SSH_AUTH_SOCK="$HOME/${onePasswordAgentSocket}"
 
       unset CLAUDECODE
 
