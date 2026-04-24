@@ -17,6 +17,7 @@ with pkgs;
     tmux
     bat
     just
+    # TODO: remove doCheck override once upstream direnv tests pass in nixpkgs.
     (direnv.overrideAttrs (_: {doCheck = false;}))
     zoxide
     gh
