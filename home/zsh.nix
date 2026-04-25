@@ -49,6 +49,7 @@ in {
       // (
         if isDarwin
         then {
+          surf = "windsurf";
           vpn-on = "mullvad connect";
           vpn-off = "mullvad disconnect";
           vpn-status = "mullvad status && echo '---' && mullvad relay get";
