@@ -4,7 +4,7 @@
 
 - Always **ultrathink** about the codebase, structure, patterns, existing files/utilities. Think - what's a high-quality, senior-engineer implementation for this? 
 - If you're lost, always read documentation, or consult the user for guidance.
-- Read the AGENTS.md (CLAUDE.md symlinks here)
+- Read the AGENTS.md (CLAUDE.md and other agent guideline files symlink here)
 
 ## Documentation
 
@@ -20,9 +20,16 @@ When reading documentation, always:
 - Python: use `uv` for everything. `uv run` for scripts, `uv sync` for projects, `uv tool install` for global CLI tools. never `pip install`.
 - Rust: use `cargo` via `rustup`.
 
-## Commits
+## Commits & PRs
 
-- Use conventional commits (feat:, fix:, chore:, docs:)
+- Format commit messages and PR titles as conventional commits: `<type>(<scope>): <summary>`
+    - Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`
+    - **Scope is optional** — include it when it adds clarity, omit it when the change is broad or the type alone is enough
+        - With scope: `feat(zsh): add surf alias`, `chore(secrets): drop GITHUB_TOKEN auto-export`
+        - Without scope: `feat: add postgresql to base packages`, `fix: VoiceInk perms`
+    - When using a scope, use the package/app/module/file you're touching (e.g. `feat(dots)`, `fix(zsh)`)
+    - Keep the summary concise and accurate — describe what the change does, not how
+- Branches: `cm/` prefix followed by a short descriptive name (e.g. `cm/add-warp-cask`)
 - Sign commits with 1Password SSH key (commit.gpgsign = true)
 - If signing hangs (non-interactive context), use `git -c commit.gpgsign=false commit`
 - Never add Co-Authored-By lines or any other attribution to commits or PRs
