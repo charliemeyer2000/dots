@@ -77,6 +77,14 @@ in {
 
       [ -f ~/.env.local ] && source ~/.env.local
 
+      # GitHub PAT is intentionally NOT auto-exported (gh falls back to OAuth
+      # keyring, which works for orgs that block classic PATs). Fetch on demand:
+      #   GITHUB_TOKEN=$(gh-pat) some-tool        # one-shot
+      #   export GITHUB_TOKEN=$(gh-pat)           # current shell only
+      gh-pat() {
+        op read "op://Personal/Dev Secrets/github-token"
+      }
+
       ${
         if isDarwin
         then ''

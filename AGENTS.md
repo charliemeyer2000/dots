@@ -87,7 +87,8 @@ All inputs follow the root nixpkgs for consistency.
 - Template: `secrets/secrets.zsh.tmpl` references 1Password items via `{{ op://vault/item/field }}`
 - On rebuild (`just switch`), `op inject` fills the template → `~/.env.local` (mode 600)
 - zsh sources `~/.env.local` on startup
-- Exported keys: `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`, `MULLVAD_ACCOUNT_NUMBER`
+- Exported keys: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`, `MULLVAD_ACCOUNT_NUMBER`, `DOCKER_PAT`, `EXA_API_KEY`, `OPENROUTER_API_KEY`
+- `GITHUB_TOKEN` is intentionally NOT auto-exported. `gh` falls back to its OAuth keyring (works with orgs that ban classic PATs). For ad-hoc use, the `gh-pat` zsh function fetches the PAT from 1Password on demand: `GITHUB_TOKEN=$(gh-pat) some-tool`.
 - Supports both 1Password service account token (CI) and desktop app (interactive)
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 
@@ -158,6 +159,7 @@ Shell aliases (available after rebuild):
 - `dv` — `devin --permission-mode bypass`
 - `k` / `tf` — kubectl / terraform
 - `killport <port>` — Kill process on a port
+- `gh-pat` — Print GitHub PAT from 1Password (e.g. `GITHUB_TOKEN=$(gh-pat) some-tool`)
 - `skill-add`, `skill-search`, `skill-list`, `skill-remove` — Skill management
 - `skill-install`, `skill-browse`, `skills` — Install skills, browse skills.sh, list installed
 - `surf <path>` — Open Windsurf at the given path (macOS only)
