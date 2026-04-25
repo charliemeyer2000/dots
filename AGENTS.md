@@ -160,6 +160,7 @@ Shell aliases (available after rebuild):
 - `killport <port>` — Kill process on a port
 - `skill-add`, `skill-search`, `skill-list`, `skill-remove` — Skill management
 - `skill-install`, `skill-browse`, `skills` — Install skills, browse skills.sh, list installed
+- `surf <path>` — Open Windsurf at the given path (macOS only)
 - `vpn-on` / `vpn-off` / `vpn-status` — Mullvad VPN manual control (macOS only)
 - `vpn-us` / `vpn-uk` / `vpn-eu` — Connect Mullvad to specific regions (macOS only)
 
