@@ -176,7 +176,7 @@ Shared across all machines (via `modules/packages.nix`):
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
 - **Languages**: go, rustup, lua, nodejs_22, pnpm, bun, uv
 - **AI/HPC**: claude-code (via claude-code-overlay), devin-cli (via devin-cli-overlay), uvacompute, rv (UVA Rivanna job submission CLI)
-- **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, ollama, colima (macOS only)
+- **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, postgresql, ollama, colima (macOS only)
 - **Secrets**: _1password-cli
 
 Language management:

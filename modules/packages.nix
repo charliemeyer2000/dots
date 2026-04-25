@@ -60,6 +60,7 @@ with pkgs;
     cloudflared
     tailscale
     redis
+    postgresql
     ollama
   ]
   ++ lib.optionals pkgs.stdenv.isDarwin [
