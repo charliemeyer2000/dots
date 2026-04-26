@@ -3,3 +3,6 @@ audit.sh
 result
 .direnv
 secrets/.env.local
+
+# Internal Cognition skill — not for public dotfiles
+config/agents/skills/devin-webapp/
