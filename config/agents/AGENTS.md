@@ -17,7 +17,7 @@ When reading documentation, always:
 ## Workflow
 
 - Plan non-trivial work first: For anything 3+ steps or with architectural decisions, write the plan before touching code. If things go sideways mid-implementation, stop and re-plan — don't keep pushing.
-- Verify before declaring done: Run the tests, check the logs, demonstrate correctness. Never mark a task complete without proof it works. Ask yourself: "would a staff engineer approve this?"
+- Verify before declaring done: Run the tests, linting, formatting, sorting, check the logs, CI, demonstrate correctness. Never mark a task complete without proof it works. Ask yourself: "would a staff engineer approve this?"
 - Fix bugs autonomously: Given a bug report, failing test, or broken CI: just fix it. Point at the logs/errors and resolve them. Don't ask for hand-holding on things you can investigate yourself.
 - Demand elegance, balanced: For non-trivial changes, pause and ask "is there a more elegant way?" If a fix feels hacky, reach for the clean solution. Skip this for obvious one-line fixes — don't over-engineer.
 - Challenge your own work before presenting it: Diff your changes against main, sanity-check the behavior, look for what you missed.
