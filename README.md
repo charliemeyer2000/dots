@@ -139,6 +139,7 @@ some things can't be nix-managed. install/configure by hand.
 required once per new mac for everything to work end-to-end:
 
 - **sign into the Mac App Store** — required to install Xcode/Keynote/Klack (mas integration with brew bundle is broken)
+- **1Password → Settings → Developer** — turn on **Use the SSH agent** (for git/ssh) and **Integrate with 1Password CLI** (for `op signin` biometric unlock). these toggles are HMAC-tagged by 1Password and **cannot be automated** — must be flipped manually
 - **xcode CLT** — auto-installed by `darwin.nix` activation script; fall back to `sudo xcode-select --install` if it fails
 - **accept the Xcode license** — `sudo xcodebuild -license accept` (required for `xcodebuild` and some brew formulas)
 - **Raycast hotkeys** — Raycast cloud sync handles preferences but the **global launch hotkey is per-machine**; rebind under Settings → General → Hotkey

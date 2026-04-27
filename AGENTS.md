@@ -280,6 +280,11 @@ Things that can't be nix-managed or don't transfer between machines. Grouped by 
 Required once per new Mac for everything to work end-to-end:
 
 - **Sign into the Mac App Store** — required to install Xcode, Keynote, and Klack manually (the `mas` brew-bundle integration is broken with `mas 6.0.1`, so `homebrew.masApps` is disabled in `apps.nix`).
+- **Enable 1Password developer toggles** — open 1Password → Settings → Developer and turn on:
+  - **Use the SSH agent** — required for `home/ssh.nix` (IdentityAgent) and git commit signing in `home/git.nix`. Without it, git/ssh will pop a *"1Password: Could not connect to socket. Is the agent running?"* dialog.
+  - **Integrate with 1Password CLI** — enables biometric unlock for `op` so secrets injection (`op inject`) and `op signin` work without re-typing the master password.
+
+  Both settings are HMAC-tagged in `~/Library/Group Containers/2BUA8C4S2C.com.1password/.../settings/settings.json` (1Password ships deliberate tamper detection). They **cannot** be set declaratively via nix-darwin, `defaults write`, or by editing the JSON — the HMAC requires a key from inside 1Password's encrypted vault. This is by design and there's no community workaround.
 - **Xcode Command Line Tools** — `modules/darwin.nix` activation script auto-installs these on first `darwin-rebuild`. If it fails (e.g. softwareupdate label drift), run `sudo xcode-select --install` manually.
 - **Accept the Xcode license** — `sudo xcodebuild -license accept`. Required before any `xcodebuild` use (including some Homebrew formulas that build from source). Re-run after installing the full Xcode app.
 - **Install full Xcode** *(only if doing iOS/macOS dev)* — install from the App Store, then re-run `sudo xcodebuild -license accept`.
