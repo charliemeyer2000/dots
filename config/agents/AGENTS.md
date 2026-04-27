@@ -53,6 +53,7 @@ When reading documentation, always:
 - Config lives at `~/all/dots`
 - macOS m4 pro: nix-darwin + home-manager — `just switch darwin-personal` - personal laptop
 - macOS m1: nix-darwin + home-manager - `just switch darwin-agent` - always-on old mac
+- macOS cognition: nix-darwin + home-manager - `just switch darwin-cog` - work laptop (zoom managed by IT, excluded from brew)
 - Linux workstation: standalone home-manager — `just switch workstation` - linux box, 32 CPU, 5090 gpu.
 - Secrets injected via 1Password `op inject` during activation
 

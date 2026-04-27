@@ -35,13 +35,17 @@
     config.allowUnfree = true;
     inherit overlays;
   };
-in {
-  flake = {
-    darwinConfigurations.darwin-personal = inputs.nix-darwin.lib.darwinSystem {
+
+  # Build a nix-darwin system from a host module under ../hosts/<name>.
+  # All darwin hosts share the same wiring (home-manager, nix-homebrew, overlays);
+  # per-host divergence belongs in ../hosts/<name>/default.nix.
+  mkDarwin = name:
+    inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
       specialArgs = {inherit inputs;};
       modules = [
-        ../hosts/darwin-personal
+        ../hosts/_darwin-common.nix
+        ../hosts/${name}
         inputs.home-manager.darwinModules.home-manager
         inputs.nix-homebrew.darwinModules.nix-homebrew
         hmModule
@@ -50,18 +54,15 @@ in {
       ];
     };
 
-    darwinConfigurations.darwin-agent = inputs.nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";
-      specialArgs = {inherit inputs;};
-      modules = [
-        ../hosts/darwin-agent
-        inputs.home-manager.darwinModules.home-manager
-        inputs.nix-homebrew.darwinModules.nix-homebrew
-        hmModule
-        homebrewModule
-        {nixpkgs.overlays = overlays;}
-      ];
-    };
+  darwinHosts = [
+    "darwin-personal"
+    "darwin-agent"
+    "darwin-cog"
+  ];
+in {
+  flake = {
+    darwinConfigurations =
+      inputs.nixpkgs.lib.genAttrs darwinHosts mkDarwin;
 
     homeConfigurations.workstation = inputs.home-manager.lib.homeManagerConfiguration {
       pkgs = pkgsLinux;

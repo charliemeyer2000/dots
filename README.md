@@ -25,6 +25,10 @@ op signin
 
 # 6. second build — secrets, tailscale auth, and App Store apps
 just switch darwin-personal
+
+# 7. log out and back in (or reboot)
+#    required on a fresh mac — macOS caches NSGlobalDomain prefs per-session,
+#    so keyboard repeat, press-and-hold, etc. only take effect after relogin.
 ```
 
 ### linux workstation
@@ -112,7 +116,10 @@ after adding/removing a skill, run `just switch <config>` to deploy (or use `ski
 |---|---|---|---|
 | `darwin-personal` | M4 Pro MacBook Pro | nix-darwin | daily driver, full GUI apps |
 | `darwin-agent` | M1 Pro MacBook Pro | nix-darwin | always-on agent, never sleeps |
+| `darwin-cog` | Cognition work MacBook | nix-darwin | excludes IT-managed casks (zoom) |
 | `workstation` | Ubuntu, RTX 5090 | standalone home-manager | dotfiles + CLI only (no NixOS) |
+
+all darwin hosts share `hosts/_darwin-common.nix` (imports + user + nix.enable + stateVersion). each host's `default.nix` only declares its differences. add a new darwin host by creating `hosts/<name>/default.nix` and appending `"<name>"` to `darwinHosts` in `parts/hosts.nix`.
 
 ## ssh hosts
 
@@ -125,11 +132,29 @@ configured in `home/ssh.nix`, using 1Password SSH agent:
 
 ## manual stuff
 
-some things can't be nix-managed. install/configure by hand:
+some things can't be nix-managed. install/configure by hand.
+
+### fresh macOS — one-time
+
+required once per new mac for everything to work end-to-end:
+
+- **sign into the Mac App Store** — required to install Xcode/Keynote/Klack (mas integration with brew bundle is broken)
+- **xcode CLT** — auto-installed by `darwin.nix` activation script; fall back to `sudo xcode-select --install` if it fails
+- **accept the Xcode license** — `sudo xcodebuild -license accept` (required for `xcodebuild` and some brew formulas)
+- **Raycast hotkeys** — Raycast cloud sync handles preferences but the **global launch hotkey is per-machine**; rebind under Settings → General → Hotkey
+- **log out / reboot** — required after the first `just switch` for keyboard repeat, press-and-hold, and other `NSGlobalDomain` defaults to take effect
+
+### app sign-ins (cloud-synced)
+
+just sign in and configs follow:
+
+- **Raycast, Cursor, Windsurf, Chrome, 1Password** — built-in sync
+- **Slack, Discord, Signal, WhatsApp** — sign in to each (Signal needs phone link)
+
+### hardware / external
 
 - **iOS apps on Mac (mas can't install):** UniFi
 - **direct download:** VESC Tool (vesc-project.com)
-- **app-internal config:** Raycast, Cursor, Chrome, 1Password (all have built-in sync — just sign in)
 - **Berkeley Mono font** (paid, not in nix):
   ```bash
   gh repo clone (hidden)/fonts /tmp/fonts

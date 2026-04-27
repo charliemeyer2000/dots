@@ -40,18 +40,20 @@ dots/
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
 │   └── hammerspoon.nix   # Hammerspoon window management (macOS)
 ├── hosts/                # Machine-specific configurations
-│   ├── darwin-personal/  # M4 Pro MacBook Pro: base + darwin + apps + secrets
-│   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): base + darwin + apps + secrets
+│   ├── _darwin-common.nix # Shared base for all darwin hosts (imports + user + nix.enable + stateVersion)
+│   ├── darwin-personal/  # M4 Pro MacBook Pro: only host-unique networking attrs
+│   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): only host-unique attrs
+│   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed casks (zoom)
 │   └── workstation/      # Linux workstation: standalone home-manager + secrets
 ├── modules/              # System-level modules
 │   ├── packages.nix      # Shared package list (used by base.nix and workstation)
 │   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
-│   ├── apps.nix          # Homebrew casks (GUI apps, shared by all darwin hosts)
+│   ├── apps.nix          # Shared base list of Homebrew casks + dots.homebrew.{excludeCasks,extraCasks} options
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── parts/                # Flake-parts modules
-│   ├── hosts.nix         # Machine definitions + home-manager/nix-homebrew wiring
+│   ├── hosts.nix         # mkDarwin helper + darwinHosts list + workstation HM config
 │   ├── formatter.nix     # alejandra (nix formatter)
 │   ├── checks.nix        # Pre-commit hooks (alejandra, deadnix, statix, shellcheck)
 │   └── devshell.nix      # Dev shell: alejandra, deadnix, statix, nil, just
@@ -91,6 +93,7 @@ All inputs follow the root nixpkgs for consistency.
 - `GITHUB_TOKEN` is intentionally NOT auto-exported. `gh` falls back to its OAuth keyring (works with orgs that ban classic PATs). For ad-hoc use, the `gh-pat` zsh function fetches the PAT from 1Password on demand: `GITHUB_TOKEN=$(gh-pat) some-tool`.
 - Supports both 1Password service account token (CI) and desktop app (interactive)
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
+- Multi-account: `dots.onePassword.account` (default `"my.1password.com"`) is passed as `op --account <value>` in the desktop-app path so vault lookups disambiguate when both personal and work 1Password accounts are signed in. Service-account auth ignores it (the token already identifies the account). Override per-host if a machine should resolve secrets against a different account.
 
 ### Python via uv
 - No system python3 in base.nix — uv manages all Python versions
@@ -129,11 +132,18 @@ Agent config is managed in a tool-agnostic way:
 
 ### Host Composition
 
+All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, optional `dots.homebrew.*` overrides).
+
 ```
-darwin-personal  = base + darwin + apps + secrets            (nix-darwin, M4 Pro MacBook Pro)
-darwin-agent     = base + darwin + apps + secrets            (nix-darwin, M1 Pro MacBook Pro, always-on)
-workstation      = home + packages + hm-secrets              (standalone home-manager, Ubuntu 24.04)
+_darwin-common.nix = base + darwin + apps + secrets        (shared imports + defaults)
+
+darwin-personal  = _darwin-common.nix + hostname           (nix-darwin, M4 Pro MacBook Pro)
+darwin-agent     = _darwin-common.nix + hostname           (nix-darwin, M1 Pro MacBook Pro, always-on)
+darwin-cog       = _darwin-common.nix + hostname + excludeCasks=["zoom"]  (Cognition work MacBook, IT manages Zoom)
+workstation      = home + packages + hm-secrets            (standalone home-manager, Ubuntu 24.04)
 ```
+
+Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` with at minimum `networking.hostName`, then append `"<name>"` to the `darwinHosts` list in `parts/hosts.nix`.
 
 The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
 
@@ -197,6 +207,21 @@ Language management:
 - Tailscale service enabled
 - Homebrew taps: cirruslabs/cli, hashicorp, k9s, stripe, graphite, ekristen, steipete
 
+### Per-Host Homebrew Casks
+
+`modules/apps.nix` defines a shared base list of GUI casks plus two per-host options under `dots.homebrew`:
+
+- `excludeCasks` — strings to drop from the base list (e.g. apps managed externally by IT). Applied last, so excludes always win.
+- `extraCasks` — strings to add on top of the base list (e.g. work-only tooling).
+
+Resolved as: `homebrew.casks = subtractLists excludeCasks (baseCasks ++ extraCasks)`.
+
+Example (`hosts/darwin-cog/default.nix`):
+
+```nix
+dots.homebrew.excludeCasks = ["zoom"];
+```
+
 ## SSH Hosts (ssh.nix)
 
 | Host | Address | User | Notes |
@@ -213,7 +238,7 @@ All SSH uses 1Password agent (`IdentityAgent` → 1Password socket).
 - Pre-commit hooks: alejandra, deadnix, statix, shellcheck (only work inside `nix develop`)
 - CI: GitHub Actions on push to main and all PRs
   - `check` job (ubuntu): `nix flake check` + `nix fmt -- --check .`
-  - `build-darwin` job (macos): `nix build .#darwinConfigurations.darwin-personal.system`
+  - `build-darwin` job (macos): `nix build .#darwinConfigurations.darwin-personal.system` (only personal is built in CI; agent and cog share the same modules so they're covered transitively by `nix flake check`)
   - Uses Determinate Systems nix-installer and magic-nix-cache
   - Concurrency: stale PR runs cancelled automatically
 - Dependabot: weekly auto-bumps for GitHub Actions versions
@@ -235,6 +260,7 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 3. First build: `sudo nix run nix-darwin -- switch --flake .#darwin-personal` (secrets fail gracefully)
 4. Sign into 1Password desktop app, then `op signin`
 5. Second build: `just switch darwin-personal` (secrets + Tailscale auth succeed)
+6. **Log out and back in (or reboot)** — required on a fresh machine. macOS caches `NSGlobalDomain` prefs per-session, so keyboard repeat (`KeyRepeat`/`InitialKeyRepeat`), press-and-hold, scroll direction, and other global UI defaults won't take effect in the current session even though `defaults read -g KeyRepeat` shows the new value. Dock and Finder defaults *do* apply immediately because nix-darwin restarts those processes; everything reading from `NSGlobalDomain` needs a logout.
 
 ### Linux Workstation (standalone home-manager)
 
@@ -247,11 +273,35 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 
 ## Manual Setup Required
 
-- SSH keys: import to 1Password
-- Sign into Mac App Store (required for `mas` to install Xcode, Keynote, Klack)
-- UniFi (iOS app on Mac — `mas` can't install these, get from App Store manually)
-- VESC Tool (direct download from vesc-project.com)
-- Berkeley Mono font (paid, manual install to ~/Library/Fonts/)
+Things that can't be nix-managed or don't transfer between machines. Grouped by category.
+
+### Fresh macOS — one-time setup
+
+Required once per new Mac for everything to work end-to-end:
+
+- **Sign into the Mac App Store** — required to install Xcode, Keynote, and Klack manually (the `mas` brew-bundle integration is broken with `mas 6.0.1`, so `homebrew.masApps` is disabled in `apps.nix`).
+- **Xcode Command Line Tools** — `modules/darwin.nix` activation script auto-installs these on first `darwin-rebuild`. If it fails (e.g. softwareupdate label drift), run `sudo xcode-select --install` manually.
+- **Accept the Xcode license** — `sudo xcodebuild -license accept`. Required before any `xcodebuild` use (including some Homebrew formulas that build from source). Re-run after installing the full Xcode app.
+- **Install full Xcode** *(only if doing iOS/macOS dev)* — install from the App Store, then re-run `sudo xcodebuild -license accept`.
+- **Raycast hotkeys** — Raycast's cloud sync handles preferences/extensions, but the **global launch hotkey is per-machine** and must be re-bound manually under Raycast → Settings → General → Hotkey.
+- **Log out / reboot** — see step 6 of the macOS bootstrap above; required for `NSGlobalDomain` defaults (keyboard repeat, press-and-hold, etc.) to take effect.
+
+### App sign-ins (cloud-synced)
+
+These apps have built-in sync — just sign in and configs follow:
+
+- **1Password** — desktop app + CLI (`op signin`)
+- **Raycast** — Settings → Accounts (then re-bind hotkeys manually, see above)
+- **Cursor / Windsurf** — sign in to sync settings + extensions
+- **Chrome** — sign in to sync extensions/bookmarks
+- **Slack, Discord, Signal, WhatsApp** — sign in to each (Signal needs phone link)
+
+### Hardware / external assets
+
+- **SSH keys** — import to 1Password
+- **UniFi iOS app on Mac** — `mas` can't install iOS-only apps; get from the macOS App Store manually
+- **VESC Tool** — direct download from vesc-project.com (not in nixpkgs or homebrew)
+- **Berkeley Mono font** (paid, not in nix) — manual install to `~/Library/Fonts/`
 
 ## Troubleshooting
 

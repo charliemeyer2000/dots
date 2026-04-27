@@ -20,6 +20,7 @@ switch config='':
     echo "Available configurations:"
     echo "  - darwin-personal   # M4 Pro MacBook Pro (daily driver)"
     echo "  - darwin-agent      # M1 Pro MacBook Pro (always-on agent)"
+    echo "  - darwin-cog        # Cognition work MacBook (zoom managed by IT)"
     echo "  - workstation       # Linux workstation (standalone home-manager)"
     echo ""
     echo "Usage: just switch <config>"
