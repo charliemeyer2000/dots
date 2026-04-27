@@ -346,9 +346,19 @@ in {
   };
 
   # ── Keyboard ────────────────────────────────────────────────────────
+  # Caps Lock → Left Option. nix-darwin's system.keyboard convenience options
+  # only cover Escape and Control, so we use userKeyMapping with HID codes:
+  #   src 0x700000039 = Caps Lock
+  #   dst 0x7000000E2 = Left Option (Alt)
+  # Takes effect after logout/reboot (NSGlobalDomain caching, see AGENTS.md).
   system.keyboard = {
     enableKeyMapping = true;
-    remapCapsLockToEscape = true;
+    userKeyMapping = [
+      {
+        HIDKeyboardModifierMappingSrc = 30064771129;
+        HIDKeyboardModifierMappingDst = 30064771298;
+      }
+    ];
   };
 
   # ── Startup ─────────────────────────────────────────────────────────
