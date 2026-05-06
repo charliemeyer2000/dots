@@ -191,11 +191,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1776949667,
-        "narHash": "sha256-GMSVw35Q+294GlrTUKlx087E31z7KurReQ1YHSKp5iw=",
+        "lastModified": 1778036283,
+        "narHash": "sha256-62EWg6lI0qyzm7oAx5cAnGkLutvJsRBe0KkEW2JDZCE=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "01fbdeef22b76df85ea168fbfe1bfd9e63681b30",
+        "rev": "ed67bc86e84e51d4a88e73c7fd36006dc876476f",
         "type": "github"
       },
       "original": {
@@ -354,11 +354,11 @@
       },
       "locked": {
         "dir": "nix",
-        "lastModified": 1776471336,
-        "narHash": "sha256-vRv49zdRarkGzajcexzQMinbHT9Sz/2Q4kdU+dOPPWo=",
+        "lastModified": 1777335425,
+        "narHash": "sha256-ZBUvRAWPFDC9SjbJYTVHsOqpLfIPexDw+1kfGeonyJw=",
         "owner": "charliemeyer2000",
         "repo": "VoiceInk",
-        "rev": "5cb96d6796b261bf487be41e60d5254d58ad0597",
+        "rev": "ce59fa90eaaa5b7de5732e75445a5680236c3ed2",
         "type": "github"
       },
       "original": {
