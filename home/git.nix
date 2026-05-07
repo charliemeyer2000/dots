@@ -22,6 +22,8 @@ in {
       commit.gpgsign = true;
       init.defaultBranch = "main";
       pull.rebase = true;
+      push.default = "current";
+      push.autoSetupRemote = true;
       credential."https://github.com".helper = ghCredHelper;
       credential."https://gist.github.com".helper = ghCredHelper;
     };
