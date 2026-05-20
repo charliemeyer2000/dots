@@ -24,6 +24,7 @@ in {
       pull.rebase = true;
       push.default = "current";
       push.autoSetupRemote = true;
+      rebase.updateRefs = true;
       credential."https://github.com".helper = ghCredHelper;
       credential."https://gist.github.com".helper = ghCredHelper;
     };
