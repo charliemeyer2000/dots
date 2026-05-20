@@ -6,6 +6,7 @@ with pkgs;
   [
     git
     git-lfs
+    git-absorb
     ripgrep
     fd
     fzf
