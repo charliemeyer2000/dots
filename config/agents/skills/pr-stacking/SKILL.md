@@ -1,85 +1,408 @@
 ---
 name: pr-stacking
-description: Work with stacked GitHub PRs — creating a stack, rebasing/restacking after base changes, and merging bottom-up. Use when the user mentions stacked PRs, dependent PRs, PR chains, rebasing a stack, merging a stack, or when you detect a PR whose base branch is another PR's head branch.
+description: Work with stacked GitHub PRs — creating stacks, restacking after changes anywhere in the stack, batch-rebasing 9+ deep stacks in one command, and merging bottom-up. Use when the user mentions stacked PRs, dependent PRs, PR chains, rebasing a stack, restacking, merging a stack, editing a commit deep in a stack, or when you detect a PR whose base branch is another PR's head branch. Also triggers for questions about --update-refs, git absorb with stacks, or force-pushing an entire stack.
 ---
 
 # Stacked PRs
 
-## Creating a stack
+## Environment
 
-A stack is just a chain of branches where each PR targets the one below it instead of `main`.
+`rebase.updateRefs` is enabled globally — every rebase automatically moves intermediate branch pointers. A rebase from the top of a 9-deep stack rewrites every branch ref in one pass.
 
-```
-main ← branch-a (PR #1) ← branch-b (PR #2) ← branch-c (PR #3)
-```
+`git-absorb` is installed and on PATH — use it to surgically insert fixes into the correct commit without manual interactive rebase.
+
+Enable `rerere` (reuse recorded resolution) before any stacked rebase work. It records conflict resolutions so that when the same conflict pattern recurs in later commits (common in deep stacks where a style/import fix cascades), git auto-resolves it:
 
 ```bash
-# Start the base
-git checkout main && git checkout -b feat/backend
+git config --global rerere.enabled true
+git config --global rerere.autoUpdate true
+```
+
+---
+
+## Concepts
+
+A stack is a chain of branches where each PR targets the one below it:
+
+```
+main ← feat/api (PR #1) ← feat/auth (PR #2) ← feat/tests (PR #3)
+```
+
+Each PR's diff shows only its own layer. Reviewers see isolated changes.
+
+**Stack vocabulary** (matches Graphite conventions):
+- **trunk**: the branch stacks merge into (`main`)
+- **downstack**: PRs below the current one (ancestors)
+- **upstack**: PRs above the current one (descendants)
+
+---
+
+## Creating a stack
+
+```bash
+git checkout main && git checkout -b feat/api
 # ... commit work ...
 gh pr create --base main
 
-# Stack on top
-git checkout -b feat/frontend  # branches from feat/backend
+git checkout -b feat/auth   # branches from feat/api
 # ... commit work ...
-gh pr create --base feat/backend
+gh pr create --base feat/api
+
+git checkout -b feat/tests  # branches from feat/auth
+# ... commit work ...
+gh pr create --base feat/auth
 ```
 
-Each PR's diff only shows its own layer. Reviewers see isolated changes.
+---
 
-## Restacking after base changes
+## Discovering a stack programmatically
 
-When commits are added to a branch lower in the stack, rebase each branch above it in order:
+Stacks aren't always linear chains. A single base branch might have multiple PRs branching off it (tree shape), some branches might be one-off PRs that happen to target the same base, and the graph can fork at any level. The discovery functions below handle all of these shapes.
+
+### Walk the full tree from a root
+
+Returns every reachable branch in dependency order (parents before children), handling forks where multiple PRs share a base:
 
 ```bash
-# You changed feat/backend. Now update feat/frontend:
-git checkout feat/frontend
-git rebase feat/backend
-git push --force-with-lease
+# Recursively discover all open PRs reachable from a root branch.
+# Outputs one line per branch in topological order (parents first).
+# Handles tree-shaped stacks where a branch has multiple children.
+walk_stack() {
+  local owner_repo="$1" root="$2"
+  local -A visited=()
+  local queue=("$root")
 
-# If there's a third layer:
-git checkout feat/api-tests
-git rebase feat/frontend
-git push --force-with-lease
+  while [[ ${#queue[@]} -gt 0 ]]; do
+    local current="${queue[0]}"
+    queue=("${queue[@]:1}")
+
+    [[ -n "${visited[$current]+x}" ]] && continue
+    visited["$current"]=1
+    echo "$current"
+
+    # Find ALL open PRs whose base is the current branch
+    local children
+    children=$(gh pr list --repo "$owner_repo" --base "$current" \
+      --state open --json headRefName --jq '.[].headRefName')
+
+    while IFS= read -r child; do
+      [[ -n "$child" && -z "${visited[$child]+x}" ]] && queue+=("$child")
+    done <<< "$children"
+  done
+}
+
+# Usage: walk_stack "owner/repo" "main"
+# Example output for a tree-shaped stack:
+#   main
+#   feat/api
+#   feat/hotfix        <- one-off PR also based on main
+#   feat/auth          <- child of feat/api
+#   feat/auth-tests    <- child of feat/auth
+#   feat/api-docs      <- another child of feat/api (fork)
 ```
 
-Rebase one layer at a time, bottom-up. Resolve conflicts at each layer before moving to the next.
+### Get only the direct children of a branch
+
+Useful when you only care about the immediate next layer:
+
+```bash
+children_of() {
+  local owner_repo="$1" branch="$2"
+  gh pr list --repo "$owner_repo" --base "$branch" \
+    --state open --json number,headRefName \
+    --jq '.[] | "\(.number)\t\(.headRefName)"'
+}
+```
+
+### Find all leaf branches (tips of the stack)
+
+Leaves are branches with no open PRs targeting them — these are the ones you checkout to rebase an entire sub-tree:
+
+```bash
+find_leaves() {
+  local owner_repo="$1" root="$2"
+  local -a all_branches=()
+  local -A has_children=()
+
+  while IFS= read -r branch; do
+    all_branches+=("$branch")
+    local children
+    children=$(gh pr list --repo "$owner_repo" --base "$branch" \
+      --state open --json headRefName --jq '.[].headRefName')
+    [[ -n "$children" ]] && has_children["$branch"]=1
+  done < <(walk_stack "$owner_repo" "$root")
+
+  for branch in "${all_branches[@]}"; do
+    [[ -z "${has_children[$branch]+x}" ]] && echo "$branch"
+  done
+}
+
+# For a tree-shaped stack, rebase from EACH leaf:
+for leaf in $(find_leaves "owner/repo" "feat/api"); do
+  git checkout "$leaf"
+  git rebase feat/api
+done
+```
+
+---
+
+## Restacking after changes (the core workflow)
+
+You made a commit to `feat/api` (the base), and PRs sit on top. You need them all rebased cleanly.
+
+### Linear stack (chain)
+
+Checkout the TOP of the stack and rebase onto the changed base. `--update-refs` (enabled globally) rewrites every intermediate branch pointer automatically:
+
+```bash
+# You just committed to feat/api. Restack everything above it.
+git checkout feat/tests          # the topmost branch
+git rebase feat/api              # rebases feat/auth AND feat/tests in one pass
+```
+
+Git sees that `feat/auth` points to a commit between `feat/api` and `feat/tests`. During rebase, it updates `feat/auth`'s ref to point at the new rebased commit. One rebase, all branches fixed.
+
+After rebasing, push all updated branches:
+
+```bash
+# Batch push every branch in the stack
+git push --force-with-lease origin feat/auth feat/tests
+
+# Or for deep stacks, push from walk_stack output:
+walk_stack "owner/repo" "feat/api" | tail -n +2 | xargs git push --force-with-lease origin
+```
+
+### Tree-shaped stack (forks / one-off branches)
+
+When a branch has multiple children (e.g. `feat/api` has both `feat/auth` and `feat/api-docs` branching off it), a single rebase from one leaf only updates that leaf's path. You need to rebase from each leaf:
+
+```bash
+# Rebase every path through the tree
+for leaf in $(find_leaves "owner/repo" "feat/api"); do
+  git checkout "$leaf"
+  git rebase feat/api
+done
+
+# Then batch push everything
+walk_stack "owner/repo" "feat/api" | tail -n +2 | xargs git push --force-with-lease origin
+```
+
+`--update-refs` handles intermediate branches along each path, so if `feat/auth` sits between `feat/api` and `feat/auth-tests`, rebasing from `feat/auth-tests` updates `feat/auth` too. You only need one rebase per leaf, not per branch.
+
+### Manual bottom-up rebase (fallback for complex topologies)
+
+If the tree has cross-dependencies or you need per-layer conflict control:
+
+```bash
+# Rebase each layer in topological order (walk_stack outputs parents first)
+walk_stack "owner/repo" "feat/api" | tail -n +2 | while IFS= read -r branch; do
+  git checkout "$branch"
+  # The PR's base branch is the parent to rebase onto
+  parent=$(gh pr view "$branch" --json baseRefName --jq .baseRefName)
+  git rebase "$parent"
+  git push --force-with-lease origin "$branch"
+done
+```
+
+Resolve conflicts at each layer before moving to the next.
+
+---
+
+## Editing a commit deep in the stack
+
+You need to fix something in `feat/api` (the base) while 9 PRs sit above it.
+
+### Approach 1: `git absorb` (preferred — zero manual steps)
+
+`git absorb` analyzes your staged changes, figures out which existing commit they belong to, and creates targeted `fixup!` commits. Combined with `--update-refs`, this restacks everything in one shot.
+
+**Always pass `--base`** to tell absorb the bottom of the stack. Without it, absorb only searches the last 10 commits (its default stack size), which is wrong for deep stacks:
+
+```bash
+git checkout feat/tests    # top of stack (so all commits are reachable)
+# Make your fix anywhere in the working tree
+git add -A
+git absorb --base feat/api --and-rebase
+```
+
+**`--force-author`**: absorb refuses to modify commits by other authors by default. In team stacks where you're restacking someone else's work, pass this flag:
+
+```bash
+git absorb --base feat/api --force-author --and-rebase
+```
+
+**Dry run first** to see what absorb will do without creating any commits:
+
+```bash
+git add -A
+git absorb --base feat/api --dry-run
+# Output shows which hunks map to which commits
+# If satisfied:
+git absorb --base feat/api --force-author --and-rebase
+```
+
+**When absorb can't place every hunk**: absorb prints "Some file modifications did not have an available commit to fix up." Those changes stay staged. Handle them manually:
+
+```bash
+git absorb --base feat/api --force-author --and-rebase
+# If partial: leftover changes are still staged
+git diff --cached --stat                    # see what's left
+git commit -m "fix: remaining changes"      # commit as new, or:
+git commit --fixup <target-SHA>             # target a specific commit
+GIT_SEQUENCE_EDITOR=true GIT_EDITOR=true git rebase -i --autosquash feat/api
+```
+
+If you want to review the fixup commits before squashing (skip `--and-rebase`):
+
+```bash
+git add -A
+git absorb --base feat/api --force-author   # creates fixup! commits only
+git log --oneline -20                        # review
+GIT_SEQUENCE_EDITOR=true GIT_EDITOR=true git rebase -i --autosquash feat/api
+```
+
+For tree-shaped stacks, run absorb from each leaf (same as restacking):
+
+```bash
+for leaf in $(find_leaves "owner/repo" "feat/api"); do
+  git checkout "$leaf"
+  git add -A
+  git absorb --base feat/api --force-author --and-rebase
+done
+```
+
+### Approach 2: manual `commit --fixup` + autosquash
+
+When you know exactly which commit to target (e.g. from `git log` or a PR review comment referencing a SHA):
+
+```bash
+git checkout feat/api
+# Make the fix
+git add -A
+git commit --fixup <SHA-of-commit-to-fix>
+
+# Rebase from the top of the stack (base is the parent of the fixup target)
+git checkout feat/tests
+GIT_SEQUENCE_EDITOR=true GIT_EDITOR=true git rebase -i --autosquash feat/api~1
+git push --force-with-lease origin feat/api feat/auth feat/tests
+```
+
+### Approach 3: amend + rebase (simplest for single-commit branches)
+
+If each branch has exactly one commit:
+
+```bash
+git checkout feat/api
+git add -A && git commit --amend --no-edit
+
+git checkout feat/tests
+git rebase feat/api
+# All intermediate branches updated automatically
+```
+
+---
+
+## Syncing the stack with trunk
+
+When `main` has advanced and you need to rebase the entire stack onto it:
+
+```bash
+git checkout main && git pull
+
+# Linear stack: rebase from the top
+git checkout feat/tests
+git rebase main
+git push --force-with-lease origin feat/api feat/auth feat/tests
+
+# Tree-shaped stack: rebase from each leaf
+for leaf in $(find_leaves "owner/repo" "main"); do
+  git checkout "$leaf"
+  git rebase main
+done
+walk_stack "owner/repo" "main" | tail -n +2 | xargs git push --force-with-lease origin
+```
+
+---
 
 ## Merging a stack
 
-Merge bottom-up with squash. The critical detail: **do not pass `--delete-branch` to `gh pr merge` on any PR except the top of the stack.**
+Merge bottom-up with squash. The critical rule: **do not pass `--delete-branch` to `gh pr merge` except on the topmost PR.**
 
 ### Why `--delete-branch` breaks stacks
 
-`gh pr merge --delete-branch` sends a separate `DELETE /git/refs` API call immediately after the merge. This races with GitHub's server-side post-merge processing. GitHub's auto-retarget (which updates dependent PRs to point at the merged PR's base) is triggered by the server's own `delete_branch_on_merge` hook, not by client-side ref deletions. When `gh`'s DELETE arrives first, GitHub treats it as a manual branch deletion and **closes** dependent PRs instead of retargeting them.
+`gh pr merge --delete-branch` sends a `DELETE /git/refs` API call immediately after merge. This races with GitHub's server-side post-merge processing. GitHub's auto-retarget (updating dependent PRs to point at the merged PR's base) is triggered by the server's own `delete_branch_on_merge` hook, not by client-side ref deletions. When `gh`'s DELETE arrives first, GitHub **closes** dependent PRs instead of retargeting them.
 
-If `delete_branch_on_merge` is enabled in repo settings (check with `gh api repos/{owner}/{repo} --jq .delete_branch_on_merge`), the branch gets cleaned up automatically by the server — in the correct order, with retarget happening first.
-
-### Step-by-step
+If `delete_branch_on_merge` is enabled in repo settings, the branch gets cleaned up automatically by the server in the correct order:
 
 ```bash
-# 1. Merge the base PR (no --delete-branch)
+gh api repos/{owner}/{repo} --jq .delete_branch_on_merge
+```
+
+### Step-by-step merge
+
+```bash
+# 1. Merge the bottom PR (no --delete-branch)
 gh pr merge <base-pr> --squash
 
-# 2. Wait a few seconds, then verify retarget
+# 2. Wait for retarget, then verify
 sleep 5
 gh pr view <next-pr> --json state,baseRefName
-# expect: state=OPEN, baseRefName=main
+# Expect: state=OPEN, baseRefName=main
 
-# 3. Update the next PR's branch against main
+# 3. Update the next PR's branch against its new base
 gh api repos/{owner}/{repo}/pulls/<next-pr>/update-branch -X PUT
 
 # 4. Wait for CI, then merge
 gh pr checks <next-pr> --required --watch
 gh pr merge <next-pr> --squash
-# Use --delete-branch only on the LAST PR in the stack (nothing depends on it)
+
+# Repeat 2-4 up the stack.
+# Use --delete-branch ONLY on the LAST PR (nothing depends on it).
 ```
 
-Repeat steps 2-4 for each layer.
+### Scripted merge for deep stacks
 
-### If retarget fails (PR gets closed)
+```bash
+merge_stack() {
+  local owner_repo="$1"
+  shift
+  local prs=("$@")  # PR numbers, bottom to top
+  local last_idx=$(( ${#prs[@]} - 1 ))
 
-This happens if `--delete-branch` was used or the server didn't retarget in time. Recovery:
+  for i in "${!prs[@]}"; do
+    local pr="${prs[$i]}"
+    local flags="--squash"
+    [[ "$i" -eq "$last_idx" ]] && flags="$flags --delete-branch"
+
+    echo "Merging PR #$pr..."
+    gh pr merge "$pr" $flags --repo "$owner_repo"
+
+    if [[ "$i" -lt "$last_idx" ]]; then
+      local next="${prs[$((i + 1))]}"
+      echo "Waiting for retarget of PR #$next..."
+      sleep 5
+
+      # Verify retarget happened
+      local state base
+      state=$(gh pr view "$next" --repo "$owner_repo" --json state --jq .state)
+      base=$(gh pr view "$next" --repo "$owner_repo" --json baseRefName --jq .baseRefName)
+
+      if [[ "$state" != "OPEN" ]]; then
+        echo "ERROR: PR #$next was closed instead of retargeted. See recovery steps."
+        return 1
+      fi
+
+      # Update the branch
+      gh api "repos/$owner_repo/pulls/$next/update-branch" -X PUT
+      gh pr checks "$next" --repo "$owner_repo" --required --watch
+    fi
+  done
+}
+
+# Usage: merge_stack "owner/repo" 101 102 103 104
+```
+
+### Recovery: if retarget fails (PR gets closed)
 
 ```bash
 # Recreate the deleted base branch pointing at main
@@ -87,12 +410,75 @@ MAIN_SHA=$(gh api repos/{owner}/{repo}/git/ref/heads/main --jq '.object.sha')
 gh api repos/{owner}/{repo}/git/refs -X POST \
   -f ref="refs/heads/<deleted-branch>" -f sha="$MAIN_SHA"
 
-# Reopen the PR
+# Reopen and retarget
 gh pr reopen <pr-number>
-
-# Retarget to main
 gh api repos/{owner}/{repo}/pulls/<pr-number> -X PATCH -f base=main
 
 # Clean up the temporary branch
 gh api repos/{owner}/{repo}/git/refs/heads/<deleted-branch> -X DELETE
 ```
+
+---
+
+## Conflict resolution strategy for agents
+
+When rebasing deep stacks, conflicts are common — especially when style/formatting commits touch the same files as feature commits. `rerere` helps with recurring patterns, but you'll still hit novel conflicts.
+
+### Primary strategy: resolve in place and continue
+
+Do NOT abort on the first conflict. Resolve it and keep the rebase going — aborting throws away all prior conflict resolutions in the same rebase:
+
+```bash
+git rebase feat/api   # hits a conflict
+
+# 1. Inspect conflicting files
+git diff --name-only --diff-filter=U
+
+# 2. Resolve each file (edit to remove conflict markers)
+# ... fix the files ...
+
+# 3. Stage and continue (GIT_EDITOR=true prevents vim from opening for commit message)
+git add -A
+GIT_EDITOR=true git rebase --continue
+
+# If the same pattern appears in a later commit, rerere may auto-resolve it.
+# You'll see "Resolved 'file.py' using previous resolution" in the output.
+```
+
+**Critical**: always set both `GIT_EDITOR=true` and `GIT_SEQUENCE_EDITOR=true` when running rebase commands non-interactively. `GIT_SEQUENCE_EDITOR` prevents the todo-list editor; `GIT_EDITOR` prevents the commit-message editor during `--continue`. Missing `GIT_EDITOR` causes the agent to hang waiting for vim.
+
+### Fallback: abort and go layer-by-layer
+
+If conflicts are too tangled to resolve in place (e.g. every commit conflicts differently), abort and rebase one branch at a time to isolate which layer is the problem:
+
+```bash
+git rebase --abort
+
+# Rebase each layer individually
+walk_stack "owner/repo" "feat/api" | tail -n +2 | while IFS= read -r branch; do
+  git checkout "$branch"
+  parent=$(gh pr view "$branch" --json baseRefName --jq .baseRefName)
+  git rebase "$parent"
+  # Resolve conflicts here if any, then continue
+  git push --force-with-lease origin "$branch"
+done
+```
+
+---
+
+## Quick reference
+
+| Task | Command |
+|---|---|
+| Enable rerere (do once) | `git config --global rerere.enabled true && git config --global rerere.autoUpdate true` |
+| Restack linear stack | `git checkout <top> && git rebase <changed-base>` |
+| Restack tree-shaped stack | `for leaf in $(find_leaves ...); do git checkout "$leaf" && git rebase <base>; done` |
+| Sync stack onto updated main | `git checkout <top> && git rebase main` |
+| Absorb fix into right commit | `git add -A && git absorb --base <stack-bottom> --force-author --and-rebase` |
+| Absorb dry run | `git add -A && git absorb --base <stack-bottom> --dry-run` |
+| Non-interactive autosquash | `GIT_SEQUENCE_EDITOR=true GIT_EDITOR=true git rebase -i --autosquash <base>` |
+| Non-interactive rebase continue | `GIT_EDITOR=true git rebase --continue` |
+| Batch push stack | `walk_stack "owner/repo" "<root>" \| tail -n +2 \| xargs git push --force-with-lease origin` |
+| Walk full stack tree | `walk_stack "owner/repo" "base-branch"` |
+| Find leaf branches | `find_leaves "owner/repo" "base-branch"` |
+| Merge stack (scripted) | `merge_stack "owner/repo" 101 102 103` |
