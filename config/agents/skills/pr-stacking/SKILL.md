@@ -1,6 +1,6 @@
 ---
 name: pr-stacking
-description: Work with stacked GitHub PRs — creating stacks, restacking after changes anywhere in the stack, batch-rebasing 9+ deep stacks in one command, and merging bottom-up. Use when the user mentions stacked PRs, dependent PRs, PR chains, rebasing a stack, restacking, merging a stack, editing a commit deep in a stack, or when you detect a PR whose base branch is another PR's head branch. Also triggers for questions about --update-refs, git absorb with stacks, or force-pushing an entire stack.
+description: Work with stacked GitHub PRs — creating stacks, restacking after changes anywhere in the stack, batch-rebasing 9+ deep stacks in one command, merging bottom-up, and tracing/visualizing an existing stack's topology and CI status. Use when the user mentions stacked PRs, dependent PRs, PR chains, rebasing a stack, restacking, merging a stack, editing a commit deep in a stack, tracing or inspecting a stack, summarizing the state of a stack, or when you detect a PR whose base branch is another PR's head branch. Also triggers for questions about --update-refs, git absorb with stacks, force-pushing an entire stack, or normalizing GitHub statusCheckRollup across CheckRun and StatusContext entries.
 ---
 
 # Stacked PRs
@@ -59,9 +59,20 @@ gh pr create --base feat/auth
 
 Stacks aren't always linear chains. A single base branch might have multiple PRs branching off it (tree shape), some branches might be one-off PRs that happen to target the same base, and the graph can fork at any level. The discovery functions below handle all of these shapes.
 
+**Pick a sensible root.** Don't walk from `main` in a large repo — every open PR against `main` becomes a candidate root and the recursive `gh` calls fan out across the whole repo (often timing out). Start from the bottom branch of your stack (the one that targets `main`). Find it first:
+
+```bash
+# Find candidate bottoms of the stack you care about
+gh pr list --repo "$REPO" --base main --state open \
+  --search "head:<prefix>" --json number,headRefName,title \
+  --jq '.[] | "#\(.number) \(.headRefName) \(.title)"'
+```
+
+`head:<prefix>` matches anywhere in the head branch name (substring, not strict prefix). A stack may also include branches outside your namespace — e.g. cloud-agent commits land on `devin/...` or `copilot/...` branches stitched into your `cm/...` chain — so don't pre-filter discovery by your own branch prefix or by `--author "@me"`. Walk by base/head topology instead.
+
 ### Walk the full tree from a root
 
-Returns every reachable branch in dependency order (parents before children), handling forks where multiple PRs share a base:
+Returns every reachable branch in dependency order (parents before children), handling forks where multiple PRs share a base. Resilient to `set -euo pipefail`: empty results and transient `gh` failures fall back to "no children" rather than aborting the traversal.
 
 ```bash
 # Recursively discover all open PRs reachable from a root branch.
@@ -80,26 +91,30 @@ walk_stack() {
     visited["$current"]=1
     echo "$current"
 
-    # Find ALL open PRs whose base is the current branch
-    local children
+    # Find ALL open PRs whose base is the current branch.
+    # `|| true` prevents set -e from aborting on transient gh failures.
+    local children=""
     children=$(gh pr list --repo "$owner_repo" --base "$current" \
-      --state open --json headRefName --jq '.[].headRefName')
+      --state open --json headRefName --jq '.[].headRefName' 2>/dev/null) || true
+
+    [[ -z "$children" ]] && continue
 
     while IFS= read -r child; do
       [[ -n "$child" && -z "${visited[$child]+x}" ]] && queue+=("$child")
     done <<< "$children"
   done
+  return 0
 }
 
-# Usage: walk_stack "owner/repo" "main"
+# Usage: walk_stack "owner/repo" "feat/api"   # start from the bottom of YOUR stack
 # Example output for a tree-shaped stack:
-#   main
 #   feat/api
-#   feat/hotfix        <- one-off PR also based on main
 #   feat/auth          <- child of feat/api
 #   feat/auth-tests    <- child of feat/auth
 #   feat/api-docs      <- another child of feat/api (fork)
 ```
+
+Pass `--state all` instead of `--state open` if you need to include merged/closed branches (useful when reconstructing the history of a stack mid-merge).
 
 ### Get only the direct children of a branch
 
@@ -126,15 +141,16 @@ find_leaves() {
 
   while IFS= read -r branch; do
     all_branches+=("$branch")
-    local children
+    local children=""
     children=$(gh pr list --repo "$owner_repo" --base "$branch" \
-      --state open --json headRefName --jq '.[].headRefName')
+      --state open --json headRefName --jq '.[].headRefName' 2>/dev/null) || true
     [[ -n "$children" ]] && has_children["$branch"]=1
   done < <(walk_stack "$owner_repo" "$root")
 
   for branch in "${all_branches[@]}"; do
     [[ -z "${has_children[$branch]+x}" ]] && echo "$branch"
   done
+  return 0
 }
 
 # For a tree-shaped stack, rebase from EACH leaf:
@@ -142,6 +158,55 @@ for leaf in $(find_leaves "owner/repo" "feat/api"); do
   git checkout "$leaf"
   git rebase feat/api
 done
+```
+
+### Trace a stack with PR metadata in one pass
+
+When you need to summarise a stack (PR numbers, bases, line counts, CI, review status, titles) — for a status report, a code review handoff, or to figure out what's actually open — combine `walk_stack` with a single `gh pr list --head` call per branch. Don't hand-build a PR→base mapping, gh already knows it.
+
+```bash
+# Print one tab-separated line per stacked PR. Skips the root (it's the
+# base of the bottom PR, not a stacked PR itself).
+trace_stack() {
+  local owner_repo="$1" root="$2"
+  walk_stack "$owner_repo" "$root" | tail -n +2 | while IFS= read -r branch; do
+    gh pr list --repo "$owner_repo" --head "$branch" --state open --limit 1 \
+      --json number,title,baseRefName,headRefName,additions,deletions,changedFiles,reviewDecision,statusCheckRollup \
+      --jq '.[] |
+        ([.statusCheckRollup[] | (.conclusion // .state // .status // "PENDING")]
+         | group_by(.) | map("\(length) \(.[0])") | join(", ")) as $ci |
+        "#\(.number)\t\(.headRefName) <- \(.baseRefName)\t+\(.additions)/-\(.deletions) (\(.changedFiles) files)\tCI: \($ci)\tReview: \(.reviewDecision // "—")\t\(.title)"'
+  done
+}
+
+# Usage: trace_stack "owner/repo" "feat/api" | column -t -s $'\t'
+```
+
+### CI status normalization (footgun)
+
+`statusCheckRollup` is a heterogeneous list containing **two** GraphQL types:
+
+- `CheckRun` (GitHub Actions, custom apps) — populated `.conclusion` (`SUCCESS`/`FAILURE`/`SKIPPED`/`NEUTRAL`/`CANCELLED`/`TIMED_OUT`) and `.status` (`COMPLETED`/`IN_PROGRESS`/`QUEUED`).
+- `StatusContext` (legacy commit statuses — Buildkite, Devin Review, security scanners) — populated `.state` (`SUCCESS`/`FAILURE`/`PENDING`/`ERROR`) and no `.conclusion`/`.status`.
+
+Naively grouping by `.conclusion` produces `null` keys for every `StatusContext` and breaks `from_entries`. Always coalesce across all three fields:
+
+```bash
+gh pr view "$pr" --repo "$REPO" --json statusCheckRollup --jq '
+  [.statusCheckRollup[] | (.conclusion // .state // .status // "PENDING")]
+  | group_by(.) | map({key: .[0], value: length}) | from_entries
+'
+# => {"SUCCESS":56,"SKIPPED":45,"FAILURE":1}
+```
+
+To list just the failing checks (useful for triaging which CI job is red across a stack):
+
+```bash
+gh pr view "$pr" --repo "$REPO" --json statusCheckRollup --jq '
+  .statusCheckRollup[]
+  | select((.conclusion // .state) == "FAILURE")
+  | {name: (.name // .context), url: (.detailsUrl // .targetUrl)}
+'
 ```
 
 ---
@@ -479,6 +544,9 @@ done
 | Non-interactive autosquash | `GIT_SEQUENCE_EDITOR=true GIT_EDITOR=true git rebase -i --autosquash <base>` |
 | Non-interactive rebase continue | `GIT_EDITOR=true git rebase --continue` |
 | Batch push stack | `walk_stack "owner/repo" "<root>" \| tail -n +2 \| xargs git push --force-with-lease origin` |
-| Walk full stack tree | `walk_stack "owner/repo" "base-branch"` |
-| Find leaf branches | `find_leaves "owner/repo" "base-branch"` |
+| Find bottom of stack | `gh pr list --base main --search "head:<prefix>" --state open --json number,headRefName` |
+| Walk full stack tree | `walk_stack "owner/repo" "<bottom-branch>"` |
+| Find leaf branches | `find_leaves "owner/repo" "<bottom-branch>"` |
+| Trace stack with metadata | `trace_stack "owner/repo" "<bottom-branch>" \| column -t -s $'\t'` |
+| Normalize CI status | `[.statusCheckRollup[] \| (.conclusion // .state // .status // "PENDING")]` |
 | Merge stack (scripted) | `merge_stack "owner/repo" 101 102 103` |
