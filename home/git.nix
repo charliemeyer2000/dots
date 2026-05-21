@@ -26,7 +26,12 @@ in {
       push.autoSetupRemote = true;
       rebase.updateRefs = true;
       rerere.enabled = true;
-      rerere.autoUpdate = true;
+      # autoUpdate=false: rerere applies recorded resolutions to the working
+      # tree but does NOT auto-stage them. Forces a manual review pass before
+      # `git rebase --continue` — important because rerere can leave partial
+      # resolutions (stray >>>>>>> markers without matching pairs) when the
+      # new conflict's shape differs slightly from the recorded one.
+      rerere.autoUpdate = false;
       credential."https://github.com".helper = ghCredHelper;
       credential."https://gist.github.com".helper = ghCredHelper;
     };

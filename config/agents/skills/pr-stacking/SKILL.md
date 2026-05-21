@@ -15,8 +15,10 @@ Enable `rerere` (reuse recorded resolution) before any stacked rebase work. It r
 
 ```bash
 git config --global rerere.enabled true
-git config --global rerere.autoUpdate true
+git config --global rerere.autoUpdate false
 ```
+
+**Keep `rerere.autoUpdate false`.** With `autoUpdate true`, rerere applies a recorded resolution AND auto-stages it. But when the new conflict shape differs slightly from the recorded one (extra surrounding lines, slightly different indentation), the auto-applied resolution can leave **stray `>>>>>>>` or `=======` markers** without matching pairs — partial resolutions that silently break the build. With `false`, rerere still applies its best guess to your working tree, but you stage manually after verifying. Always run `git grep -nE '^(<<<<<<<|>>>>>>>|=======$)'` before continuing a rebase.
 
 ---
 
@@ -531,11 +533,126 @@ done
 
 ---
 
-## Quick reference
+## Pre-flight checks before pushing a restack
+
+Run locally before force-pushing. Each catches a different class of restack bug:
+
+```bash
+# 1. Stray conflict markers (rerere can leave partial resolutions)
+git grep -nE '^(<<<<<<<|>>>>>>>|=======$)'
+
+# 2. If the project has database migrations (Alembic, Django, Prisma, etc.),
+#    verify the migration chain is linear — migration "parent" references are
+#    string identifiers in files that git rebase doesn't update.
+
+# 3. Run the project's linter and formatter — the same commands CI runs.
+#    Check .github/workflows/ or CI config to find the EXACT commands.
+#    Common gotcha: CI may use a different formatter than you expect
+#    (e.g. black vs ruff format, prettier vs biome).
+
+# 4. Run the project's type-checker if applicable (tsc, pyright, mypy).
+#    Type errors surface renamed identifiers (e.g. component prop renames
+#    on main that the stack still uses the old names for).
+```
+
+## Restack failure modes (and how to fix each)
+
+Most arise because **string identifiers in files don't auto-update during git rebase** — git only knows about textual diffs, not semantic references like migration parent pointers, component prop names, or import paths.
+
+### Migration chain divergence after rebasing onto fresh trunk
+
+**Symptom**: tests fail with "multiple heads" or "ambiguous migration" errors.
+
+**Cause**: database migration files reference their parent by a **string identifier** (e.g. Alembic's `down_revision`, Django's `dependencies`). When the base PR is rebased onto a newer trunk, new trunk migrations appear alongside the PR's migration — but the PR's migration still points at the OLD trunk tip. Two parallel chains, two heads.
+
+**Fix**: update the PR migration's parent reference to point at trunk's new tip. Absorb into the migration commit.
+
+### Duplicate commits from a botched prior rebase
+
+**Symptom**: identical declarations in code (e.g. same `useState` call twice, same import block duplicated). Linter reports redefined/shadowed identifiers.
+
+**Cause**: a prior rebase failed partway and was resumed; the same logical commit got applied twice (different SHA, identical author timestamp + message).
+
+**Detection**:
+```bash
+git log --format="%H %ai %s" <base>..HEAD | awk '
+  { key=$2" "$3" "substr($0, index($0,$4)) }
+  seen[key]++ { print "DUP:", $0 }
+'
+```
+
+**Fix**: drop the duplicate with `git rebase -i` (mark as `drop`), then resolve conflicts in subsequent commits that depended on the duplicate's state.
+
+### Renamed identifiers on trunk that the stack still uses
+
+**Symptom**: type errors referencing old names (e.g. `Type '"old-name"' is not assignable to type '"new-name" | ...'`). Common with component prop renames, enum value changes, function signature changes.
+
+**Cause**: trunk renamed something after the stack was branched. The stack's string literals / call sites still use the old name. Git rebase doesn't know these are semantically linked.
+
+**Detection**: run the type-checker (`tsc`, `pyright`, `mypy`).
+
+**Fix**: grep the stack for the old name, rename to new, absorb.
+
+### "Your local changes would be overwritten by merge" on generated files
+
+**Symptom**: rebase aborts even though `git status` shows a clean working tree. Common on auto-generated files (route manifests, lockfiles, codegen output) touched by many sequential commits.
+
+**Cause**: after resolving an earlier conflict, the file's index state drifts from what the next commit's diff expects. This is a pre-merge checkout failure — `-X theirs` doesn't help.
+
+**Fix**:
+```bash
+git checkout HEAD -- <generated-file>
+git update-index --refresh
+GIT_EDITOR=true git rebase --continue
+```
+
+If this recurs across many commits, loop:
+```bash
+while true; do
+  git checkout HEAD -- <generated-file> 2>/dev/null || true
+  git update-index --refresh >/dev/null 2>&1 || true
+  out=$(GIT_EDITOR=true git -c commit.gpgsign=false rebase --continue 2>&1)
+  [[ "$out" == *"Successfully rebased"* ]] && break
+  [[ "$out" != *"would be overwritten"* ]] && { echo "$out"; break; }
+done
+```
+
+After completion, verify the file matches origin — the loop shouldn't silently lose content:
+```bash
+diff <(git show origin/<branch>:<file>) <(git show <branch>:<file>)
+```
+
+### Duplicate import blocks from conflict resolution
+
+**Symptom**: linter reports "redefined while unused" on imports that appear twice in the same file.
+
+**Cause**: a conflict resolution kept both sides — the original imports AND the relocated imports. The second block often has a few UNIQUE imports mixed in with the duplicates.
+
+**Fix**: always diff the two blocks before deleting:
+```bash
+diff <(sed -n '<start1>,<end1>p' <file>) <(sed -n '<start2>,<end2>p' <file>)
+```
+Merge unique imports into the canonical block, delete the duplicate block, then re-run the linter/formatter.
+
+---
+
+## When NOT to use `git absorb --and-rebase`
+
+Absorb works great for normal chains. It **breaks down** when many commits modify the **same file** — each fixup squashed into an earlier commit changes the file state that later commits' diffs were computed against, cascading into large merge conflicts.
+
+**Pragmatic alternatives**:
+
+1. **Single fix commit at the leaf** — loses per-PR attribution but avoids rebase deadlock. The leaf PR goes green; intermediate PRs may stay red on the same checks.
+
+2. **Per-PR fix commits at each branch tip** — checkout each failing branch, apply just the subset of fixes relevant to that branch, commit, push. No restacking needed since each fix is independent. This is the right call when each PR needs independently green CI.
+
+If you go with option 2, the per-PR subset is usually obvious from the failure logs: each CI failure points at a file last touched in that PR or an ancestor.
+
+---
 
 | Task | Command |
 |---|---|
-| Enable rerere (do once) | `git config --global rerere.enabled true && git config --global rerere.autoUpdate true` |
+| Enable rerere (do once) | `git config --global rerere.enabled true && git config --global rerere.autoUpdate false` |
 | Restack linear stack | `git checkout <top> && git rebase <changed-base>` |
 | Restack tree-shaped stack | `for leaf in $(find_leaves ...); do git checkout "$leaf" && git rebase <base>; done` |
 | Sync stack onto updated main | `git checkout <top> && git rebase main` |
@@ -550,3 +667,7 @@ done
 | Trace stack with metadata | `trace_stack "owner/repo" "<bottom-branch>" \| column -t -s $'\t'` |
 | Normalize CI status | `[.statusCheckRollup[] \| (.conclusion // .state // .status // "PENDING")]` |
 | Merge stack (scripted) | `merge_stack "owner/repo" 101 102 103` |
+| Find stray conflict markers | `git grep -nE '^(<<<<<<<\|>>>>>>>\|=======$)'` |
+| Drop a duplicate commit | `GIT_EDITOR=true GIT_SEQUENCE_EDITOR='sed -i.bak -E "s/^pick <SHA>[a-f0-9]*/drop <SHA>/"' git rebase -i --update-refs <base>` |
+| Recover from generated-file conflict | `git checkout HEAD -- <file> && git update-index --refresh && GIT_EDITOR=true git rebase --continue` |
+| Verify content matches origin (post-rebase) | `diff <(git show origin/<branch>:<file>) <(git show <branch>:<file>)` |
