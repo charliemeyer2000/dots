@@ -187,7 +187,7 @@ The grouped reviews query gives you each reviewer's **latest** state — that's 
 
 This is the load-bearing step. For **every** unresolved thread and **every** failing check, do the following in order. Do not skip.
 
-1. **Read the code.** Open the file at the cited line and read at least 30 lines of surrounding context. If the line no longer exists or the function has been rewritten, the comment is stale → reply with the commit SHA that addressed it and resolve.
+1. **Read the code.** Open the file at the cited line and read at least 30 lines of surrounding context. If the line no longer exists or the function has been rewritten, the comment is stale → reply with the commit SHA that addressed it and resolve. Always trace the call-stack, relevant files, and other code touchpoints. Never ever guess; always validate findings to ensure accuracy.
 2. **Reproduce the alleged problem.** Don't trust the reviewer:
    - "This will crash on empty input" → write the failing test, run it, observe.
    - "This is O(n²)" → check the actual input size and whether it matters in production.

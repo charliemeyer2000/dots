@@ -2,7 +2,8 @@
 
 ## Coding Practice
 
-- Always ultrathink about the codebase, structure, patterns, existing files/utilities. Think - what's a high-quality, senior-engineer implementation for this? 
+- Always ultrathink about the codebase, structure, patterns, existing files/utilities. Think - what's a high-quality, senior-engineer implementation for this? Does this follow existing code patterns in the codebase? 
+- If you are unconfident, refer to code, trace callstacks, and find the source of truth. Guessing is insufficient.
 - If you're lost, always read documentation, search the web, or consult the user for guidance.
 - Read the AGENTS.md (CLAUDE.md and other agent guideline files symlink here)
 
@@ -10,7 +11,7 @@
 
 When reading documentation, always:
 - Check what version you are using to ensure the documentation you're reading aligns with the version of the package you're using. 
-- When fetching, always start by searching for the `llms.txt`. If the documentation supports it, fetch the `.md` version of docs rather than the regular docs. 
+- When fetching, always start by searching for the `llms.txt`/`llms-full.txt` files. If the documentation supports it, fetch the `.md` version of docs rather than the regular docs. 
 - If you can't find docs, we suggest manually inspecting the installed package/tool for its generated code, or ask the user for guidance.
 
 
