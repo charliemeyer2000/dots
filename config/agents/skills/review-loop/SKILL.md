@@ -59,46 +59,39 @@ REST does **not** expose `isResolved` on threads. If you skip GraphQL you will r
 
 ### The one query you'll run most: unresolved threads
 
+**Paginate.** A PR that's been through a few rounds easily exceeds 100 threads. `reviewThreads(first:100)` alone silently drops the rest, so you'll think the PR is quiet when 30+ threads are still hiding on page 2. Use `--paginate --slurp` and merge pages with `jq` (note: `--slurp` cannot be combined with `--jq`, so pipe to `jq` instead):
+
 ```bash
 fetch_unresolved() {
-  gh api graphql -f query='
-    query($owner:String!, $name:String!, $pr:Int!) {
+  gh api graphql --paginate --slurp -f query='
+    query($owner:String!, $name:String!, $pr:Int!, $endCursor:String) {
       repository(owner:$owner, name:$name) {
         pullRequest(number:$pr) {
-          reviewThreads(first:100) {
+          reviewThreads(first:100, after:$endCursor) {
+            pageInfo { hasNextPage endCursor }   # required for --paginate
             nodes {
-              id                   # thread node id (used for resolve mutation)
+              id                 # thread node id -> resolveReviewThread
               isResolved
               isOutdated
               path
               line
-              viewerCanResolve
-              comments(first:50) {
-                nodes {
-                  fullDatabaseId   # integer id for REST /replies endpoint
-                  author { login }
-                  body
-                  createdAt
-                  outdated
-                }
+              comments(first:1) {
+                nodes { fullDatabaseId author { login } body }   # [0] -> REST /replies
               }
             }
           }
         }
       }
     }' -f owner="$OWNER" -f name="$NAME" -F pr="$PR_NUM" \
-    --jq '.data.repository.pullRequest.reviewThreads.nodes
-          | map(select(.isResolved == false and .isOutdated == false))'
+  | jq '[.[].data.repository.pullRequest.reviewThreads.nodes[]]
+        | map(select(.isResolved == false
+                     and (.comments.nodes[0].author.login != "'"$ME"'")))'
 }
 ```
 
-This returns every open thread in one shot. Each thread carries:
+This returns **every** unresolved thread across all pages, minus ones you opened yourself. Each carries `id` (→ `resolveReviewThread`) and `comments.nodes[0].fullDatabaseId` (→ REST `/replies`). Sanity-check the count against the PR's "conversations" tab the first time; if it looks low, your pagination is broken.
 
-- `id` — thread node id, pass to `resolveReviewThread`
-- `comments[0].fullDatabaseId` — integer id, pass to REST `/replies`
-- All comment bodies + authors so you can decide which threads were opened by AI vs. humans vs. yourself
-
-Drop threads where every comment is authored by `$ME` — those are your own replies. Drop where `isOutdated` is true — the line moved or was deleted, the complaint no longer applies.
+**Do not filter out `isOutdated`.** Outdated only means the line moved or the diff changed — the thread is still **open** and counts against "quiet." An earlier version of this skill dropped outdated threads, which left a pile of stale-but-unresolved threads that never closed and a PR that was never actually quiet. Keep them in the queue. Treat `isOutdated == true` as a strong signal the issue was already addressed by a later commit: verify briefly, reply "addressed in `<sha>`", and **resolve** it.
 
 ### Resolving a thread
 
@@ -140,7 +133,7 @@ If the rebase conflicts, resolve and `GIT_EDITOR=true git rebase --continue`. Re
 gh pr checks "$PR_NUM" --watch --fail-fast || true
 ```
 
-`--watch` blocks until done; do **not** `sleep`-poll. The `|| true` is because `--watch` exits non-zero on failure, which is expected — we want to inspect failures, not bail.
+`--watch` blocks until the required CI checks settle — don't hand-roll a `sleep` loop for those. (AI reviewers are the exception: `--watch` often returns before they finish, so they get an explicit poll — see below.) The `|| true` is because `--watch` exits non-zero on failure, which is expected — we want to inspect failures, not bail.
 
 If checks haven't started yet (no rows), give the CI 30s to wake up and re-check:
 
@@ -170,6 +163,22 @@ gh pr checks "$PR_NUM" --json name,state,bucket,link \
   done
 ```
 
+**AI reviewers finish much later than CI — wait for them explicitly.** Tools like Devin Review / CodeRabbit run *per push* and often take 5–15+ minutes — longer than all of CI. Two traps:
+
+- They post threads **while still "analyzing"** *and* a final batch when the check flips to terminal. A status of `pass` does **not** mean "no comments" — it just means the run finished; it can still have posted a dozen advisory threads. Always re-run `fetch_unresolved` *after* the reviewer check goes terminal.
+- `gh pr checks --watch` returns when the *required* checks settle, which is often before the (usually non-required) reviewer check is done. This is the one place to poll a specific check rather than trust `--watch`:
+
+```bash
+# wait for a named reviewer check (e.g. "Devin Review") to reach a terminal state
+while gh pr checks "$PR_NUM" --json name,state \
+        --jq '.[] | select(.name=="Devin Review") | .state' \
+      | grep -qiE 'pending|in_progress|queued'; do
+  sleep 30
+done
+```
+
+Only decide "quiet" after every reviewer you care about has gone terminal on the **current HEAD SHA**. Each push starts a fresh reviewer round, so expect to wait again after every fix. (Replies, resolves, and editing the PR description do **not** trigger a reviewer re-run — only new commits do. Editing the description *can* re-trigger other workflows like a security-review or codeowners check, which is harmless.)
+
 ### 3. Pull review state
 
 ```bash
@@ -187,8 +196,14 @@ The grouped reviews query gives you each reviewer's **latest** state — that's 
 
 This is the load-bearing step. For **every** unresolved thread and **every** failing check, do the following in order. Do not skip.
 
-1. **Read the code.** Open the file at the cited line and read at least 30 lines of surrounding context. If the line no longer exists or the function has been rewritten, the comment is stale → reply with the commit SHA that addressed it and resolve. Always trace the call-stack, relevant files, and other code touchpoints. Never ever guess; always validate findings to ensure accuracy.
-2. **Reproduce the alleged problem.** Don't trust the reviewer:
+1. **Read the code — and the codebase around it.** This step decides everything; do it properly. Open the cited line, read ≥30 lines of context, then go deeper:
+   - **Trace to the source.** Follow the call stack, the data's origin, and the actual config/constants/base classes — not just the cited line. The premise of a flag often lives two or three hops away (in a session factory, a constants file, a parent class). The whole finding can collapse once you read it.
+   - **Find analogous patterns to learn the codebase's intent.** Grep for sibling code that does the same kind of thing — other endpoints in the router, other callers of the helper, the established "core" function. This is how you tell a *real bug* from an *established convention the whole repo follows*, and it shows you what a correct fix looks like: **match the siblings.** (Example: "this re-fetch lacks an `org_id` filter" is noise if every sibling endpoint does the same and middleware enforces the tenant boundary; but "this path doesn't handle a ServiceUser owner" is a real fix if the sibling approval paths already do and this one is the odd one out.)
+   - **Separate pre-existing from PR-introduced.** `git grep` / `git log -S` against the PR base to see whether the flagged code is new in this PR or baseline. Baseline behavior shared with other call sites/transports is usually out of scope; a regression you introduced is not.
+   - **Use intent signals, but not circular ones.** Docstrings and comments in code you did *not* touch are real evidence of design intent. A docstring or guard *you* added in this PR is not — never cite your own change to justify itself (subagents will do this; don't let them).
+
+   If the cited line no longer exists or was rewritten, the thread is stale → reply with the SHA that addressed it and resolve. Never guess; validate every finding against the actual code.
+2. **Reproduce the alleged problem — and check the reviewer's stated facts.** AI reviewers confidently assert premises that are simply wrong (e.g. "this session uses `expire_on_commit=True`" when it's `False`, or "`resume_devin` takes `requesting_user_id`" when it takes `user_id`). A wrong premise collapses the whole finding, so verify the premise against the actual code/config **before** you evaluate the conclusion. Then reproduce:
    - "This will crash on empty input" → write the failing test, run it, observe.
    - "This is O(n²)" → check the actual input size and whether it matters in production.
    - "Missing error handling" → trace whether the caller already handles it.
@@ -203,18 +218,21 @@ This is the load-bearing step. For **every** unresolved thread and **every** fai
    | **False positive** | Reviewer misread the code; not actually broken | Reply with specific counter-evidence (file:line + reasoning), then resolve |
    | **Noise / preference** | Cosmetic suggestion the codebase doesn't enforce (defensive null checks, redundant comments, "extract helper") | Reply briefly explaining why we don't apply this here, then resolve |
    | **Out of scope** | Valid but doesn't belong in this PR | Reply with follow-up plan or issue link, then resolve |
-   | **Needs human input** | Ambiguous, depends on product intent | Leave unresolved, mention the human reviewer, **continue the loop** — don't exit |
+   | **Needs human input** | Ambiguous; depends on product intent the reviewer raised | Leave unresolved, mention the human reviewer, **continue the loop** — don't exit |
+   | **Judgment / shared-code call** | A "fix" would touch shared or security-sensitive code (auth, etc.), change a public contract, or hinges on a real design trade-off | Don't change it unilaterally. Present the options + your recommendation to **the user you're working for** and get a decision; then reply on the thread with the rationale and resolve. Document load-bearing decisions in the PR description so reviewers (human and AI) stop re-flagging them |
 
 4. **Act.** Fixes go in code; replies go via `reply_inline` or the issue-comments endpoint; close with `resolve_thread "$thread_id"`. A non-empty reply before resolving is almost always the right call — silent resolves frustrate reviewers.
 
 5. **Move on.** Process every signal before you push. Batching reduces the number of round-trips and keeps commit history clean.
+
+**High-volume rounds.** When a round drops 15–30 threads (common after a big push or a reviewer's first pass), one-at-a-time is slow and error-prone. Drive `fetch_unresolved` from a small script that maps a substring of each thread's first comment to a canned reply, then posts the reply and resolves — but **dry-run first**: print each thread's first line next to the reply it matched, eyeball that the categorization is right, *then* let it post. Threads that match no rule are exactly the ones that need real, individual attention — never auto-resolve an unmatched thread.
 
 ### 5. Verify locally
 
 Before pushing, prove your fixes work. Skipping this is the second biggest cause of bouncing rounds:
 
 - Run the tests touching the changed files
-- Run the typechecker / linter the CI uses
+- Run the **exact** typechecker / linter / formatter the CI runs, over the **same file set CI covers — including test files**. (A real round bounced here: local pyright was run only on the source file, but CI type-checks tests too and caught a type error in the new test.)
 - Re-run the reproducer from step 4.2 and confirm it now passes
 
 ### 6. Commit and push safely
@@ -234,8 +252,10 @@ git push --force-with-lease origin "$HEAD_BRANCH"
 
 Go back to step 1. Continue until **both**:
 
-- All required checks are green (`bucket == pass` or `skipping` for every required check), AND
-- `fetch_unresolved | jq 'length'` returns `0` for threads not authored by `$ME`.
+- All required checks are green (`bucket == pass` or `skipping`), with every AI reviewer terminal on the current HEAD SHA, AND
+- `fetch_unresolved | jq 'length'` returns `0`.
+
+Know your repo's *known-ignorable* non-green checks so they don't trap you in a fake loop: e.g. a Vercel deploy that fails on account/permissions ("author must have access to the project"), or a bot check that sits perpetually "Awaiting…". These aren't real gates — confirm once what they are, then don't let them block your definition of "green."
 
 **Do not stop at an arbitrary round count.** If you keep making progress (each round closes threads or moves checks toward green), keep going. The only legitimate early-exit conditions are:
 
@@ -251,7 +271,7 @@ On exit, print one line: rounds completed, threads closed, threads still open an
 Different bots have different failure modes — calibrate accordingly:
 
 - **CodeRabbit** — high noise floor. Posts a walkthrough comment (issue-style) + many inline suggestions tagged `🛠️ Refactor suggestion` / `⚠️ Potential issue` / `🧹 Nitpick`. Nitpicks are almost always noise. "Potential issue" is roughly 50/50; verify with a reproducer. "Refactor suggestion" is taste-based; only apply if it matches existing patterns.
-- **Devin / Cognition reviewer** — higher signal but verbose. Focus on items it tags as `bug` or `critical`. `consideration` / `enhancement` / `nit` are usually demote-to-noise.
+- **Devin / Cognition reviewer** — higher signal but verbose; tags severity with emoji (🔴 bug, 🟡 medium, 🚩 consideration). 🔴s deserve a hard look but are still wrong sometimes — verify the premise. It re-reviews on every push and **will flag the same code both ways across rounds** (e.g. "missing guard" one round, "guard is inconsistent" the next). Don't chase it round-trip: make one coherent decision, implement it, reply with the rationale, and resolve. A green "Devin Review" check still carries threads to triage.
 - **Copilot review** — pattern-matches on common idioms, often wrong about project-specific conventions. Always verify against neighboring code before accepting.
 - **Greptile** — usually high signal on cross-file consistency; verify by reading the other files it cites.
 - **Human reviewers** — always take seriously, but still verify with a reproducer before changing code. Reply with evidence, not "fixed in <sha>".
@@ -293,6 +313,7 @@ Don't grind forever on a stuck round; one polite escalation is better than ten p
 | Task | Command |
 |---|---|
 | Wait for checks | `gh pr checks $PR_NUM --watch --fail-fast` |
+| Wait for a named AI reviewer | poll `gh pr checks $PR_NUM --json name,state --jq '.[]\|select(.name=="Devin Review").state'` until not `pending` |
 | List failing checks | `gh pr checks $PR_NUM --json name,state,bucket,link --jq '.[] \| select(.bucket=="fail")'` |
 | Failing run logs | `gh run view <run-id> --log-failed` |
 | Unresolved threads (canonical) | `fetch_unresolved` (GraphQL helper above) |
