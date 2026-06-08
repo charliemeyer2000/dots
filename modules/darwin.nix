@@ -309,8 +309,10 @@ in {
     killall Stats 2>/dev/null && sudo -u ${user} open -a Stats || true
     killall SystemUIServer ControlCenter 2>/dev/null || true
     pmset -a standby 0 autopoweroff 0 hibernatemode 0 disablesleep 1
-    # nix-darwin power.sleep.computer="never" only sets AC; force battery too
-    pmset -b sleep 0 displaysleep 0 disksleep 0
+    # nix-darwin power.sleep.computer="never" only sets AC; force battery too.
+    # displaysleep 5 on battery: panel sleeps but system stays awake (disablesleep),
+    # trimming GPU/compositor heat during lid-closed/idle battery runs.
+    pmset -b sleep 0 displaysleep 5 disksleep 0
   '';
 
   # ── Privacy: disable Apple ad tracking ───────────────────────────────
