@@ -184,9 +184,9 @@ Blocked aliases (enforce correct tooling):
 
 Shared across all machines (via `modules/packages.nix`):
 
-- **CLI tools**: git, git-lfs, git-absorb, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat
+- **CLI tools**: git, git-lfs, git-absorb, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat, watchexec
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
-- **Languages**: go, rustup, lua, nodejs_22, pnpm, bun, uv
+- **Languages**: go, rustup, lua, zig, nodejs_22, pnpm, bun, uv
 - **AI/HPC**: claude-code (via claude-code-overlay), devin-cli (via devin-cli-overlay), uvacompute, rv (UVA Rivanna job submission CLI)
 - **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, postgresql, ollama, colima (macOS only)
 - **Secrets**: _1password-cli
@@ -205,7 +205,7 @@ Language management:
 - Screenshots: saved to `~/Desktop/screenshots`
 - TouchID for sudo
 - Tailscale service enabled
-- Homebrew taps: cirruslabs/cli, hashicorp, k9s, stripe, graphite, ekristen, steipete
+- Homebrew taps: cirruslabs/cli, hashicorp, k9s, stripe, graphite, ekristen, steipete, speakeasy-api
 
 ### Per-Host Homebrew Casks
 

@@ -25,6 +25,7 @@ with pkgs;
     gum
     nmap
     socat
+    watchexec
 
     # Dev
     cmake
@@ -39,6 +40,7 @@ with pkgs;
     go
     rustup
     lua
+    zig
     nodejs_22
     pnpm
     bun

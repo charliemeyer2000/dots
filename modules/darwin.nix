@@ -425,6 +425,7 @@ in {
       "withgraphite/tap"
       "ekristen/tap"
       "steipete/tap"
+      "speakeasy-api/homebrew-tap"
     ];
     brews = [
       "cirruslabs/cli/tart"
@@ -440,6 +441,7 @@ in {
       "steipete/tap/oracle"
       "steipete/tap/peekaboo"
       "steipete/tap/remindctl"
+      "speakeasy-api/homebrew-tap/speakeasy"
 
       # Embedded tools
       "open-ocd"
