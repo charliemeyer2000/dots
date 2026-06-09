@@ -32,7 +32,7 @@
       cursor = false;
       windsurf = false;
     };
-    agent.model = "claude-fable-5-max";
+    agent.model = "claude-fable-5";
     mcpServers = sharedMcpServers // devinExtraMcpServers;
   };
 
