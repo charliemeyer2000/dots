@@ -11,6 +11,9 @@ git clone --depth 1 --quiet "https://github.com/${owner_repo}.git" "$TEMP_DIR/re
     exit 1
 }
 
-find "$TEMP_DIR/repo" -name "SKILL.md" -type f 2>/dev/null | \
-    sed 's|.*/\([^/]*/\)SKILL.md|\1|' | sed 's|/$||' | sort -u | \
-    sed 's/^/  - /'
+# List skills by their canonical frontmatter `name:` (what skills.sh shows and
+# what `skill-add` expects), falling back to the folder name when unset.
+find "$TEMP_DIR/repo" -name "SKILL.md" -type f 2>/dev/null | while IFS= read -r md; do
+    name=$(sed -n 's/^name:[[:space:]]*//p' "$md" | head -1 | tr -d '\042\047')
+    echo "${name:-$(basename "$(dirname "$md")")}"
+done | sort -u | sed 's/^/  - /'
