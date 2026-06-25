@@ -417,15 +417,42 @@ in {
       autoUpdate = true;
       cleanup = "zap";
     };
+    # All third-party (non-official) taps. `trusted = true` adds `trusted: true`
+    # to the Brewfile entry so `brew bundle` loads their formulae/casks under
+    # Homebrew 6.0+'s HOMEBREW_REQUIRE_TAP_TRUST (covers transitive deps too).
     taps = [
-      "cirruslabs/cli"
-      "hashicorp/tap"
-      "derailed/k9s"
-      "stripe/stripe-cli"
-      "withgraphite/tap"
-      "ekristen/tap"
-      "steipete/tap"
-      "speakeasy-api/homebrew-tap"
+      {
+        name = "cirruslabs/cli";
+        trusted = true;
+      }
+      {
+        name = "hashicorp/tap";
+        trusted = true;
+      }
+      {
+        name = "derailed/k9s";
+        trusted = true;
+      }
+      {
+        name = "stripe/stripe-cli";
+        trusted = true;
+      }
+      {
+        name = "withgraphite/tap";
+        trusted = true;
+      }
+      {
+        name = "ekristen/tap";
+        trusted = true;
+      }
+      {
+        name = "steipete/tap";
+        trusted = true;
+      }
+      {
+        name = "speakeasy-api/homebrew-tap";
+        trusted = true;
+      }
     ];
     brews = [
       "cirruslabs/cli/tart"
@@ -474,6 +501,7 @@ in {
       "tinyxml2"
 
       # Other utilities
+      "coreutils"
       "gogcli"
       "groff"
       "kube-ps1"

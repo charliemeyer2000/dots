@@ -12,43 +12,39 @@ in {
       if isDarwin
       then ["/Users/charlie/.colima/ssh_config"]
       else [];
-    matchBlocks = {
+    settings = {
       workstation = {
-        hostname = "100.97.247.28";
-        user = "charlie";
+        HostName = "100.97.247.28";
+        User = "charlie";
       };
       uva-hpc = {
-        hostname = "login.hpc.virginia.edu";
-        user = "abs6bd";
-        extraOptions = {
-          ControlMaster = "auto";
-          ControlPath = "~/.ssh/sockets/uva-hpc-%r@%h-%p";
-          ControlPersist = "30m";
-          ServerAliveInterval = "60";
-        };
-        identityFile = "~/.ssh/id_ed25519";
+        HostName = "login.hpc.virginia.edu";
+        User = "abs6bd";
+        IdentityFile = "~/.ssh/id_ed25519";
+        ControlMaster = "auto";
+        ControlPath = "~/.ssh/sockets/uva-hpc-%r@%h-%p";
+        ControlPersist = "30m";
+        ServerAliveInterval = 60;
       };
       jetson-nano = {
-        hostname = "100.95.16.119";
-        user = "charlie";
+        HostName = "100.95.16.119";
+        User = "charlie";
       };
       do-droplet = {
-        hostname = "24.199.85.26";
-        user = "root";
+        HostName = "24.199.85.26";
+        User = "root";
       };
       "*" = {
-        forwardAgent = false;
-        compression = false;
-        serverAliveInterval = 0;
-        serverAliveCountMax = 3;
-        hashKnownHosts = false;
-        setEnv = {
+        ForwardAgent = false;
+        Compression = false;
+        ServerAliveInterval = 0;
+        ServerAliveCountMax = 3;
+        HashKnownHosts = false;
+        SetEnv = {
           TERM = "xterm-256color";
         };
-        extraOptions = {
-          IdentityAgent = "\"~/${onePasswordAgentSocket}\"";
-          AddKeysToAgent = "yes";
-        };
+        IdentityAgent = "\"~/${onePasswordAgentSocket}\"";
+        AddKeysToAgent = "yes";
       };
     };
   };

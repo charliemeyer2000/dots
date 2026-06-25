@@ -41,7 +41,6 @@
   # per-host divergence belongs in ../hosts/<name>/default.nix.
   mkDarwin = name:
     inputs.nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";
       specialArgs = {inherit inputs;};
       modules = [
         ../hosts/_darwin-common.nix
@@ -50,7 +49,10 @@
         inputs.nix-homebrew.darwinModules.nix-homebrew
         hmModule
         homebrewModule
-        {nixpkgs.overlays = overlays;}
+        {
+          nixpkgs.hostPlatform = "aarch64-darwin";
+          nixpkgs.overlays = overlays;
+        }
       ];
     };
 

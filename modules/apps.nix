@@ -36,7 +36,7 @@
     # Productivity
     "chatgpt"
     "granola"
-    "linear-linear"
+    "linear"
     "memo"
     "notion"
     # voiceink — managed via voiceink-overlay (nix, not brew)

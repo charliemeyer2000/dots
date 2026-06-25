@@ -52,6 +52,8 @@ in {
           # "windsurf" cask was renamed to "devin-desktop" (Cognition rebranded Windsurf → Devin Desktop)
           surf = "devin-desktop";
           dde = "devin-desktop"; # open Devin Desktop at a path, e.g. `dde .` (the `code .` equivalent)
+          # coreutils installs GNU tools with a `g` prefix on macOS; expose GNU timeout as `timeout` (no native BSD equivalent)
+          timeout = "gtimeout";
           vpn-on = "mullvad connect";
           vpn-off = "mullvad disconnect";
           vpn-status = "mullvad status && echo '---' && mullvad relay get";

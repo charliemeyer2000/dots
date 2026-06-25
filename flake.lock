@@ -266,11 +266,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1775054070,
-        "narHash": "sha256-RmD1hP3gA3VxVV7x0kqRxvy1kV6NqDQ2F0yBMYZsA1k=",
+        "lastModified": 1782351631,
+        "narHash": "sha256-fabbMTLzze48NfKhNTDynETa0On88G/kSEfqDsa8VH0=",
         "owner": "charliemeyer2000",
         "repo": "rivanna.dev",
-        "rev": "2738f63ed5174a549cbc486a585f7ffef6402dd3",
+        "rev": "d4f86817dcb646cb51b3aff85fa3f9263c711b1f",
         "type": "github"
       },
       "original": {
@@ -321,8 +321,8 @@
         ]
       },
       "locked": {
-        "lastModified": 1775870560,
-        "narHash": "sha256-OvR9Su7MCOB+9hdsA/Zva6/J3ofZi+nZcpSCEDPdQxs=",
+        "lastModified": 1782351664,
+        "narHash": "sha256-Z27/R4nwmEpMj/HfADgktU+bo7kgI/20vTnJ/TE134o=",
         "type": "tarball",
         "url": "https://uvacompute.com/nix/flake.tar.gz"
       },
