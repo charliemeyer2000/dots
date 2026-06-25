@@ -49,7 +49,9 @@ in {
       // (
         if isDarwin
         then {
-          surf = "windsurf";
+          # "windsurf" cask was renamed to "devin-desktop" (Cognition rebranded Windsurf → Devin Desktop)
+          surf = "devin-desktop";
+          dde = "devin-desktop"; # open Devin Desktop at a path, e.g. `dde .` (the `code .` equivalent)
           vpn-on = "mullvad connect";
           vpn-off = "mullvad disconnect";
           vpn-status = "mullvad status && echo '---' && mullvad relay get";

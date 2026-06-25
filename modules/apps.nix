@@ -17,7 +17,8 @@
     "ngrok"
     "db-browser-for-sqlite"
     "cursor"
-    "windsurf"
+    # "windsurf" was renamed to "devin-desktop" upstream (Cognition rebranded Windsurf → Devin Desktop); app is now Devin.app
+    "devin-desktop"
     "docker-desktop"
     "figma"
     "foxglove"
