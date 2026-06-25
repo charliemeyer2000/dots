@@ -15,6 +15,11 @@
       command = "npx";
       args = ["chrome-devtools-mcp@latest" "--channel" "stable"];
     };
+    # Reads EXA_API_KEY from the inherited shell env (exported via ~/.env.local).
+    exa = {
+      command = "npx";
+      args = ["-y" "exa-mcp-server"];
+    };
   };
 
   # Devin-only servers (agent-specific integrations)
