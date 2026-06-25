@@ -17,6 +17,9 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
   "respectGitignore": true,
   "alwaysThinkingEnabled": true,
   "showTurnDuration": false,
