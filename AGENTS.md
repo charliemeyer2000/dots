@@ -24,18 +24,17 @@ dots/
 │   ├── agents/
 │   │   ├── AGENTS.md     # Global agent instructions (deployed to ~/.agents/)
 │   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.)
-│   ├── claude/
-│   │   ├── settings.json # Claude Code-specific settings (model, plugins)
-│   │   └── statusline.sh # Claude Code statusline script
-│   └── devin/
-│       └── config.json   # Devin CLI config (reads from claude, shares skills)
+│   └── claude/
+│       ├── settings.json # Claude Code-specific settings (model, plugins)
+│       └── statusline.sh # Claude Code statusline script
 ├── home/                 # Home-manager modules
 │   ├── default.nix       # Entry point — imports all modules below
 │   ├── zsh.nix           # Shell: aliases, PATH, env vars, oh-my-zsh
 │   ├── git.nix           # Git: 1Password SSH signing, gh credential helper
 │   ├── ssh.nix           # SSH: hosts, 1Password agent, ControlMaster
 │   ├── ghostty.nix       # Ghostty terminal: fonts, gruvbox theme, splits
-│   ├── agents.nix        # Deploys config/agents/ → ~/.agents/, symlinks ~/.claude/ + ~/.config/devin/
+│   ├── agents.nix        # dots.agents.mcp options; deploys ~/.agents/, jq-merges Claude + Devin MCP config
+│   ├── mcp-servers.nix   # Agent-neutral MCP server catalog (shared source of truth)
 │   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
 │   └── hammerspoon.nix   # Hammerspoon window management (macOS)
@@ -120,15 +119,19 @@ All inputs follow the root nixpkgs for consistency.
 Agent config is managed in a tool-agnostic way:
 - Source of truth: `config/agents/` (AGENTS.md + skills/)
 - Claude-specific settings: `config/claude/settings.json`
-- Devin-specific settings: `config/devin/config.json` (reads rules from claude config)
 - Deployed to `~/.agents/` via home-manager (agents.nix)
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md` (symlink)
 - `~/.claude/skills` → `~/.agents/skills` (symlink)
-- `~/.config/devin/config.json` ← `config/devin/config.json` (copied)
 - `~/.config/devin/skills` → `~/.agents/skills` (symlink)
 - Any AGENTS.md-compatible coding agent can read from `~/.agents/`
 - Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`, `skill-browse`, `skill-install`
 - Portable across all machines
+
+#### MCP servers (shared, per-host configurable)
+- **Catalog** (`home/mcp-servers.nix`): single source of truth — agent-neutral defs (stdio `{command, args, env?}`, remote `{type, url, headers?}`). agents.nix renders each into the target tool's dialect (Claude keeps `type`; Devin uses `transport`).
+- **Per-host, per-agent** via `dots.agents.mcp`: `.claude` / `.devin` pick catalog names (`null` = all, `[]` = none), `.catalog` is extendable. Override on a darwin host with `home-manager.users.charlie.dots.agents.mcp.devin = ["exa" "datadog"];` (or directly on the workstation).
+- **Merged, not symlinked**: both CLIs rewrite their config at runtime, so agents.nix jq-merges managed servers in (a symlink gets clobbered). Catalog servers are authoritative; out-of-band ones (e.g. `claude mcp add`) are preserved.
+- **Auth via OAuth, not env keys**: remote servers (datadog, posthog, Sanity) carry no credentials — log in once per machine (`devin mcp login <name>` or Claude `/mcp`), re-login to switch accounts. Only exa reads a key (`EXA_API_KEY`) from the shell env.
 
 ### Host Composition
 
