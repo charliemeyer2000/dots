@@ -35,7 +35,7 @@ in {
         cc = "ANTHROPIC_API_KEY= command claude --dangerously-skip-permissions";
         dv = "devin --permission-mode bypass";
         killport = "f() { lsof -ti :$1 | xargs kill -9; }; f";
-        npm = "echo 'use pnpm instead' && false";
+        npm = "echo 'use pnpm unless you absolutely must use npm' >&2; command npm";
         pip = "echo 'use uv instead' && false";
         pip3 = "echo 'use uv instead' && false";
 

@@ -79,7 +79,7 @@ killport <port>   # kill process on port
 vpn-on / vpn-off  # mullvad manual control (macOS)
 ```
 
-`npm`, `pip`, and `pip3` are aliased to errors — use `pnpm` and `uv` instead.
+`pip` and `pip3` are aliased to errors — use `uv` instead. `npm` prints a reminder to prefer `pnpm`, then still runs.
 
 ## agent configuration
 

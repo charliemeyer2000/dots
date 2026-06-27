@@ -179,8 +179,8 @@ Shell aliases (available after rebuild):
 - `vpn-on` / `vpn-off` / `vpn-status` — Mullvad VPN manual control (macOS only)
 - `vpn-us` / `vpn-uk` / `vpn-eu` — Connect Mullvad to specific regions (macOS only)
 
-Blocked aliases (enforce correct tooling):
-- `npm` → error, use `pnpm`
+Tooling-guard aliases:
+- `npm` → prints a stderr reminder to prefer `pnpm`, then runs `npm`
 - `pip` / `pip3` → error, use `uv`
 
 ## Packages & Language Runtimes (packages.nix)
