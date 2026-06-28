@@ -201,7 +201,6 @@ in {
     grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
     grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
     grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
-    grant_tcc kTCCServiceAccessibility com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
     grant_tcc kTCCServiceAccessibility com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
     grant_tcc kTCCServiceAccessibility com.logitech.Logi-Options "/Applications/Logi Options.app"
@@ -218,10 +217,10 @@ in {
     grant_tcc kTCCServicePostEvent com.henrikruscon.Klack "/Applications/Klack.app"
 
     # Screen capture — ScreenCaptureKit / SCShareableContent / CGDisplay* still
-    # gate on kTCCServiceScreenCapture (system DB) on macOS 15. Apps that are
-    # ad-hoc signed by nix (e.g. VoiceInk) MUST be re-granted here on every
-    # rebuild, otherwise their stored csreq points at the old cdhash and tccd
-    # fails the match with "Failed to match existing code requirement".
+    # gate on kTCCServiceScreenCapture (system DB) on macOS 15. Re-granted on
+    # every rebuild so an app update / re-sign that changes the cdhash can't
+    # leave the stored csreq pointing at the old code requirement, which makes
+    # tccd fail the match with "Failed to match existing code requirement".
     grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
     grant_tcc kTCCServiceScreenCapture com.mitchellh.ghostty "/Applications/Ghostty.app"
@@ -229,7 +228,6 @@ in {
     grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceScreenCapture com.tinyspeck.slackmacgap "/Applications/Slack.app"
     grant_tcc kTCCServiceScreenCapture us.zoom.xos "/Applications/zoom.us.app"
-    grant_tcc kTCCServiceScreenCapture com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
 
     # Full disk access
     grant_tcc kTCCServiceSystemPolicyAllFiles com.mitchellh.ghostty "/Applications/Ghostty.app"
@@ -252,7 +250,6 @@ in {
     }
 
     # Microphone
-    grant_user_tcc kTCCServiceMicrophone com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
     grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
     grant_user_tcc kTCCServiceMicrophone com.google.Chrome "/Applications/Google Chrome.app"
     grant_user_tcc kTCCServiceMicrophone com.hnc.Discord "/Applications/Discord.app"
@@ -276,7 +273,6 @@ in {
     # above — that one covers screen video). Liverpool is the user-DB service that
     # gates SCStreamConfiguration audio capture on macOS 15+. Kept in sync for apps
     # that may capture system audio alongside screen video.
-    grant_user_tcc kTCCServiceLiverpool com.prakashjoshipax.VoiceInk "/Applications/Nix Apps/VoiceInk.app"
     grant_user_tcc kTCCServiceLiverpool pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_user_tcc kTCCServiceLiverpool com.anthropic.claudefordesktop "/Applications/Claude.app"
     grant_user_tcc kTCCServiceLiverpool com.mitchellh.ghostty "/Applications/Ghostty.app"

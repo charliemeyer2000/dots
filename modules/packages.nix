@@ -68,5 +68,4 @@ with pkgs;
   ]
   ++ lib.optionals pkgs.stdenv.isDarwin [
     colima
-    voiceink
   ]

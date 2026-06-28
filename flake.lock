@@ -255,8 +255,7 @@
         "rv": "rv",
         "sf-cli-overlay": "sf-cli-overlay",
         "uvacompute": "uvacompute",
-        "vimessage": "vimessage",
-        "voiceink-overlay": "voiceink-overlay"
+        "vimessage": "vimessage"
       }
     },
     "rv": {
@@ -343,28 +342,6 @@
       "original": {
         "owner": "charliemeyer2000",
         "repo": "vimessage",
-        "type": "github"
-      }
-    },
-    "voiceink-overlay": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "dir": "nix",
-        "lastModified": 1777335425,
-        "narHash": "sha256-ZBUvRAWPFDC9SjbJYTVHsOqpLfIPexDw+1kfGeonyJw=",
-        "owner": "charliemeyer2000",
-        "repo": "VoiceInk",
-        "rev": "ce59fa90eaaa5b7de5732e75445a5680236c3ed2",
-        "type": "github"
-      },
-      "original": {
-        "dir": "nix",
-        "owner": "charliemeyer2000",
-        "repo": "VoiceInk",
         "type": "github"
       }
     }

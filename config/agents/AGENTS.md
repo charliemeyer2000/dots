@@ -41,7 +41,7 @@ When reading documentation, always:
     - Common types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`
     - Scope is optional — include it when it adds clarity, omit it when the change is broad or the type alone is enough
         - With scope: `feat(zsh): add surf alias`, `chore(secrets): drop GITHUB_TOKEN auto-export`
-        - Without scope: `feat: add postgresql to base packages`, `fix: VoiceInk perms`
+        - Without scope: `feat: add postgresql to base packages`, `fix: resolve darwin-rebuild tap-trust failure`
     - When using a scope, use the package/app/module/file you're touching (e.g. `feat(dots)`, `fix(zsh)`)
     - Keep the summary concise and accurate — describe what the change does, not how
 - Branches: `cm/` prefix followed by a short descriptive name (e.g. `cm/add-warp-cask`)
