@@ -35,6 +35,7 @@
 
     # Productivity
     "chatgpt"
+    "fluidvoice"
     "granola"
     "linear"
     "memo"

@@ -200,6 +200,7 @@ in {
     grant_tcc kTCCServiceAccessibility org.hammerspoon.Hammerspoon "/Applications/Hammerspoon.app"
     grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
     grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
+    grant_tcc kTCCServiceAccessibility com.FluidApp.app "/Applications/FluidVoice.app"
     grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
     grant_tcc kTCCServiceAccessibility com.hnc.Discord "/Applications/Discord.app"
     grant_tcc kTCCServiceAccessibility us.zoom.xos "/Applications/zoom.us.app"
@@ -250,6 +251,7 @@ in {
     }
 
     # Microphone
+    grant_user_tcc kTCCServiceMicrophone com.FluidApp.app "/Applications/FluidVoice.app"
     grant_user_tcc kTCCServiceMicrophone com.granola.app "/Applications/Granola.app"
     grant_user_tcc kTCCServiceMicrophone com.google.Chrome "/Applications/Google Chrome.app"
     grant_user_tcc kTCCServiceMicrophone com.hnc.Discord "/Applications/Discord.app"
