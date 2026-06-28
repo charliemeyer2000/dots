@@ -4,4 +4,7 @@
   networking.hostName = "charlie-m1pro";
   networking.computerName = "Charlie's M1 Pro";
   networking.localHostName = "charlie-m1pro";
+
+  home-manager.users.charlie.dots.agents.instructions.host =
+    builtins.readFile ../../config/agents/hosts/darwin-agent.md;
 }

@@ -51,18 +51,12 @@ When reading documentation, always:
 
 ## Environment
 
-- Config lives at `~/all/dots`
-- macOS m4 pro: nix-darwin + home-manager — `just switch darwin-personal` - personal laptop
-- macOS m1: nix-darwin + home-manager - `just switch darwin-agent` - always-on old mac
-- macOS cognition: nix-darwin + home-manager - `just switch darwin-cog` - work laptop (zoom managed by IT, excluded from brew)
-- Linux workstation: standalone home-manager — `just switch workstation` - linux box, 32 CPU, 5090 gpu.
-- Personal secrets injected via 1Password `op inject` during activation
-
-## Other machines
-
-Check out the .ssh/config for other machines we have access to
-- When connected via tailscale:
-    - `workstation`: personal workstation running a 5090 
-    - `jetson-nano`: edge device, jetson orin nano
-- When connected to the UVA HPC cluster:
-    - `uva-hpc`
+- Config lives at `~/all/dots`. Rebuild any host with `just switch <config>` (alias: `rebuild <config>`).
+- If you need sudo, it will prompt the user with TouchId, so just ask them to authenticate.
+- Personal secrets injected via 1Password `op inject` during activation.
+- The fleet (the machine you're currently on is detailed under "This machine" at the end):
+    - `darwin-personal` — M4 Pro MacBook Pro, daily driver (nix-darwin + home-manager)
+    - `darwin-agent` — M1 Pro MacBook Pro, always-on agent (nix-darwin + home-manager)
+    - `darwin-cog` — Cognition work MacBook (nix-darwin + home-manager)
+    - `workstation` — Linux box, 32 CPU + 5090 GPU (standalone home-manager)
+- Check `~/.ssh/config` for SSH targets; which ones are reachable depends on the current machine (see "This machine").

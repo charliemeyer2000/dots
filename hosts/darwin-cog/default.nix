@@ -7,4 +7,7 @@
 
   # IT-managed apps — keep brew bundle from fighting the IT-installed copy.
   dots.homebrew.excludeCasks = ["zoom"];
+
+  home-manager.users.charlie.dots.agents.instructions.host =
+    builtins.readFile ../../config/agents/hosts/darwin-cog.md;
 }

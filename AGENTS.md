@@ -22,7 +22,8 @@ dots/
 ├── CLAUDE.md → AGENTS.md # Symlink for Claude Code compatibility
 ├── config/
 │   ├── agents/
-│   │   ├── AGENTS.md     # Global agent instructions (deployed to ~/.agents/)
+│   │   ├── AGENTS.md     # Shared base agent instructions (host-agnostic)
+│   │   ├── hosts/        # Per-host add-ons (darwin-personal.md, workstation.md, ...)
 │   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.)
 │   └── claude/
 │       ├── settings.json # Claude Code-specific settings (model, plugins)
@@ -33,7 +34,7 @@ dots/
 │   ├── git.nix           # Git: 1Password SSH signing, gh credential helper
 │   ├── ssh.nix           # SSH: hosts, 1Password agent, ControlMaster
 │   ├── ghostty.nix       # Ghostty terminal: fonts, gruvbox theme, splits
-│   ├── agents.nix        # dots.agents.mcp options; deploys ~/.agents/, jq-merges Claude + Devin MCP config
+│   ├── agents.nix        # dots.agents.{mcp,instructions} options; deploys ~/.agents/ (base+per-host AGENTS.md), jq-merges Claude + Devin MCP config
 │   ├── mcp-servers.nix   # Agent-neutral MCP server catalog (shared source of truth)
 │   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
@@ -117,15 +118,22 @@ All inputs follow the root nixpkgs for consistency.
 
 ### Agent Configuration
 Agent config is managed in a tool-agnostic way:
-- Source of truth: `config/agents/` (AGENTS.md + skills/)
+- Source of truth: `config/agents/` (shared `AGENTS.md` base + `hosts/<host>.md` add-ons + skills/)
 - Claude-specific settings: `config/claude/settings.json`
 - Deployed to `~/.agents/` via home-manager (agents.nix)
+- `~/.agents/AGENTS.md` = shared base + the current host's add-on, concatenated at build time (see "Agent instructions" below)
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md` (symlink)
 - `~/.claude/skills` → `~/.agents/skills` (symlink)
 - `~/.config/devin/skills` → `~/.agents/skills` (symlink)
 - Any AGENTS.md-compatible coding agent can read from `~/.agents/`
 - Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`, `skill-browse`, `skill-install`
 - Portable across all machines
+
+#### Agent instructions (shared base + per-host)
+- **Base** (`config/agents/AGENTS.md`): host-agnostic rules — coding practice, workflow, package managers, commits. Single source of truth.
+- **Per-host** (`config/agents/hosts/<host>.md`): a "This machine" section with the current host's identity, role, reachable machines, and quirks (e.g. work/personal boundaries on `darwin-cog`, "you ARE the GPU box" on `workstation`).
+- **Composed** via `dots.agents.instructions`: agents.nix sets `~/.agents/AGENTS.md` to `base + host`. Each host declares only its add-on — `home-manager.users.charlie.dots.agents.instructions.host = builtins.readFile ../../config/agents/hosts/<host>.md;` on a darwin host (or directly on the workstation). Adding a host's instructions is a one-line diff plus the markdown file.
+- Because everything funnels through `~/.agents/AGENTS.md`, both Claude (via the `CLAUDE.md` symlink) and Devin (via `read_config_from.claude`) get the host-aware instructions.
 
 #### MCP servers (shared, per-host configurable)
 - **Catalog** (`home/mcp-servers.nix`): single source of truth — agent-neutral defs (stdio `{command, args, env?}`, remote `{type, url, headers?}`). agents.nix renders each into the target tool's dialect (Claude keeps `type`; Devin uses `transport`).
@@ -135,7 +143,7 @@ Agent config is managed in a tool-agnostic way:
 
 ### Host Composition
 
-All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, optional `dots.homebrew.*` overrides).
+All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
 
 ```
 _darwin-common.nix = base + darwin + apps + secrets        (shared imports + defaults)
@@ -231,7 +239,6 @@ dots.homebrew.excludeCasks = ["zoom"];
 | Host | Address | User | Notes |
 |------|---------|------|-------|
 | workstation | 100.97.247.28 | charlie | Tailscale, personal 5090 workstation |
-| jetson-nano | 100.95.16.119 | charlie | Tailscale, Jetson Orin Nano |
 | uva-hpc | login.hpc.virginia.edu | abs6bd | ControlMaster multiplexing |
 | do-droplet | 24.199.85.26 | root | DigitalOcean |
 

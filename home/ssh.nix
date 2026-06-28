@@ -26,10 +26,6 @@ in {
         ControlPersist = "30m";
         ServerAliveInterval = 60;
       };
-      jetson-nano = {
-        HostName = "100.95.16.119";
-        User = "charlie";
-      };
       do-droplet = {
         HostName = "24.199.85.26";
         User = "root";

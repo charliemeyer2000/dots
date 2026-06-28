@@ -23,5 +23,8 @@ in {
       ]);
   };
 
+  dots.agents.instructions.host =
+    builtins.readFile ../../config/agents/hosts/workstation.md;
+
   nixpkgs.config.allowUnfree = true;
 }

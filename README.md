@@ -85,7 +85,7 @@ vpn-on / vpn-off  # mullvad manual control (macOS)
 
 agent config uses the [AGENTS.md](https://agents-md.org) open standard — source of truth is `config/agents/`, deployed to `~/.agents/` via `home/agents.nix`:
 
-- `config/agents/AGENTS.md` → `~/.agents/AGENTS.md` (global instructions)
+- `config/agents/AGENTS.md` + `config/agents/hosts/<host>.md` → `~/.agents/AGENTS.md` (shared base + per-host add-on, concatenated at build time)
 - `config/agents/skills/` → `~/.agents/skills/`
 - `config/claude/settings.json` → `~/.claude/settings.json`
 - `config/devin/config.json` → `~/.config/devin/config.json`
@@ -94,6 +94,20 @@ tool-specific dirs symlink into `~/.agents/`:
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md`
 - `~/.claude/skills` → `~/.agents/skills`
 - `~/.config/devin/skills` → `~/.agents/skills`
+
+### per-host instructions
+
+`~/.agents/AGENTS.md` is composed from a shared base plus a per-host add-on via `dots.agents.instructions`:
+
+- `config/agents/AGENTS.md` — host-agnostic rules (coding practice, workflow, package managers, commits)
+- `config/agents/hosts/<host>.md` — a "This machine" section: identity, role, reachable machines, host quirks
+
+Each host wires its own add-on in `hosts/<host>/default.nix`, e.g.:
+
+```nix
+dots.agents.instructions.host = builtins.readFile ../../config/agents/hosts/workstation.md;
+# on a darwin host, prefix with `home-manager.users.charlie.`
+```
 
 ### skills
 
@@ -126,7 +140,6 @@ all darwin hosts share `hosts/_darwin-common.nix` (imports + user + nix.enable +
 configured in `home/ssh.nix`, using 1Password SSH agent:
 
 - `workstation` — personal workstation (5090), via Tailscale
-- `jetson-nano` — Jetson Orin Nano, via Tailscale
 - `uva-hpc` — UVA HPC cluster (multiplexed)
 - `do-droplet` — DigitalOcean droplet
 

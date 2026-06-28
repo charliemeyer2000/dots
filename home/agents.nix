@@ -7,6 +7,7 @@
   homeDir = config.home.homeDirectory;
   jq = "${pkgs.jq}/bin/jq";
   cfg = config.dots.agents.mcp;
+  instr = config.dots.agents.instructions;
 
   # Catalog entries use Claude's dialect as-is; Devin calls the transport key `transport`.
   toDevin = _: srv:
@@ -30,28 +31,47 @@
     mcpServers = lib.mapAttrs toDevin (select cfg.devin);
   };
 in {
-  options.dots.agents.mcp = {
-    catalog = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.attrsOf lib.types.anything);
-      default = import ./mcp-servers.nix;
-      description = "Agent-neutral MCP server catalog shared across coding agents; extend per host for machine-specific servers.";
+  options.dots.agents = {
+    mcp = {
+      catalog = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.attrsOf lib.types.anything);
+        default = import ./mcp-servers.nix;
+        description = "Agent-neutral MCP server catalog shared across coding agents; extend per host for machine-specific servers.";
+      };
+      claude = lib.mkOption {
+        type = lib.types.nullOr (lib.types.listOf lib.types.str);
+        default = null;
+        example = ["exa" "chrome-devtools"];
+        description = "Catalog servers enabled for Claude Code (null = all, [] = none).";
+      };
+      devin = lib.mkOption {
+        type = lib.types.nullOr (lib.types.listOf lib.types.str);
+        default = null;
+        example = ["exa" "datadog"];
+        description = "Catalog servers enabled for the Devin CLI (null = all, [] = none).";
+      };
     };
-    claude = lib.mkOption {
-      type = lib.types.nullOr (lib.types.listOf lib.types.str);
-      default = null;
-      example = ["exa" "chrome-devtools"];
-      description = "Catalog servers enabled for Claude Code (null = all, [] = none).";
-    };
-    devin = lib.mkOption {
-      type = lib.types.nullOr (lib.types.listOf lib.types.str);
-      default = null;
-      example = ["exa" "datadog"];
-      description = "Catalog servers enabled for the Devin CLI (null = all, [] = none).";
+
+    # Shared base + per-host add-on, concatenated into ~/.agents/AGENTS.md
+    # (which Claude reads via the CLAUDE.md symlink and Devin via read_config_from).
+    instructions = {
+      base = lib.mkOption {
+        type = lib.types.lines;
+        default = builtins.readFile ../config/agents/AGENTS.md;
+        description = "Shared, host-agnostic agent instructions (base of ~/.agents/AGENTS.md).";
+      };
+      host = lib.mkOption {
+        type = lib.types.lines;
+        default = "";
+        example = lib.literalExpression "builtins.readFile ../../config/agents/hosts/darwin-personal.md";
+        description = "Host-specific agent instructions appended to the shared base.";
+      };
     };
   };
 
   config = {
-    home.file.".agents/AGENTS.md".source = ../config/agents/AGENTS.md;
+    home.file.".agents/AGENTS.md".text =
+      instr.base + lib.optionalString (instr.host != "") ("\n" + instr.host);
     home.file.".agents/skills" = {
       source = ../config/agents/skills;
       recursive = true;
