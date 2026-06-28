@@ -156,6 +156,7 @@ Justfile commands:
 - `just switch <config>` — Rebuild and apply (auto-detects darwin-rebuild vs home-manager)
 - `just switch-dry <config>` — Preview build without applying
 - `just check` — Run flake checks and linters
+- `just update` — Update all flake inputs (`nix flake update`)
 - `just fmt` — Format all nix files with alejandra
 - `just dev` — Enter dev shell with nix tooling
 - `just skill-add <repo> <skill>` — Add a skill from a GitHub repo

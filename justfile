@@ -11,6 +11,10 @@ fmt:
 check:
   nix flake check
 
+# update all flake inputs
+update:
+  nix flake update
+
 # rebuild machine with specified configuration (auto-detects darwin vs home-manager)
 switch config='':
   #!/usr/bin/env bash
@@ -29,7 +33,6 @@ switch config='':
   fi
   mkdir -p ~/.config/dots
   pwd > ~/.config/dots/location
-  nix flake update rv uvacompute
   if [[ "$(uname)" == "Darwin" ]]; then
     nix flake check
     sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#{{config}} || {
