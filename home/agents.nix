@@ -9,6 +9,20 @@
   cfg = config.dots.agents.mcp;
   instr = config.dots.agents.instructions;
 
+  inherit (pkgs.stdenv) isDarwin;
+
+  # Devin Desktop bundles its own (often older) "Devin Local" agent which, by
+  # default, shares ~/.local/share/devin/cli/sessions.db with the standalone
+  # CLI. Two different builds writing one WAL database corrupts it ("database
+  # disk image is malformed"), so point Desktop's bundled agent at its own XDG
+  # data dir. The terminal CLI keeps the default store, so its history is
+  # untouched; the two simply no longer share one sessions.db.
+  desktopAgentEnv = {
+    "devin-cli".XDG_DATA_HOME = "${homeDir}/.local/share/devin-desktop";
+  };
+  desktopAgentEnvJson = builtins.toJSON desktopAgentEnv;
+  desktopSettingsJson = builtins.toJSON {"devin.acp.agentEnv" = desktopAgentEnv;};
+
   # Catalog entries use Claude's dialect as-is; Devin calls the transport key `transport`.
   toDevin = _: srv:
     if srv ? type
@@ -121,5 +135,21 @@ in {
 
     home.file.".config/devin/skills".source =
       config.lib.file.mkOutOfStoreSymlink "${homeDir}/.agents/skills";
+
+    # ── Devin Desktop (macOS only) ───────────────────────────────
+    # Isolate Desktop's bundled "Devin Local" agent onto its own data dir so it
+    # stops sharing — and corrupting — the standalone CLI's sessions.db. Desktop
+    # rewrites User/settings.json at runtime, so merge instead of symlinking.
+    home.activation.devinDesktopIsolation = lib.mkIf isDarwin (lib.hm.dag.entryAfter ["writeBoundary"] ''
+      SETTINGS="${homeDir}/Library/Application Support/devin/User/settings.json"
+      if [ -f "$SETTINGS" ]; then
+        ${jq} --argjson v '${desktopAgentEnvJson}' \
+          '.["devin.acp.agentEnv"] = ((.["devin.acp.agentEnv"] // {}) + $v)' \
+          "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+      else
+        mkdir -p "$(dirname "$SETTINGS")"
+        echo '${desktopSettingsJson}' | ${jq} . > "$SETTINGS"
+      fi
+    '');
   };
 }

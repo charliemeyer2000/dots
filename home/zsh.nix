@@ -89,6 +89,18 @@ in {
         op read "op://Personal/Dev Secrets/github-token"
       }
 
+      # List running devin agent processes with the binary each is running.
+      # The shared sessions.db corrupts when two different devin builds write it
+      # at once (e.g. a stale `dv` session left open across a nix overlay bump),
+      # so this makes version mismatches easy to spot: `devin-ps`.
+      devin-ps() {
+        local p bin
+        for p in $(pgrep -x devin 2>/dev/null); do
+          bin=$(lsof -p "$p" 2>/dev/null | awk '$4=="txt"{print $NF}' | grep -m1 -i devin)
+          printf '%-7s %s\n' "$p" "''${bin:-?}"
+        done
+      }
+
       ${
         if isDarwin
         then ''
