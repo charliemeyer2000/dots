@@ -36,7 +36,7 @@
 
   claudeMcpJson = builtins.toJSON (select cfg.claude);
   devinConfigJson = builtins.toJSON {
-    agent.model = "claude-opus-4-8-max";
+    agent.model = "claude-5-fable-max";
     read_config_from = {
       claude = true;
       cursor = false;
