@@ -28,4 +28,8 @@
     type = "http";
     url = "https://docs.whop.com/mcp";
   };
+  "linear" = {
+    type = "http";
+    url = "https://mcp.linear.app/mcp";
+  };
 }
