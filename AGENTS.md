@@ -44,7 +44,8 @@ dots/
 │   ├── darwin-personal/  # M4 Pro MacBook Pro: only host-unique networking attrs
 │   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): only host-unique attrs
 │   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed casks (zoom)
-│   └── workstation/      # Linux workstation: standalone home-manager + secrets
+│   ├── workstation/      # Linux workstation: standalone home-manager + secrets
+│   └── devin-cloud/      # Ephemeral Devin cloud-agent VM: headless standalone home-manager
 ├── modules/              # System-level modules
 │   ├── packages.nix      # Shared package list (used by base.nix and workstation)
 │   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
@@ -53,7 +54,7 @@ dots/
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── parts/                # Flake-parts modules
-│   ├── hosts.nix         # mkDarwin helper + darwinHosts list + workstation HM config
+│   ├── hosts.nix         # mkDarwin helper + darwinHosts list + workstation & devin-cloud HM configs
 │   ├── formatter.nix     # alejandra (nix formatter)
 │   ├── checks.nix        # Pre-commit hooks (alejandra, deadnix, statix, shellcheck)
 │   └── devshell.nix      # Dev shell: alejandra, deadnix, statix, nil, just
@@ -152,11 +153,14 @@ darwin-personal  = _darwin-common.nix + hostname           (nix-darwin, M4 Pro M
 darwin-agent     = _darwin-common.nix + hostname           (nix-darwin, M1 Pro MacBook Pro, always-on)
 darwin-cog       = _darwin-common.nix + hostname + excludeCasks=["zoom"]  (Cognition work MacBook, IT manages Zoom)
 workstation      = home + packages + hm-secrets            (standalone home-manager, Ubuntu 24.04)
+devin-cloud      = zsh + direnv + agents + packages        (headless standalone home-manager, ephemeral Devin cloud-agent VM)
 ```
 
 Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` with at minimum `networking.hostName`, then append `"<name>"` to the `darwinHosts` list in `parts/hosts.nix`.
 
 The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
+
+The `devin-cloud` host is also standalone home-manager, for ephemeral Devin cloud-agent VMs. It imports only the headless, non-1Password home modules (zsh, direnv, agents) — skipping `git.nix` (1Password commit signing + `gh` credential helper would break Devin's git proxy), `ssh.nix`, the GUI modules, and `hm-secrets.nix` (secrets are Devin-managed env vars, not `op inject`). An org-wide Devin blueprint runs `home-manager switch --flake .#devin-cloud` at snapshot-build time.
 
 ## Common Commands
 
