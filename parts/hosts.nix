@@ -71,5 +71,12 @@ in {
         ../hosts/workstation
       ];
     };
+
+    homeConfigurations.devin-cloud = inputs.home-manager.lib.homeManagerConfiguration {
+      pkgs = pkgsLinux;
+      modules = [
+        ../hosts/devin-cloud
+      ];
+    };
   };
 }
