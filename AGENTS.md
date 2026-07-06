@@ -45,7 +45,7 @@ dots/
 │   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): only host-unique attrs
 │   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed casks (zoom)
 │   ├── workstation/      # Linux workstation: standalone home-manager + secrets
-│   └── devin-cloud/      # Ephemeral Devin cloud-agent VM: headless standalone home-manager
+│   └── devin-cloud/      # Ephemeral Devin cloud-agent VM: headless HM + bin/ helpers + canonical org-blueprint.yaml
 ├── modules/              # System-level modules
 │   ├── packages.nix      # Shared package list (used by base.nix and workstation)
 │   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
@@ -160,7 +160,7 @@ Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` wit
 
 The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
 
-The `devin-cloud` host is also standalone home-manager, for ephemeral Devin cloud-agent VMs. It imports only the headless, non-1Password home modules (zsh, direnv, agents) — skipping `git.nix` (1Password commit signing + `gh` credential helper would break Devin's git proxy), `ssh.nix`, the GUI modules, and `hm-secrets.nix` (secrets are Devin-managed env vars, not `op inject`). An org-wide Devin blueprint runs `home-manager switch --flake .#devin-cloud` at snapshot-build time.
+The `devin-cloud` host is also standalone home-manager, for ephemeral Devin cloud-agent VMs. It imports only the headless, non-1Password home modules (zsh, direnv, agents) — skipping `git.nix` (1Password commit signing + `gh` credential helper would break Devin's git proxy), `ssh.nix`, the GUI modules, and `hm-secrets.nix` (secrets are Devin-managed env vars, not `op inject`). It also ships two `bin/` helpers onto PATH via `writeShellScriptBin` — `devin-tailscale-up` (join the tailnet) and `devin-op-ssh` (load an SSH key from 1Password into ssh-agent) — reusing the nix-provided `tailscale`/`op` binaries. An org-wide Devin blueprint runs `home-manager switch --flake .#devin-cloud` at snapshot-build time; its canonical source-of-truth copy lives at `hosts/devin-cloud/org-blueprint.yaml` (org blueprints can't be git-backed, so it's mirrored to Devin's settings by hand rather than auto-synced).
 
 ## Common Commands
 
