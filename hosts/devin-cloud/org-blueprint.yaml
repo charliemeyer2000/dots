@@ -42,10 +42,12 @@ initialize: |
      nix build "$DOTS#homeConfigurations.devin-cloud.activationPackage" \
        --no-link --print-out-paths >/tmp/hm-out 2>/tmp/hm-build.log; then
     HOME_MANAGER_BACKUP_EXT=bak "$(cat /tmp/hm-out)/activate" || true
-    # expose the home-manager profile (tools + session vars) to the
-    # non-interactive shells Devin uses to run commands.
+    # Put the home-manager profile (tools + session vars) on PATH. Devin runs
+    # commands in non-interactive, non-login shells that source neither .bashrc
+    # nor .profile -- it sources $ENVRC. Writing there is what actually exposes
+    # the toolchain + helpers to the agent; the rc files are for interactive use.
     LINE='[ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"; export PATH="$HOME/.nix-profile/bin:$PATH"'
-    for rc in "$HOME/.bashrc" "$HOME/.profile"; do
+    for rc in ${ENVRC:+"$ENVRC"} "$HOME/.bashrc" "$HOME/.profile"; do
       touch "$rc"
       grep -qF 'nix-profile/bin:$PATH' "$rc" || printf '\n%s\n' "$LINE" >> "$rc"
     done
