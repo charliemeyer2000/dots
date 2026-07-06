@@ -1,0 +1,82 @@
+# Canonical copy of the org-wide Devin blueprint -- the reviewed source of truth.
+# Org/enterprise blueprints can't be git-backed (they run before any repo is
+# cloned; this one is what clones dots), so this file is reviewed here and
+# mirrored to Devin's org settings (Settings > Environment) via the approval
+# flow rather than auto-synced.
+#
+# It is deliberately a thin bootstrap: install Nix, clone dots, activate the
+# `devin-cloud` home-manager host. Everything substantive -- toolchain, shell,
+# ~/.agents + skills, tailscale + op (via nix), and the devin-tailscale-up /
+# devin-op-ssh helpers -- lives in dots (hosts/devin-cloud), not here.
+#
+# No `set -e`: this runs before EVERY repo build in the org, so each block
+# degrades gracefully and never fails an unrelated repo's build.
+initialize: |
+  # 1. Determinate Nix (the /nix store + profile persist into the snapshot).
+  if [ ! -e /nix/var/nix/profiles/default/bin/nix ]; then
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
+      | sh -s -- install linux --no-confirm --init none || true
+  fi
+  if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+  fi
+  # nix-daemon has no init service (--init none); start it for the build-time
+  # activation below. Not needed at session runtime (profile tools are plain
+  # /nix/store paths that work without the daemon).
+  if command -v nix >/dev/null 2>&1 && ! nix store info >/dev/null 2>&1; then
+    sudo sh -c 'nohup /nix/var/nix/profiles/default/bin/nix-daemon >/tmp/nix-daemon.log 2>&1 &'
+    sleep 3
+  fi
+
+  # 2. Clone dots + activate the devin-cloud home-manager host. This installs the
+  #    toolchain, shell config, ~/.agents + skills, tailscale + op (via nix), and
+  #    the devin-tailscale-up / devin-op-ssh helpers onto PATH.
+  DOTS="$HOME/all/dots"
+  if [ ! -d "$DOTS/.git" ]; then
+    mkdir -p "$HOME/all"
+    git clone --depth 1 https://github.com/charliemeyer2000/dots "$DOTS" || true
+  else
+    git -C "$DOTS" pull --ff-only || true
+  fi
+  if command -v nix >/dev/null 2>&1 && \
+     nix build "$DOTS#homeConfigurations.devin-cloud.activationPackage" \
+       --no-link --print-out-paths >/tmp/hm-out 2>/tmp/hm-build.log; then
+    HOME_MANAGER_BACKUP_EXT=bak "$(cat /tmp/hm-out)/activate" || true
+    # expose the home-manager profile (tools + session vars) to the
+    # non-interactive shells Devin uses to run commands.
+    LINE='[ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"; export PATH="$HOME/.nix-profile/bin:$PATH"'
+    for rc in "$HOME/.bashrc" "$HOME/.profile"; do
+      touch "$rc"
+      grep -qF 'nix-profile/bin:$PATH' "$rc" || printf '\n%s\n' "$LINE" >> "$rc"
+    done
+  else
+    echo "WARN: devin-cloud host not built -- see /tmp/hm-build.log" >&2
+  fi
+knowledge:
+  - name: local-cloud-parity
+    contents: |
+      This VM mirrors Charlie's local dots setup via the devin-cloud
+      home-manager host (activated at snapshot build): same shell, aliases, CLI
+      tools, ~/.agents + skills. Tools live in ~/.nix-profile/bin. Source of
+      truth: charliemeyer2000/dots -> hosts/devin-cloud. Most secrets are
+      Devin-managed org env vars; OP_SERVICE_ACCOUNT_TOKEN also grants on-demand
+      access to Charlie's 1Password "Developer" vault.
+  - name: tailnet-access
+    contents: |
+      To reach Charlie's workstation (aiworkstation: hostd :8080, Grafana) or
+      SSH into it, join the tailnet first: devin-tailscale-up (idempotent; needs
+      the TAILSCALE_OAUTH_CLIENT_SECRET org secret). The VM joins as an ephemeral
+      tag:shared node, auto-removed at session end, ACL-scoped. workstation has
+      Tailscale SSH (ssh charlie@aiworkstation, no keys). Deploys to AWS/Vercel
+      go through CI -- open a PR, don't hold creds.
+  - name: machine-ssh-1password
+    contents: |
+      The DO droplet / uvacompute hub (root@24.199.85.26) is NOT on the tailnet;
+      reach it by loading Charlie's SSH key from 1Password on demand:
+        . devin-op-ssh      # source it so SSH_AUTH_SOCK is exported
+        ssh root@24.199.85.26
+      Needs the OP_SERVICE_ACCOUNT_TOKEN org secret; key read from
+      op://Developer/id_ed25519 into ssh-agent, never written to disk. That vault
+      also holds API keys (Anthropic, OpenAI, OpenRouter, Exa, GitHub, Docker,
+      HF, WandB, Axiom, Alpaca, Tailscale, E2B):
+        op read "op://Developer/<item>/credential"
