@@ -4,12 +4,14 @@
 # exported to your shell. ?ssh-format=openssh is required (1P defaults to PKCS#8,
 # which ssh-add rejects for ed25519). Key never touches disk. Needs the
 # OP_SERVICE_ACCOUNT_TOKEN org secret; op comes from nix (home.packages).
-set -euo pipefail
+# No `set -e`: this is meant to be sourced (`. devin-op-ssh`), and errexit would
+# kill the calling shell on any failure. Guard explicitly and return/exit instead.
+set -uo pipefail
 : "${OP_SERVICE_ACCOUNT_TOKEN:?set the OP_SERVICE_ACCOUNT_TOKEN org secret}"
 KEY_REF="${OP_SSH_KEY_REF:-op://Developer/id_ed25519/private key?ssh-format=openssh}"
 command -v op >/dev/null 2>&1 || {
   echo "op CLI not installed" >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 }
 if [ -z "${SSH_AUTH_SOCK:-}" ] || ! ssh-add -l >/dev/null 2>&1; then
   eval "$(ssh-agent -s)" >/dev/null
