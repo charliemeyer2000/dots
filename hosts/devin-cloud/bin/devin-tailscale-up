@@ -1,0 +1,38 @@
+# Join Charlie's tailnet as an ephemeral, tag:shared node so a Devin session can
+# reach workstation/droplet services. Idempotent; auto-removed at session end.
+# Needs the TAILSCALE_OAUTH_CLIENT_SECRET org secret. tailscale/tailscaled come
+# from nix (home.packages); resolve their absolute paths so the sudo calls work
+# regardless of sudo's secure_path.
+set -euo pipefail
+: "${TAILSCALE_OAUTH_CLIENT_SECRET:?set the TAILSCALE_OAUTH_CLIENT_SECRET org secret}"
+TAG="${DEVIN_TS_TAG:-tag:shared}"
+TS_HOSTNAME="${DEVIN_TS_HOSTNAME:-devin-$(hostname | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9-' '-' | sed 's/-*$//')}"
+
+TS_BIN="$(command -v tailscale)"
+TSD_BIN="$(command -v tailscaled)"
+
+ensure_daemon() {
+  "$TS_BIN" status >/dev/null 2>&1 && return 0
+  "$TS_BIN" status 2>&1 | grep -qi 'logged out' && return 0
+  if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files tailscaled.service >/dev/null 2>&1; then
+    sudo systemctl start tailscaled >/dev/null 2>&1 || true
+    sleep 1
+  fi
+  "$TS_BIN" status >/dev/null 2>&1 && return 0
+  "$TS_BIN" status 2>&1 | grep -qi 'logged out' && return 0
+  sudo mkdir -p /var/lib/tailscale /var/run/tailscale
+  args="--state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock"
+  [ -e /dev/net/tun ] || args="$args --tun=userspace-networking --socks5-server=localhost:1055"
+  # redirect inside the root shell so the /var/log write is privileged too.
+  sudo sh -c "nohup '$TSD_BIN' $args >/var/log/tailscaled.log 2>&1 &"
+  sleep 2
+}
+
+ensure_daemon
+sudo "$TS_BIN" up \
+  --auth-key="${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=true&preauthorized=true" \
+  --advertise-tags="${TAG}" \
+  --hostname="${TS_HOSTNAME}" \
+  --accept-routes \
+  --reset
+sudo "$TS_BIN" status

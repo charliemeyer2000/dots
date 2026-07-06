@@ -22,7 +22,15 @@ in {
     username = "ubuntu";
     homeDirectory = "/home/ubuntu";
     stateVersion = "24.11";
-    packages = sharedPackages;
+    # sharedPackages already provides tailscale + _1password-cli; these helpers
+    # wrap them for the two access paths the org blueprint used to inline as
+    # heredocs (tailnet join; on-demand 1P SSH key into ssh-agent).
+    packages =
+      sharedPackages
+      ++ [
+        (pkgs.writeShellScriptBin "devin-tailscale-up" (builtins.readFile ./bin/devin-tailscale-up))
+        (pkgs.writeShellScriptBin "devin-op-ssh" (builtins.readFile ./bin/devin-op-ssh))
+      ];
   };
 
   programs.home-manager.enable = true;
