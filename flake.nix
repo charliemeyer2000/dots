@@ -42,6 +42,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # agent-browser CLI (Linux only; darwin uses the Homebrew formula)
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # UVACompute CLI
     uvacompute = {
       url = "https://uvacompute.com/nix/flake.tar.gz";

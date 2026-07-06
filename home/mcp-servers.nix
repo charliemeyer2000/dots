@@ -3,11 +3,9 @@
 # Schema: stdio → { command; args; env?; }   remote → { type; url; headers?; }
 # Remote servers use each CLI's OAuth login (no tokens here); exa reads
 # EXA_API_KEY from the shell env.
+# No browser MCP: browser control is the agent-browser CLI (via its skill), not a
+# chrome MCP, so its tool schemas stay out of every session's baseline context.
 {
-  chrome-devtools = {
-    command = "npx";
-    args = ["chrome-devtools-mcp@latest" "--channel" "stable"];
-  };
   exa = {
     command = "npx";
     args = ["-y" "exa-mcp-server"];

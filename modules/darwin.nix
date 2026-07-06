@@ -468,6 +468,9 @@ in {
       "steipete/tap/remindctl"
       "speakeasy-api/homebrew-tap/speakeasy"
 
+      # Browser automation CLI — the dots' browser driver (Linux: llm-agents overlay)
+      "agent-browser"
+
       # Embedded tools
       "open-ocd"
       "stlink"

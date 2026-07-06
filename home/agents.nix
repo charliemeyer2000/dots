@@ -55,7 +55,7 @@ in {
       claude = lib.mkOption {
         type = lib.types.nullOr (lib.types.listOf lib.types.str);
         default = null;
-        example = ["exa" "chrome-devtools"];
+        example = ["exa" "linear"];
         description = "Catalog servers enabled for Claude Code (null = all, [] = none).";
       };
       devin = lib.mkOption {
@@ -104,7 +104,8 @@ in {
 
     # ~/.claude.json holds mutable runtime state, so merge managed servers in
     # rather than overwriting; `+` keeps catalog servers authoritative while
-    # preserving any added out-of-band (e.g. `claude mcp add`).
+    # preserving any added out-of-band (e.g. `claude mcp add`). Merge is additive:
+    # removing a catalog server needs a one-time manual prune of the live JSON.
     home.activation.claudeMcpServers = lib.hm.dag.entryAfter ["writeBoundary"] ''
       CLAUDE_JSON="${homeDir}/.claude.json"
       if [ -f "$CLAUDE_JSON" ]; then
