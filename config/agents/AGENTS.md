@@ -45,15 +45,13 @@ When reading documentation, always:
     - When using a scope, use the package/app/module/file you're touching (e.g. `feat(dots)`, `fix(zsh)`)
     - Keep the summary concise and accurate — describe what the change does, not how
 - Branches: `cm/` prefix followed by a short descriptive name (e.g. `cm/add-warp-cask`)
-- Sign commits with 1Password SSH key (commit.gpgsign = true)
-- If signing hangs (non-interactive context), use `git -c commit.gpgsign=false commit`
+- Commit signing and git identity are host-specific — see "This machine".
 - Never add Co-Authored-By lines or any other attribution to commits or PRs
 
 ## Environment
 
 - Config lives at `~/all/dots`. Rebuild any host with `just switch <config>` (alias: `rebuild <config>`).
-- If you need sudo, it will prompt the user with TouchId, so just ask them to authenticate.
-- Personal secrets injected via 1Password `op inject` during activation.
+- `sudo` behavior and secret injection are host-specific — see "This machine".
 - The fleet (the machine you're currently on is detailed under "This machine" at the end):
     - `darwin-personal` — M4 Pro MacBook Pro, daily driver (nix-darwin + home-manager)
     - `darwin-agent` — M1 Pro MacBook Pro, always-on agent (nix-darwin + home-manager)
