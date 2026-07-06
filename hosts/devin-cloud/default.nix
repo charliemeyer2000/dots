@@ -5,21 +5,17 @@
 }: let
   sharedPackages = import ../../modules/packages.nix {inherit pkgs lib;};
 in {
-  # Ephemeral Devin cloud-agent VM. Standalone home-manager (like `workstation`),
-  # but only the headless, non-1Password slice: it imports the safe home modules
-  # directly instead of ../../home so it can skip git.nix (1Password commit
-  # signing + gh credential helper — would break Devin's git proxy), ssh.nix
-  # (1Password agent socket), and the GUI modules (ghostty/fonts/hammerspoon).
-  # Secrets are Devin-managed env vars, so hm-secrets.nix is omitted too.
+  # Headless, non-1Password slice for ephemeral Devin cloud VMs: import the safe
+  # home modules directly instead of ../../home, skipping git.nix (breaks Devin's
+  # git proxy), ssh.nix, the GUI modules, and hm-secrets.nix (Devin-managed env vars).
   imports = [
     ../../home/zsh.nix
     ../../home/direnv.nix
     ../../home/agents.nix
   ];
 
-  # zsh.nix consumes this for SSH_AUTH_SOCK; there is no 1Password agent on a
-  # cloud VM, so the socket simply won't exist (ssh falls back to no agent,
-  # which is fine for Tailscale SSH).
+  # zsh.nix reads this for SSH_AUTH_SOCK; the socket is absent on the VM, so ssh
+  # falls back to no agent.
   _module.args.onePasswordAgentSocket = ".1password/agent.sock";
 
   home = {
