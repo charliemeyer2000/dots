@@ -75,6 +75,8 @@ dots/
 | nix-homebrew | zhaofengli-wip/nix-homebrew | Declarative Homebrew on macOS |
 | claude-code-overlay | sadjow/claude-code-nix | Nix overlay for Claude Code CLI (official Anthropic binaries) |
 | devin-cli-overlay | charliemeyer2000/devin-cli-overlay | Nix overlay for Devin CLI |
+| sf-cli-overlay | charliemeyer2000/sf-cli-overlay | Nix overlay for SF Compute CLI |
+| llm-agents | numtide/llm-agents.nix | agent-browser CLI (Linux only; darwin uses the Homebrew formula) |
 | uvacompute | uvacompute.com/nix/flake.tar.gz | UVACompute CLI |
 | rv | charliemeyer2000/rivanna.dev | rv CLI — GPU job submission on Rivanna/Afton HPC |
 | vimessage | charliemeyer2000/vimessage | Vim hotkeys for Messages.app (home-manager module) |
@@ -141,6 +143,7 @@ Agent config is managed in a tool-agnostic way:
 - **Per-host, per-agent** via `dots.agents.mcp`: `.claude` / `.devin` pick catalog names (`null` = all, `[]` = none), `.catalog` is extendable. Override on a darwin host with `home-manager.users.charlie.dots.agents.mcp.devin = ["exa" "datadog"];` (or directly on the workstation).
 - **Merged, not symlinked**: both CLIs rewrite their config at runtime, so agents.nix jq-merges managed servers in (a symlink gets clobbered). Catalog servers are authoritative; out-of-band ones (e.g. `claude mcp add`) are preserved.
 - **Auth via OAuth, not env keys**: remote servers (datadog, posthog, Sanity) carry no credentials — log in once per machine (`devin mcp login <name>` or Claude `/mcp`), re-login to switch accounts. Only exa reads a key (`EXA_API_KEY`) from the shell env.
+- **No browser MCP**: browser control is the `agent-browser` CLI (Homebrew on darwin, the `llm-agents` overlay on Linux), driven via the `agent-browser` skill — deliberately not an MCP, so ~29 tool schemas stay out of every session's baseline context. `chrome-devtools-mcp` was removed for this reason; re-add it to the catalog only for a one-off perf/Lighthouse deep-dive. The merge is additive, so removing a catalog server also needs a one-time manual prune of `~/.claude.json` + `~/.config/devin/config.json`.
 
 ### Host Composition
 
@@ -203,7 +206,7 @@ Shared across all machines (via `modules/packages.nix`):
 - **CLI tools**: git, git-lfs, git-absorb, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat, watchexec
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
 - **Languages**: go, rustup, lua, zig, nodejs_22, pnpm, bun, uv
-- **AI/HPC**: claude-code (via claude-code-overlay), devin-cli (via devin-cli-overlay), uvacompute, rv (UVA Rivanna job submission CLI)
+- **AI/HPC**: claude-code (via claude-code-overlay), devin-cli (via devin-cli-overlay), sf-cli (via sf-cli-overlay), uvacompute, rv (UVA Rivanna job submission CLI), agent-browser (browser automation — Homebrew formula on darwin, llm-agents overlay on Linux)
 - **Infra**: awscli2, kubectl, kubernetes-helm, kind, docker-client, docker-buildx, docker-compose, cloudflared, tailscale, redis, postgresql, ollama, colima (macOS only)
 - **Secrets**: _1password-cli
 
