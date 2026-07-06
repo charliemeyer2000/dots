@@ -59,5 +59,5 @@ When reading documentation, always:
     - `darwin-agent` — M1 Pro MacBook Pro, always-on agent (nix-darwin + home-manager)
     - `darwin-cog` — Cognition work MacBook (nix-darwin + home-manager)
     - `workstation` — Linux box, 32 CPU + 5090 GPU (standalone home-manager)
-    - `devin-cloud` — ephemeral Devin cloud-agent VM (headless standalone home-manager; Devin-managed secrets, no 1Password)
+    - `devin-cloud` — ephemeral Devin cloud-agent VM (headless standalone home-manager; Devin-managed secrets + scoped 1Password service-account for `op read`)
 - Check `~/.ssh/config` for SSH targets; which ones are reachable depends on the current machine (see "This machine").
