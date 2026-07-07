@@ -11,4 +11,9 @@
 
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-personal.md;
+
+  # personal-project MCP servers
+  home-manager.users.charlie.dots.agents.mcp.catalog =
+    (import ../../home/mcp-servers.nix)
+    // (import ../../home/mcp-servers-personal.nix);
 }

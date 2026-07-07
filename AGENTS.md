@@ -36,6 +36,7 @@ dots/
 │   ├── ghostty.nix       # Ghostty terminal: fonts, gruvbox theme, splits
 │   ├── agents.nix        # dots.agents.{mcp,instructions} options; deploys ~/.agents/ (base+per-host AGENTS.md), jq-merges Claude + Devin MCP config
 │   ├── mcp-servers.nix   # Agent-neutral MCP server catalog (shared source of truth)
+│   ├── mcp-servers-personal.nix # Personal-project MCP servers (darwin-personal + darwin-agent only)
 │   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
 │   └── hammerspoon.nix   # Hammerspoon window management (macOS)
@@ -140,7 +141,7 @@ Agent config is managed in a tool-agnostic way:
 - Because everything funnels through `~/.agents/AGENTS.md`, both Claude (via the `CLAUDE.md` symlink) and Devin (via `read_config_from.claude`) get the host-aware instructions.
 
 #### MCP servers (shared, per-host configurable)
-- **Catalog** (`home/mcp-servers.nix`): single source of truth — agent-neutral defs (stdio `{command, args, env?}`, remote `{type, url, headers?}`). agents.nix renders each into the target tool's dialect (Claude keeps `type`; Devin uses `transport`).
+- **Catalog** (`home/mcp-servers.nix`): single source of truth — agent-neutral defs (stdio `{command, args, env?}`, remote `{type, url, headers?}`). agents.nix renders each into the target tool's dialect (Claude keeps `type`; Devin uses `transport`). Host-scoped servers extend it: `home/mcp-servers-personal.nix` (posthog, Sanity, whop-docs — darwin-personal + darwin-agent only) and inline additions in `hosts/darwin-cog/default.nix` (metabase, notion, slack — work only).
 - **Per-host, per-agent** via `dots.agents.mcp`: `.claude` / `.devin` pick catalog names (`null` = all, `[]` = none), `.catalog` is extendable. Override on a darwin host with `home-manager.users.charlie.dots.agents.mcp.devin = ["exa" "datadog"];` (or directly on the workstation).
 - **Merged, not symlinked**: both CLIs rewrite their config at runtime, so agents.nix jq-merges managed servers in (a symlink gets clobbered). Catalog servers are authoritative; out-of-band ones (e.g. `claude mcp add`) are preserved.
 - **Auth via OAuth, not env keys**: remote servers (datadog, posthog, Sanity) carry no credentials — log in once per machine (`devin mcp login <name>` or Claude `/mcp`), re-login to switch accounts. Only exa reads a key (`EXA_API_KEY`) from the shell env.
