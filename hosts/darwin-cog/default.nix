@@ -19,5 +19,9 @@
         type = "http";
         url = "https://metabase.devin.info/api/metabase-mcp";
       };
+      notion = {
+        type = "http";
+        url = "https://mcp.notion.com/mcp";
+      };
     };
 }
