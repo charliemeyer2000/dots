@@ -60,6 +60,14 @@ in {
           vpn-us = "mullvad relay set location us && mullvad connect";
           vpn-uk = "mullvad relay set location gb && mullvad connect";
           vpn-eu = "mullvad relay set location de && mullvad connect";
+
+          # Tart VM management
+          vm = "tart";
+          vm-list = "tart list";
+          vm-run = "tart run";
+          vm-stop = "tart stop";
+          vm-ip = "tart ip";
+          vm-clone = "tart clone";
         }
         else {}
       );
@@ -152,6 +160,12 @@ in {
         if isDarwin
         then ''
           export OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3
+
+          # SSH into a Tart VM by name (uses default admin/admin creds)
+          vm-ssh() {
+            local vm="''${1:?usage: vm-ssh <vm-name>}"
+            ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "admin@$(tart ip "$vm")"
+          }
         ''
         else ""
       }

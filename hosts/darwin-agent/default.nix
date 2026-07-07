@@ -5,6 +5,10 @@
   networking.computerName = "Charlie's M1 Pro";
   networking.localHostName = "charlie-m1pro";
 
+  # Headless: unlock login keychain on boot so Virtualization.Framework works
+  # without a GUI login session (required macOS 15+).
+  dots.tart.headlessKeychain = true;
+
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-agent.md;
 }
