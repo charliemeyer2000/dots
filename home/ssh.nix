@@ -5,6 +5,17 @@
 }: let
   inherit (pkgs.stdenv) isDarwin;
 in {
+  # The 1Password SSH agent only offers keys from the built-in Personal/Private
+  # vaults unless this config exists — our SSH key lives in the personal
+  # account's Developer vault. Once this file exists, ONLY the vaults listed
+  # here are offered, so add new entries if keys move again.
+  # https://developer.1password.com/docs/ssh/agent/config/
+  home.file.".config/1Password/ssh/agent.toml".text = ''
+    [[ssh-keys]]
+    vault = "Developer"
+    account = "my.1password.com"
+  '';
+
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
