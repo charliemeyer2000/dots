@@ -8,6 +8,11 @@
 # this is deliberately a one-time human step — not full automation.
 set -euo pipefail
 
+command -v agent-browser >/dev/null || {
+  echo "agent-browser not on PATH — install it first (pnpm add -g agent-browser)." >&2
+  exit 1
+}
+
 STATE="${PR_EVIDENCE_GH_STATE:-$HOME/.agent-browser/pr-evidence-github.state.json}"
 SESSION="pr-evidence-github-login"
 mkdir -p "$(dirname "$STATE")"

@@ -26,8 +26,8 @@ Lighter is better — a screenshot beats a video someone has to scrub.
 
 ## Capture
 Drive the browser with the **agent-browser** skill (`agent-browser skills get core` for
-usage; `npm i -g agent-browser@latest` if it's missing). Use an isolated session so
-parallel agents don't collide on a browser or a recording:
+usage; the dots install it on switch, but `pnpm add -g agent-browser` if it's missing).
+Use an isolated session so parallel agents don't collide on a browser or a recording:
 
 ```bash
 export AGENT_BROWSER_SESSION="$(agent-browser session id --scope worktree --prefix pr-evidence)"
