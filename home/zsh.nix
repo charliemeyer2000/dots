@@ -94,7 +94,7 @@ in {
       #   GITHUB_TOKEN=$(gh-pat) some-tool        # one-shot
       #   export GITHUB_TOKEN=$(gh-pat)           # current shell only
       gh-pat() {
-        op read "op://Personal/Dev Secrets/github-token"
+        op read "op://Developer/GitHub/credential"
       }
 
       # List running devin agent processes with the binary each is running.
