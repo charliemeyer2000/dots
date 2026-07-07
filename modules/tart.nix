@@ -37,7 +37,7 @@ in {
             # Derive local VM name from image: ghcr.io/cirruslabs/macos-sequoia-base:latest → macos-sequoia-base
             localName = builtins.head (lib.splitString ":" (lib.last (lib.splitString "/" image)));
           in ''
-            if ! sudo -u ${user} /opt/homebrew/bin/tart list 2>/dev/null | grep -q "^${localName} "; then
+            if ! sudo -u ${user} /opt/homebrew/bin/tart list 2>/dev/null | grep -q "${localName}"; then
               echo "  -> Pre-pulling Tart image: ${image} as ${localName}"
               sudo -u ${user} /opt/homebrew/bin/tart clone "${image}" "${localName}" || \
                 echo "  -> Failed to pull ${image} (network may be unavailable)"
