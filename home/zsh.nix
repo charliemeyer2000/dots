@@ -161,7 +161,7 @@ in {
         then ''
           export OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3
 
-          # SSH into a Tart VM by name (uses default admin/admin creds)
+          # SSH into a Tart VM by name (prompts for password; default: admin)
           vm-ssh() {
             local vm="''${1:?usage: vm-ssh <vm-name>}"
             ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "admin@$(tart ip "$vm")"
