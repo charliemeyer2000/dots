@@ -52,6 +52,7 @@ dots/
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
 │   ├── apps.nix          # Shared base list of Homebrew casks + dots.homebrew.{excludeCasks,extraCasks} options
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
+│   ├── tart.nix          # Tart VM management: image pre-pull + headless keychain unlock
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── parts/                # Flake-parts modules
 │   ├── hosts.nix         # mkDarwin helper + darwinHosts list + workstation & devin-cloud HM configs
@@ -150,7 +151,7 @@ Agent config is managed in a tool-agnostic way:
 All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
 
 ```
-_darwin-common.nix = base + darwin + apps + secrets        (shared imports + defaults)
+_darwin-common.nix = base + darwin + apps + secrets + tart  (shared imports + defaults)
 
 darwin-personal  = _darwin-common.nix + hostname           (nix-darwin, M4 Pro MacBook Pro)
 darwin-agent     = _darwin-common.nix + hostname           (nix-darwin, M1 Pro MacBook Pro, always-on)
@@ -194,6 +195,8 @@ Shell aliases (available after rebuild):
 - `surf <path>` — Open Windsurf at the given path (macOS only)
 - `vpn-on` / `vpn-off` / `vpn-status` — Mullvad VPN manual control (macOS only)
 - `vpn-us` / `vpn-uk` / `vpn-eu` — Connect Mullvad to specific regions (macOS only)
+- `vm` / `vm-list` / `vm-run` / `vm-stop` / `vm-ip` / `vm-clone` — Tart VM management (macOS only)
+- `vm-ssh <name>` — SSH into a Tart VM by name (macOS only)
 
 Tooling-guard aliases:
 - `npm` → prints a stderr reminder to prefer `pnpm`, then runs `npm`
