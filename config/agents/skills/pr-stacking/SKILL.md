@@ -283,24 +283,82 @@ gh pr view "$pr" --repo "$REPO" --json statusCheckRollup --jq '
 
 ## Merging stacks
 
-Bottom-up with squash. **Never `--delete-branch` except on the topmost PR** — it races with GitHub's auto-retarget and closes dependent PRs.
+Bottom-up with squash. First check the repo setting — it decides the retarget flow:
+
+```bash
+gh api repos/OWNER/REPO --jq .delete_branch_on_merge
+```
+
+**`true`** — merge with plain `gh pr merge --squash` and **never pass `--delete-branch`**. Auto-delete fires AFTER retargeting completes, so dependents retarget race-free; the explicit flag is what races and closes dependent PRs.
+
+**`false`** — GitHub won't retarget for you. `gh pr edit <next> --base main` BEFORE deleting any branch (delete first and the dependent closes).
+
+Per-level safety loop: before touching a PR, assert it is OPEN with base `main`. After merging, assert state MERGED. After the parent merges, poll the dependent until base is `main` — abort loudly if it goes CLOSED.
+
+### Bringing the next PR up to date: restack, not update-branch
+
+`gh api update-branch` works only until a PR modifies a file that a LOWER PR in the stack CREATED. Once the lower PR squash-merges, main's copy and the branch's copy of that file have no common ancestor → add/add conflict → HTTP 422 "merge conflict between base and head". Restack-after-each-merge has the same CI cost and no conflicts:
+
+```bash
+# Before merging anything, snapshot each PR's reviewed diff:
+git diff "$parent..$branch" | grep -vE '^index |^@@' > "/tmp/$branch.reviewed"
+
+# After each squash-merge:
+git fetch origin
+git checkout <leaf>
+git rebase origin/main   # updateRefs: already-merged commits auto-drop (content is upstream)
+
+# Verify each remaining PR's diff is unchanged, then batch push:
+git diff "$parent..$branch" | grep -vE '^index |^@@' | diff "/tmp/$branch.reviewed" -
+git push --force-with-lease origin <remaining-branches>
+```
+
+### CI budget and required checks
+
+Required checks re-run per level either way — update-branch mints a merge commit, restack mints new SHAs. Budget one full CI cycle per stack level. `strict_required_status_checks_policy=false` spares the "branch up to date" requirement, not the per-commit required checks.
+
+```bash
+gh pr checks <pr> --required
+```
+
+PRs based on stack branches report "no required checks" — the required set only materializes once the PR is retargeted to main, so previously-ignorable failing contexts can suddenly become merge-blocking.
+
+### Stale bot status contexts
+
+Workflows filtered `on: pull_request: branches: [main]` (e.g. a security-review bot posting commit statuses) never fire while a PR is based on a stack branch — stale failure statuses linger and turn blocking after retarget. They refresh on the first synchronize after retarget (update-branch or force-push both count). If the bot's session is dead and never posts a verdict, force a fresh run with draft→ready:
+
+```bash
+gh pr ready <pr> --undo && sleep 5 && gh pr ready <pr>   # fires ready_for_review
+```
+
+### merge_stack()
 
 ```bash
 merge_stack() {
   local owner_repo="$1" ; shift ; local prs=("$@")
+  local auto=$(gh api "repos/$owner_repo" --jq .delete_branch_on_merge)
   local last=$(( ${#prs[@]} - 1 ))
   for i in "${!prs[@]}"; do
-    local pr="${prs[$i]}" flags="--squash"
-    [[ "$i" -eq "$last" ]] && flags="$flags --delete-branch"
-    gh pr merge "$pr" $flags --repo "$owner_repo"
-    if [[ "$i" -lt "$last" ]]; then
-      local next="${prs[$((i + 1))]}"
-      sleep 5
-      local state=$(gh pr view "$next" --repo "$owner_repo" --json state --jq .state)
-      [[ "$state" != "OPEN" ]] && { echo "ERROR: #$next closed instead of retargeted"; return 1; }
-      gh api "repos/$owner_repo/pulls/$next/update-branch" -X PUT
-      gh pr checks "$next" --repo "$owner_repo" --required --watch
+    local pr="${prs[$i]}"
+    local st=$(gh pr view "$pr" --repo "$owner_repo" --json state,baseRefName --jq '.state + " " + .baseRefName')
+    [[ "$st" != "OPEN main" ]] && { echo "ERROR: #$pr is '$st', expected 'OPEN main'"; return 1; }
+    gh pr checks "$pr" --repo "$owner_repo" --required --watch || return 1
+    gh pr merge "$pr" --squash --repo "$owner_repo"   # never --delete-branch
+    [[ $(gh pr view "$pr" --repo "$owner_repo" --json state --jq .state) != "MERGED" ]] \
+      && { echo "ERROR: #$pr did not merge"; return 1; }
+    [[ "$i" -eq "$last" ]] && break
+    local next="${prs[$((i + 1))]}"
+    if [[ "$auto" == "true" ]]; then
+      until [[ $(gh pr view "$next" --repo "$owner_repo" --json baseRefName --jq .baseRefName) == "main" ]]; do
+        [[ $(gh pr view "$next" --repo "$owner_repo" --json state --jq .state) == "CLOSED" ]] \
+          && { echo "ERROR: #$next closed instead of retargeted"; return 1; }
+        sleep 5
+      done
+    else
+      gh pr edit "$next" --repo "$owner_repo" --base main   # retarget BEFORE deleting any branch
     fi
+    # Now restack remaining branches onto origin/main and force-push (see above).
+    # gh api update-branch also works — until a PR touches a file a lower PR created (422).
   done
 }
 ```
@@ -334,5 +392,9 @@ gh api repos/OWNER/REPO/git/refs/heads/<branch> -X DELETE
 | Check API at level | `git show <branch>:<file> \| grep -A10 "def func"` |
 | CI status | `(.conclusion // .state // .status // "PENDING")` |
 | Merge stack | `merge_stack "owner/repo" 101 102 103` |
+| Auto-delete setting | `gh api repos/o/r --jq .delete_branch_on_merge` |
+| Restack after merge | `git fetch origin && git checkout <leaf> && git rebase origin/main` |
+| Required checks | `gh pr checks <pr> --required` |
+| Refresh dead bot check | `gh pr ready <pr> --undo && sleep 5 && gh pr ready <pr>` |
 | Walk stack | `walk_stack "owner/repo" "<root>"` |
 | Find leaves | `find_leaves "owner/repo" "<root>"` |
