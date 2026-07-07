@@ -23,5 +23,9 @@
         type = "http";
         url = "https://mcp.notion.com/mcp";
       };
+      slack = {
+        type = "http";
+        url = "https://mcp.slack.com/mcp";
+      };
     };
 }
