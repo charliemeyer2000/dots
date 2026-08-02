@@ -28,6 +28,10 @@ in {
         HostName = "100.97.247.28";
         User = "charlie";
       };
+      dgx-spark = {
+        HostName = "spark-62c0";
+        User = "csherrill";
+      };
       uva-hpc = {
         HostName = "login.hpc.virginia.edu";
         User = "abs6bd";
