@@ -42,7 +42,11 @@ canonical=${canonical:-$skill_name}
 
 SKILL_DIR="config/agents/skills/${canonical}"
 mkdir -p "$SKILL_DIR"
-cp -r "$SKILL_PATH"/* "$SKILL_DIR/"
+# `/.` rather than `/*`: the glob skips dot-prefixed entries, which silently
+# dropped things skills ship and reference (e.g. upstream `.claude-plugin/`).
+cp -r "$SKILL_PATH"/. "$SKILL_DIR/"
+# A repo whose root *is* the skill brings its own clone metadata along with it.
+rm -rf "$SKILL_DIR/.git" "$SKILL_DIR/.github"
 
 echo "Added ${canonical} to nix config"
 echo "Run 'just switch <config>' to activate (e.g., just switch darwin-personal)"
