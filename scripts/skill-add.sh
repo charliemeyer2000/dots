@@ -42,11 +42,20 @@ canonical=${canonical:-$skill_name}
 
 SKILL_DIR="config/agents/skills/${canonical}"
 mkdir -p "$SKILL_DIR"
-# `/.` rather than `/*`: the glob skips dot-prefixed entries, which silently
-# dropped things skills ship and reference (e.g. upstream `.claude-plugin/`).
-cp -r "$SKILL_PATH"/. "$SKILL_DIR/"
-# A repo whose root *is* the skill brings its own clone metadata along with it.
-rm -rf "$SKILL_DIR/.git" "$SKILL_DIR/.github"
+# Copy dot-prefixed entries too — a plain `/*` glob skips them, which silently
+# dropped files skills ship and reference (e.g. upstream `.claude-plugin/`).
+# Excluded at copy time rather than deleted afterwards, so an interrupted run
+# can't leave a nested clone inside this repo:
+#   .git/.github          a skill living at its repo root drags its own clone along
+#   .gitignore/.gitattributes  upstream's rules would start governing this repo,
+#                              and an ignore file can quietly keep vendored files
+#                              out of version control
+tar -cf - -C "$SKILL_PATH" \
+    --exclude='./.git' \
+    --exclude='./.github' \
+    --exclude='./.gitignore' \
+    --exclude='./.gitattributes' \
+    . | tar -xf - -C "$SKILL_DIR"
 
 echo "Added ${canonical} to nix config"
 echo "Run 'just switch <config>' to activate (e.g., just switch darwin-personal)"
