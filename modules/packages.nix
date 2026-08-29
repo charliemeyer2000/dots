@@ -71,4 +71,6 @@ with pkgs;
   ]
   ++ lib.optionals pkgs.stdenv.isLinux [
     agent-browser # darwin installs this via Homebrew instead
+    stripe-cli
+    terraform
   ]

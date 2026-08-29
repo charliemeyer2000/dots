@@ -4,10 +4,9 @@
 # mirrored to Devin's org settings (Settings > Environment) via the approval
 # flow rather than auto-synced.
 #
-# It is deliberately a thin bootstrap: install Nix, clone dots, activate the
-# `devin-cloud` home-manager host. Everything substantive -- toolchain, shell,
-# ~/.agents + skills, tailscale + op (via nix), and the devin-tailscale-up /
-# devin-op-ssh helpers -- lives in dots (hosts/devin-cloud), not here.
+# It bootstraps Nix + the `devin-cloud` home-manager host, then materializes the
+# shared Dueflow workspace. Toolchain declarations still live in dots
+# (hosts/devin-cloud); this blueprint owns only the snapshot clone/install loop.
 #
 # No `set -e`: this runs before EVERY repo build in the org, so each block
 # degrades gracefully and never fails an unrelated repo's build.
@@ -54,6 +53,40 @@ initialize: |
   else
     echo "WARN: devin-cloud host not built -- see /tmp/hm-build.log" >&2
   fi
+
+  # 3. Materialize the shared Dueflow workspace in the snapshot.
+  DUEFLOW_REPOS="dueflow dueflow-admin dueflow-dev-webhooks dueflow-infra dueflow-openclawd uvasocials"
+  mkdir -p "$HOME/all"
+  for repo in $DUEFLOW_REPOS; do
+    dest="$HOME/all/$repo"
+    if [ ! -d "$dest/.git" ]; then
+      git clone "https://github.com/Dueflow-co/$repo.git" "$dest" || {
+        echo "WARN: failed to clone Dueflow-co/$repo" >&2
+        continue
+      }
+    else
+      git -C "$dest" pull --ff-only || true
+    fi
+  done
+maintenance: |
+  [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] && \
+    . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+  export PATH="$HOME/.nix-profile/bin:$PATH"
+  DUEFLOW_REPOS="dueflow dueflow-admin dueflow-dev-webhooks dueflow-infra dueflow-openclawd uvasocials"
+  if command -v corepack >/dev/null 2>&1; then
+    corepack install --global pnpm@10.14.0 || true
+  fi
+  for repo in $DUEFLOW_REPOS; do
+    dest="$HOME/all/$repo"
+    [ -d "$dest/.git" ] || continue
+    if command -v corepack >/dev/null 2>&1 && [ -f "$dest/package.json" ]; then
+      (cd "$dest" && CI=true corepack pnpm install --frozen-lockfile) || \
+        echo "WARN: dependency refresh failed for Dueflow-co/$repo" >&2
+    fi
+  done
+  if command -v pre-commit >/dev/null 2>&1 && [ -d "$HOME/all/dueflow-infra/.git" ]; then
+    (cd "$HOME/all/dueflow-infra" && pre-commit install) || true
+  fi
 knowledge:
   - name: local-cloud-parity
     contents: |
@@ -82,3 +115,10 @@ knowledge:
       also holds API keys (Anthropic, OpenAI, OpenRouter, Exa, GitHub, Docker,
       HF, WandB, Axiom, Alpaca, Tailscale, E2B):
         op read "op://Developer/<item>/credential"
+  - name: dueflow-workspace
+    contents: |
+      Every Dueflow-co repository is pre-cloned under ~/all and dependency-ready:
+      dueflow, dueflow-admin, dueflow-dev-webhooks, dueflow-infra,
+      dueflow-openclawd, and uvasocials. The snapshot blueprint uses
+      fast-forward-only updates and frozen pnpm installs without destructive
+      repository resets.
