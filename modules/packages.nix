@@ -70,5 +70,5 @@ with pkgs;
     colima
   ]
   ++ lib.optionals pkgs.stdenv.isLinux [
-    agent-browser # darwin installs this via Homebrew instead
+    llm-agents.agent-browser # darwin installs this via Homebrew instead
   ]

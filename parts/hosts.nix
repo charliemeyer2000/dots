@@ -32,7 +32,7 @@
   pkgsLinux = import inputs.nixpkgs {
     system = "x86_64-linux";
     config.allowUnfree = true;
-    overlays = overlays ++ [inputs.llm-agents.overlays.default];
+    overlays = overlays ++ [inputs.llm-agents.overlays.shared-nixpkgs];
   };
 
   # Build a nix-darwin system from a host module under ../hosts/<name>.
