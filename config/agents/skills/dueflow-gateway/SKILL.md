@@ -11,8 +11,10 @@ gateway maps your Google identity to a tier (`super-admin` / `lead` / `engineer`
 that tier's tools exist for you. If a tool "isn't found", you aren't allowed it — don't route
 around the gateway with a raw token.
 
-- Devin: the `dueflow` MCP server (`mcp_tool server="dueflow"`), signed in with Google.
-- Claude Code / other MCP clients: remote MCP `https://mcp.dueflow.co/mcp` — DCR → "Continue with
+- Devin: the `dueflow` MCP server (`mcp_tool server="dueflow"`), installed org-wide in Devin's
+  MCP settings and signed in with Google.
+- Claude Code: the `dueflow` catalog entry (`home/mcp-servers-personal.nix`, darwin-personal +
+  darwin-agent) → remote MCP `https://mcp.dueflow.co/mcp` — `/mcp` login → DCR → "Continue with
   Google" (@dueflow.co) → consent. Console (catalog, users, API keys; admins only) at
   `https://mcp.dueflow.co`. (`executor.mcp.dueflow.co` is the same stack's pilot hostname; if
   `mcp.dueflow.co` still answers with flat `<service>-<tool>` tools it hasn't been cut over yet —
@@ -107,8 +109,10 @@ round trips. `emit(x)` streams intermediate output; `emit(result.data)` renders 
   Granola *space* are visible.
 - **Not on the gateway (yet)**: `google-workspace` (Executor cannot bind the caller's identity to
   it, so it is deliberately held back — do not expect Gmail/Calendar/Drive tools) and `dub-links`
-  (hosted MCP auth broken upstream). Anything else missing from `skills({name:"execute"})`'s
-  integration list is a tier restriction, not an outage.
+  (hosted MCP auth broken upstream). For anything else, `skills({name:"execute"})`'s integration
+  list is what YOUR tier can see: a service absent there for a non-super-admin is a tier
+  restriction; absent for a super-admin it is a catalog/deploy problem (check the latest
+  `executor-catalog` parity run in dueflow-infra).
 - **Who gets what** is code: `gateway-config/tiers.json` + `servers.json` in
   `Dueflow-co/dueflow-infra` (built into Executor by the `executor-catalog` workflow). Membership
   comes from the `mcp-*@dueflow.co` Google groups. Change access there, never by hand in the console.
@@ -118,4 +122,6 @@ round trips. `emit(x)` streams intermediate output; `emit(result.data)` renders 
 - Enumerating tools to "see what's there" — search by intent instead; the catalog is large.
 - Guessing a path like `tools.github.search_repositories` — always `search`/`describe` first.
 - Falling back to a personal token (gh, `op`, aws profile) for a Dueflow resource the gateway has.
-- Treating `tool_not_found` as a bug — for a known service it is RBAC (or a held-back upstream).
+- Treating `tool_not_found` as a bug without checking — for a service your tier lacks it is RBAC;
+  for a held-back upstream it is expected; only when a super-admin misses a declared service (or
+  `search` returns nothing at all) is it an outage worth escalating.
