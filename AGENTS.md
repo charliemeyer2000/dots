@@ -55,6 +55,7 @@ dots/
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
 │   ├── tart.nix          # Tart VM management: image pre-pull + headless keychain unlock
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
+├── overlays/             # Local package overrides (bun.nix: pin bun ahead of nixpkgs)
 ├── parts/                # Flake-parts modules
 │   ├── hosts.nix         # mkDarwin helper + darwinHosts list + workstation & devin-cloud HM configs
 │   ├── formatter.nix     # alejandra (nix formatter)

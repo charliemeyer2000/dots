@@ -27,6 +27,7 @@
     inputs.sf-cli-overlay.overlays.default
     inputs.uvacompute.overlays.default
     inputs.rv.overlays.default
+    (import ../overlays/bun.nix)
   ];
 
   pkgsLinux = import inputs.nixpkgs {
