@@ -14,6 +14,9 @@ _final: prev: {
       };
   in {
     version = "1.4.0";
+    # nixpkgs' bun already derives `src` from `passthru.sources`; restating it
+    # here keeps `overrideAttrs` from warning that `version` moved without `src`.
+    src = finalAttrs.passthru.sources.${prev.stdenvNoCC.hostPlatform.system};
     passthru =
       prevAttrs.passthru
       // {
