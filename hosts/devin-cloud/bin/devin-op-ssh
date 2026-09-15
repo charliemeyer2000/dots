@@ -1,6 +1,6 @@
 # Load an SSH key from 1Password (headless service account) into ssh-agent so a
-# Devin session can SSH into hosts whose key lives in 1P (e.g. the DO droplet,
-# which isn't on the tailnet). Source it (`. devin-op-ssh`) so SSH_AUTH_SOCK is
+# Devin session can SSH into hosts whose key lives in 1P (anything not reachable
+# via Tailscale SSH). Source it (`. devin-op-ssh`) so SSH_AUTH_SOCK is
 # exported to your shell. ?ssh-format=openssh is required (1P defaults to PKCS#8,
 # which ssh-add rejects for ed25519). Key never touches disk. Needs the
 # OP_SERVICE_ACCOUNT_TOKEN org secret; op comes from nix (home.packages).

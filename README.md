@@ -141,7 +141,6 @@ configured in `home/ssh.nix`, using 1Password SSH agent:
 
 - `workstation` — personal workstation (5090), via Tailscale
 - `uva-hpc` — UVA HPC cluster (multiplexed)
-- `do-droplet` — DigitalOcean droplet
 
 ## manual stuff
 

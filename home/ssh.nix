@@ -41,10 +41,6 @@ in {
         ControlPersist = "30m";
         ServerAliveInterval = 60;
       };
-      do-droplet = {
-        HostName = "24.199.85.26";
-        User = "root";
-      };
       "*" = {
         ForwardAgent = false;
         Compression = false;

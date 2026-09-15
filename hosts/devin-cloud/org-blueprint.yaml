@@ -73,10 +73,10 @@ knowledge:
       go through CI -- open a PR, don't hold creds.
   - name: machine-ssh-1password
     contents: |
-      The DO droplet / uvacompute hub (root@24.199.85.26) is NOT on the tailnet;
-      reach it by loading Charlie's SSH key from 1Password on demand:
+      Hosts that are NOT on the tailnet need Charlie's SSH key, loaded from
+      1Password on demand:
         . devin-op-ssh      # source it so SSH_AUTH_SOCK is exported
-        ssh root@24.199.85.26
+        ssh <user>@<host>
       Needs the OP_SERVICE_ACCOUNT_TOKEN org secret; key read from
       op://Developer/id_ed25519 into ssh-agent, never written to disk. That vault
       also holds API keys (Anthropic, OpenAI, OpenRouter, Exa, GitHub, Docker,
