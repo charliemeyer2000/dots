@@ -6,5 +6,5 @@
 - Passwordless `sudo` (no TouchID) — run privileged commands directly.
 - **Deploys go through CI, not from here.** Terraform → AWS via GitHub OIDC; Vercel via its Git integration. Open a PR and read the plan/preview off it rather than holding deploy credentials.
 - **Workstation access is over Tailscale.** Run `devin-tailscale-up` to join the tailnet (ephemeral `tag:shared` node), then reach `aiworkstation` (hostd `:8080`, Grafana) via MagicDNS + Tailscale SSH (`ssh charlie@aiworkstation`, no keys). What you can reach is governed by the tailnet ACL.
-- **The DO droplet (`root@24.199.85.26`) is NOT on the tailnet.** Reach it with `. devin-op-ssh` (loads `op://Developer/id_ed25519` into `ssh-agent`, key never on disk), then `ssh root@24.199.85.26`.
+- **Hosts that aren't on the tailnet** need Charlie's SSH key: `. devin-op-ssh` (loads `op://Developer/id_ed25519` into `ssh-agent`, key never on disk), then `ssh` as usual.
 - Linux headless slice only — no Homebrew/casks, macOS defaults, or GUI apps. The 1Password *desktop* SSH agent isn't available headless; use the `op read` → `ssh-agent` path above.

@@ -252,7 +252,6 @@ dots.homebrew.excludeCasks = ["zoom"];
 |------|---------|------|-------|
 | workstation | 100.97.247.28 | charlie | Tailscale, personal 5090 workstation |
 | uva-hpc | login.hpc.virginia.edu | abs6bd | ControlMaster multiplexing |
-| do-droplet | 24.199.85.26 | root | DigitalOcean |
 
 All SSH uses 1Password agent (`IdentityAgent` → 1Password socket).
 
