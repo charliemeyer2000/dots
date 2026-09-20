@@ -48,7 +48,7 @@ in {
       if [ -n "$TAILSCALE_OAUTH_CLIENT_SECRET" ]; then
         if ${tailscale} status &>/dev/null; then
           echo "  -> Tailscale already connected, skipping auth"
-        elif sudo -n ${tailscale} up --auth-key="''${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:shared 2>/dev/null; then
+        elif sudo -n ${tailscale} up --auth-key="''${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:workstation 2>/dev/null; then
           echo "  -> Tailscale authenticated"
         else
           echo "  -> Tailscale auth skipped (already connected or sudo requires password)"

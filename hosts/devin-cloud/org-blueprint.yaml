@@ -68,7 +68,7 @@ knowledge:
       To reach Charlie's workstation (aiworkstation: hostd :8080, Grafana) or
       SSH into it, join the tailnet first: devin-tailscale-up (idempotent; needs
       the TAILSCALE_OAUTH_CLIENT_SECRET org secret). The VM joins as an ephemeral
-      tag:shared node, auto-removed at session end, ACL-scoped. workstation has
+      tag:devin node, auto-removed at session end, ACL-scoped. workstation has
       Tailscale SSH (ssh charlie@aiworkstation, no keys). Deploys to AWS/Vercel
       go through CI -- open a PR, don't hold creds.
   - name: machine-ssh-1password

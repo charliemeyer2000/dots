@@ -110,7 +110,7 @@ All inputs follow the root nixpkgs for consistency.
 ### Tailscale Authentication
 - Tailscale authenticates automatically on `just switch` via OAuth client credentials
 - OAuth client secret (never expires) stored in 1Password, injected at activation time
-- Devices authenticate with `tag:shared` (required for OAuth-based auth)
+- Each host advertises its role tag from life-infra's `tailscale/policy.hujson`: laptops `tag:personal` (secrets.nix), workstation `tag:workstation` (hm-secrets.nix), Devin VMs `tag:devin` (devin-tailscale-up)
 - `tailscale up` is idempotent — re-auths if node key expired, no-op if current
 - No manual `tailscale up` needed on new machines (just sign into 1Password first)
 
