@@ -1,11 +1,11 @@
-# Join Charlie's tailnet as an ephemeral, tag:shared node so a Devin session can
+# Join Charlie's tailnet as an ephemeral, tag:devin node so a Devin session can
 # reach workstation services. Idempotent; auto-removed at session end.
 # Needs the TAILSCALE_OAUTH_CLIENT_SECRET org secret. tailscale/tailscaled come
 # from nix (home.packages); resolve their absolute paths so the sudo calls work
 # regardless of sudo's secure_path.
 set -euo pipefail
 : "${TAILSCALE_OAUTH_CLIENT_SECRET:?set the TAILSCALE_OAUTH_CLIENT_SECRET org secret}"
-TAG="${DEVIN_TS_TAG:-tag:shared}"
+TAG="${DEVIN_TS_TAG:-tag:devin}"
 TS_HOSTNAME="${DEVIN_TS_HOSTNAME:-devin-$(hostname | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9-' '-' | sed 's/-*$//')}"
 
 TS_BIN="$(command -v tailscale)"
