@@ -11,49 +11,55 @@
 #
 # No `set -e`: this runs before EVERY repo build in the org, so each block
 # degrades gracefully and never fails an unrelated repo's build.
-initialize: |
-  # 1. Determinate Nix (the /nix store + profile persist into the snapshot).
-  if [ ! -e /nix/var/nix/profiles/default/bin/nix ]; then
-    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
-      | sh -s -- install linux --no-confirm --init none || true
-  fi
-  if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-  fi
-  # nix-daemon has no init service (--init none); start it for the build-time
-  # activation below. Not needed at session runtime (profile tools are plain
-  # /nix/store paths that work without the daemon).
-  if command -v nix >/dev/null 2>&1 && ! nix store info >/dev/null 2>&1; then
-    sudo sh -c 'nohup /nix/var/nix/profiles/default/bin/nix-daemon >/tmp/nix-daemon.log 2>&1 &'
-    sleep 3
-  fi
+initialize:
+  # devin-oidc mints the session's short-lived OIDC token. devin-tailscale-up
+  # hands it to Tailscale (workload identity federation) instead of holding a
+  # Tailscale auth key / OAuth secret on the VM.
+  - uses: github.com/CognitionAI/actions/setup-devin-oidc@main
+  - name: nix + dots devin-cloud host
+    run: |
+      # 1. Determinate Nix (the /nix store + profile persist into the snapshot).
+      if [ ! -e /nix/var/nix/profiles/default/bin/nix ]; then
+        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
+          | sh -s -- install linux --no-confirm --init none || true
+      fi
+      if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      fi
+      # nix-daemon has no init service (--init none); start it for the build-time
+      # activation below. Not needed at session runtime (profile tools are plain
+      # /nix/store paths that work without the daemon).
+      if command -v nix >/dev/null 2>&1 && ! nix store info >/dev/null 2>&1; then
+        sudo sh -c 'nohup /nix/var/nix/profiles/default/bin/nix-daemon >/tmp/nix-daemon.log 2>&1 &'
+        sleep 3
+      fi
 
-  # 2. Clone dots + activate the devin-cloud home-manager host. This installs the
-  #    toolchain, shell config, ~/.agents + skills, tailscale + op (via nix), and
-  #    the devin-tailscale-up / devin-op-ssh helpers onto PATH.
-  DOTS="$HOME/all/dots"
-  if [ ! -d "$DOTS/.git" ]; then
-    mkdir -p "$HOME/all"
-    git clone --depth 1 https://github.com/charliemeyer2000/dots "$DOTS" || true
-  else
-    git -C "$DOTS" pull --ff-only || true
-  fi
-  if command -v nix >/dev/null 2>&1 && \
-     nix build "$DOTS#homeConfigurations.devin-cloud.activationPackage" \
-       --no-link --print-out-paths >/tmp/hm-out 2>/tmp/hm-build.log; then
-    HOME_MANAGER_BACKUP_EXT=bak "$(cat /tmp/hm-out)/activate" || true
-    # Put the home-manager profile (tools + session vars) on PATH. Devin runs
-    # commands in non-interactive, non-login shells that source neither .bashrc
-    # nor .profile -- it sources $ENVRC. Writing there is what actually exposes
-    # the toolchain + helpers to the agent; the rc files are for interactive use.
-    LINE='[ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"; export PATH="$HOME/.nix-profile/bin:$PATH"'
-    for rc in ${ENVRC:+"$ENVRC"} "$HOME/.bashrc" "$HOME/.profile"; do
-      touch "$rc"
-      grep -qF 'nix-profile/bin:$PATH' "$rc" || printf '\n%s\n' "$LINE" >> "$rc"
-    done
-  else
-    echo "WARN: devin-cloud host not built -- see /tmp/hm-build.log" >&2
-  fi
+      # 2. Clone dots + activate the devin-cloud home-manager host. This installs the
+      #    toolchain, shell config, ~/.agents + skills, tailscale + op (via nix), and
+      #    the devin-tailscale-up / devin-op-ssh helpers onto PATH.
+      DOTS="$HOME/all/dots"
+      if [ ! -d "$DOTS/.git" ]; then
+        mkdir -p "$HOME/all"
+        git clone --depth 1 https://github.com/charliemeyer2000/dots "$DOTS" || true
+      else
+        git -C "$DOTS" pull --ff-only || true
+      fi
+      if command -v nix >/dev/null 2>&1 && \
+         nix build "$DOTS#homeConfigurations.devin-cloud.activationPackage" \
+           --no-link --print-out-paths >/tmp/hm-out 2>/tmp/hm-build.log; then
+        HOME_MANAGER_BACKUP_EXT=bak "$(cat /tmp/hm-out)/activate" || true
+        # Put the home-manager profile (tools + session vars) on PATH. Devin runs
+        # commands in non-interactive, non-login shells that source neither .bashrc
+        # nor .profile -- it sources $ENVRC. Writing there is what actually exposes
+        # the toolchain + helpers to the agent; the rc files are for interactive use.
+        LINE='[ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"; export PATH="$HOME/.nix-profile/bin:$PATH"'
+        for rc in ${ENVRC:+"$ENVRC"} "$HOME/.bashrc" "$HOME/.profile"; do
+          touch "$rc"
+          grep -qF 'nix-profile/bin:$PATH' "$rc" || printf '\n%s\n' "$LINE" >> "$rc"
+        done
+      else
+        echo "WARN: devin-cloud host not built -- see /tmp/hm-build.log" >&2
+      fi
 knowledge:
   - name: local-cloud-parity
     contents: |
@@ -65,12 +71,15 @@ knowledge:
       access to Charlie's 1Password "Developer" vault.
   - name: tailnet-access
     contents: |
-      To reach Charlie's workstation (aiworkstation: hostd :8080, Grafana) or
-      SSH into it, join the tailnet first: devin-tailscale-up (idempotent; needs
-      the TAILSCALE_OAUTH_CLIENT_SECRET org secret). The VM joins as an ephemeral
-      tag:devin node, auto-removed at session end, ACL-scoped. workstation has
-      Tailscale SSH (ssh charlie@aiworkstation, no keys). Deploys to AWS/Vercel
-      go through CI -- open a PR, don't hold creds.
+      To reach the life gateway (https://life.tail0eb43d.ts.net/mcp) or Charlie's
+      workstation (aiworkstation: hostd :8080, Grafana, Tailscale SSH as
+      charlie), join the tailnet first: devin-tailscale-up (idempotent). It
+      exchanges this session's Devin OIDC token with Tailscale (workload
+      identity federation; TS_DEVIN_OIDC_CLIENT_ID org var, not a secret) and
+      joins as an ephemeral tag:devin node -- auto-removed at session end,
+      ACL-scoped to life:443 + workstation:22/8080. There is no Tailscale
+      secret on this VM. Deploys to AWS/Vercel go through CI -- open a PR,
+      don't hold creds.
   - name: machine-ssh-1password
     contents: |
       Hosts that are NOT on the tailnet need Charlie's SSH key, loaded from

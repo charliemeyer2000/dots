@@ -8,6 +8,9 @@
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
+  # OAuth client scoped to `auth_keys` + tag:workstation only; read straight from
+  # 1Password at activation so it never lands in ~/.env.local.
+  tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-workstation";
   cfg = config.dots.onePassword;
 in {
   options.dots.onePassword.account = lib.mkOption {
@@ -42,18 +45,15 @@ in {
       echo "1Password not signed in or inject failed, skipping secrets."
     fi
 
-    if [ -f ${homeDir}/.env.local ]; then
-      . ${homeDir}/.env.local
-
-      if [ -n "$TAILSCALE_OAUTH_CLIENT_SECRET" ]; then
-        if ${tailscale} status &>/dev/null; then
-          echo "  -> Tailscale already connected, skipping auth"
-        elif sudo -n ${tailscale} up --auth-key="''${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:workstation 2>/dev/null; then
-          echo "  -> Tailscale authenticated"
-        else
-          echo "  -> Tailscale auth skipped (already connected or sudo requires password)"
-        fi
+    if ${tailscale} status &>/dev/null; then
+      echo "  -> Tailscale already connected, skipping auth"
+    elif TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+      if sudo -n ${tailscale} up --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:workstation 2>/dev/null; then
+        echo "  -> Tailscale authenticated"
+      else
+        echo "  -> Tailscale auth skipped (sudo requires password)"
       fi
+      unset TS_CLIENT_SECRET
     fi
   '';
 }

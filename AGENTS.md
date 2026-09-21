@@ -95,7 +95,7 @@ All inputs follow the root nixpkgs for consistency.
 - Template: `secrets/secrets.zsh.tmpl` references 1Password items via `{{ op://vault/item/field }}`
 - On rebuild (`just switch`), `op inject` fills the template → `~/.env.local` (mode 600)
 - zsh sources `~/.env.local` on startup
-- Exported keys: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `TAILSCALE_OAUTH_CLIENT_SECRET`, `MULLVAD_ACCOUNT_NUMBER`, `DOCKER_PAT`, `EXA_API_KEY`, `OPENROUTER_API_KEY`, `ALPACA_PAPER_KEY_ID`, `ALPACA_PAPER_SECRET_KEY`
+- Exported keys: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HF_TOKEN`, `WANDB_API_KEY`, `AXIOM_API_KEY`, `MULLVAD_ACCOUNT_NUMBER`, `DOCKER_PAT`, `EXA_API_KEY`, `OPENROUTER_API_KEY`, `ALPACA_PAPER_KEY_ID`, `ALPACA_PAPER_SECRET_KEY`
 - `GITHUB_TOKEN` is intentionally NOT auto-exported. `gh` falls back to its OAuth keyring (works with orgs that ban classic PATs). For ad-hoc use, the `gh-pat` zsh function fetches the PAT from 1Password on demand: `GITHUB_TOKEN=$(gh-pat) some-tool`.
 - Supports both 1Password service account token (CI) and desktop app (interactive)
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
@@ -108,10 +108,11 @@ All inputs follow the root nixpkgs for consistency.
 - On macOS, `python3` may exist from Homebrew transitive dependencies — do not rely on it
 
 ### Tailscale Authentication
-- Tailscale authenticates automatically on `just switch` via OAuth client credentials
-- OAuth client secret (never expires) stored in 1Password, injected at activation time
-- Each host advertises its role tag from life-infra's `tailscale/policy.hujson`: laptops `tag:personal` (secrets.nix), workstation `tag:workstation` (hm-secrets.nix), Devin VMs `tag:devin` (devin-tailscale-up)
-- `tailscale up` is idempotent — re-auths if node key expired, no-op if current
+- Each host advertises its role tag from life-infra's `tailscale/policy.hujson`, with a credential that can mint *only* that tag:
+  - laptops `tag:personal` — OAuth client (`auth_keys`, `tag:personal`) at `op://Developer/Tailscale/oauth-client-secret-personal`, read by secrets.nix
+  - workstation `tag:workstation` — OAuth client (`auth_keys`, `tag:workstation`) at `op://Developer/Tailscale/oauth-client-secret-workstation`, read by hm-secrets.nix
+  - Devin VMs `tag:devin` — no secret at all: `devin-tailscale-up` exchanges the session's Devin OIDC token with Tailscale (workload identity federation, `tailscale up --client-id/--id-token`); the federated identity pins the Devin issuer + org subject and is limited to `tag:devin`
+- The Mac/workstation clients are `op read` at activation time and never written to `~/.env.local`; `tailscale up` runs on every `just switch` (idempotent — re-auths if the node key expired, no-op if current)
 - No manual `tailscale up` needed on new machines (just sign into 1Password first)
 
 ### Mullvad VPN
@@ -166,7 +167,7 @@ Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` wit
 
 The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
 
-The `devin-cloud` host is also standalone home-manager, for ephemeral Devin cloud-agent VMs. It imports only the headless, non-1Password home modules (zsh, direnv, agents) — skipping `git.nix` (1Password commit signing + `gh` credential helper would break Devin's git proxy), `ssh.nix`, the GUI modules, and `hm-secrets.nix` (secrets are Devin-managed env vars, not `op inject`). It also ships two `bin/` helpers onto PATH via `writeShellScriptBin` — `devin-tailscale-up` (join the tailnet) and `devin-op-ssh` (load an SSH key from 1Password into ssh-agent) — reusing the nix-provided `tailscale`/`op` binaries. An org-wide Devin blueprint runs `home-manager switch --flake .#devin-cloud` at snapshot-build time; its canonical source-of-truth copy lives at `hosts/devin-cloud/org-blueprint.yaml` (org blueprints can't be git-backed, so it's mirrored to Devin's settings by hand rather than auto-synced).
+The `devin-cloud` host is also standalone home-manager, for ephemeral Devin cloud-agent VMs. It imports only the headless, non-1Password home modules (zsh, direnv, agents) — skipping `git.nix` (1Password commit signing + `gh` credential helper would break Devin's git proxy), `ssh.nix`, the GUI modules, and `hm-secrets.nix` (secrets are Devin-managed env vars, not `op inject`). It also ships two `bin/` helpers onto PATH via `writeShellScriptBin` — `devin-tailscale-up` (join the tailnet as `tag:devin` via Devin OIDC → Tailscale workload identity federation; needs the non-secret `TS_DEVIN_OIDC_CLIENT_ID` org var and the `devin-oidc` CLI the blueprint installs) and `devin-op-ssh` (load an SSH key from 1Password into ssh-agent) — reusing the nix-provided `tailscale`/`op` binaries. An org-wide Devin blueprint runs `home-manager switch --flake .#devin-cloud` at snapshot-build time; its canonical source-of-truth copy lives at `hosts/devin-cloud/org-blueprint.yaml` (org blueprints can't be git-backed, so it's mirrored to Devin's settings by hand rather than auto-synced).
 
 ## Common Commands
 

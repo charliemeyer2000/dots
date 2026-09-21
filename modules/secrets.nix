@@ -8,6 +8,9 @@
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
+  # OAuth client scoped to `auth_keys` + tag:personal only; read straight from
+  # 1Password at activation so it never lands in ~/.env.local.
+  tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-personal";
   asCharlie = "sudo -u charlie HOME=${homeDir}";
   cfg = config.dots.onePassword;
 in {
@@ -44,20 +47,15 @@ in {
       echo "1Password not signed in or inject failed, skipping secrets."
     fi
 
-    # Source injected secrets for Tailscale setup
-    if [ -f ${homeDir}/.env.local ]; then
-      # shellcheck source=/dev/null
-      . ${homeDir}/.env.local
-
-      # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
-      if [ -n "$TAILSCALE_OAUTH_CLIENT_SECRET" ]; then
-        echo "Authenticating Tailscale..."
-        if ${tailscale} up --reset --auth-key="''${TAILSCALE_OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
-          echo "  -> Tailscale authenticated"
-        else
-          echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
-        fi
+    # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
+    if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+      echo "Authenticating Tailscale..."
+      if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
+        echo "  -> Tailscale authenticated"
+      else
+        echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
       fi
+      unset TS_CLIENT_SECRET
     fi
   '';
 }
