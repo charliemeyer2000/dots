@@ -7,7 +7,8 @@
 
   # Dolphin emulator for offline SSBM mods (20XX, UnclePunch Training Mode).
   # Slippi Launcher itself is a one-off install (self-updating, no cask exists).
-  dots.homebrew.extraCasks = ["dolphin"];
+  # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.
+  dots.homebrew.extraCasks = ["dolphin" "obsidian"];
 
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-personal.md;

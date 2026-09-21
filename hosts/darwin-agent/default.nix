@@ -9,6 +9,9 @@
   # without a GUI login session (required macOS 15+).
   dots.tart.headlessKeychain = true;
 
+  # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.
+  dots.homebrew.extraCasks = ["obsidian"];
+
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-agent.md;
 
