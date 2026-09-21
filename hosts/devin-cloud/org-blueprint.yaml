@@ -57,6 +57,13 @@ initialize:
           touch "$rc"
           grep -qF 'nix-profile/bin:$PATH' "$rc" || printf '\n%s\n' "$LINE" >> "$rc"
         done
+        # Every session is a tailnet node by default: the first command Devin runs
+        # joins (a few seconds), later ones are a ~20 ms no-op. Only $ENVRC -- the
+        # agent's shells -- not the interactive rc files.
+        if [ -n "${ENVRC:-}" ]; then
+          JOIN='command -v devin-tailscale-up >/dev/null 2>&1 && devin-tailscale-up --auto || true'
+          grep -qF 'devin-tailscale-up --auto' "$ENVRC" || printf '%s\n' "$JOIN" >> "$ENVRC"
+        fi
       else
         echo "WARN: devin-cloud host not built -- see /tmp/hm-build.log" >&2
       fi
@@ -71,15 +78,17 @@ knowledge:
       access to Charlie's 1Password "Developer" vault.
   - name: tailnet-access
     contents: |
-      To reach the life gateway (https://life.tail0eb43d.ts.net/mcp) or Charlie's
+      This VM is already on Charlie's tailnet: $ENVRC runs `devin-tailscale-up
+      --auto` before every command, which exchanges the session's Devin OIDC
+      token with Tailscale (workload identity federation; TS_DEVIN_OIDC_CLIENT_ID
+      org var, not a secret) and joins as an ephemeral tag:devin node --
+      auto-removed at session end, ACL-scoped to life:443 + workstation:22/8080.
+      So the life gateway (https://life.tail0eb43d.ts.net/mcp) and the
       workstation (aiworkstation: hostd :8080, Grafana, Tailscale SSH as
-      charlie), join the tailnet first: devin-tailscale-up (idempotent). It
-      exchanges this session's Devin OIDC token with Tailscale (workload
-      identity federation; TS_DEVIN_OIDC_CLIENT_ID org var, not a secret) and
-      joins as an ephemeral tag:devin node -- auto-removed at session end,
-      ACL-scoped to life:443 + workstation:22/8080. There is no Tailscale
-      secret on this VM. Deploys to AWS/Vercel go through CI -- open a PR,
-      don't hold creds.
+      charlie) just work; if `tailscale status` says otherwise, run
+      devin-tailscale-up by hand to see the error. There is no Tailscale secret
+      on this VM. Deploys to AWS/Vercel go through CI -- open a PR, don't hold
+      creds.
   - name: machine-ssh-1password
     contents: |
       Hosts that are NOT on the tailnet need Charlie's SSH key, loaded from

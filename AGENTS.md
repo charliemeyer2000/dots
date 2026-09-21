@@ -111,7 +111,7 @@ All inputs follow the root nixpkgs for consistency.
 - Each host advertises its role tag from life-infra's `tailscale/policy.hujson`, with a credential that can mint *only* that tag:
   - laptops `tag:personal` — OAuth client (`auth_keys`, `tag:personal`) at `op://Developer/Tailscale/oauth-client-secret-personal`, read by secrets.nix
   - workstation `tag:workstation` — OAuth client (`auth_keys`, `tag:workstation`) at `op://Developer/Tailscale/oauth-client-secret-workstation`, read by hm-secrets.nix
-  - Devin VMs `tag:devin` — no secret at all: `devin-tailscale-up` exchanges the session's Devin OIDC token with Tailscale (workload identity federation, `tailscale up --client-id/--id-token`); the federated identity pins the Devin issuer + org subject and is limited to `tag:devin`
+  - Devin VMs `tag:devin` — no secret at all: `devin-tailscale-up` exchanges the session's Devin OIDC token with Tailscale (workload identity federation, `tailscale up --client-id/--id-token`); the federated identity pins the Devin issuer + org subject and is limited to `tag:devin`. The org blueprint hooks `devin-tailscale-up --auto` into `$ENVRC`, so every session joins on its first command (no-op once up; 10-min backoff after a failure)
 - The Mac/workstation clients are `op read` at activation time and never written to `~/.env.local`; `tailscale up` runs on every `just switch` (idempotent — re-auths if the node key expired, no-op if current)
 - No manual `tailscale up` needed on new machines (just sign into 1Password first)
 
