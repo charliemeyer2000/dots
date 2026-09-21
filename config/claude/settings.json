@@ -21,7 +21,6 @@
     "ENABLE_TOOL_SEARCH": "true"
   },
   "respectGitignore": true,
-  "autoMemoryDirectory": "~/Documents/Obsidian/life/agents/memory",
   "alwaysThinkingEnabled": true,
   "showTurnDuration": false,
   "spinnerTipsEnabled": false,

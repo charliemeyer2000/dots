@@ -8,6 +8,13 @@
   jq = "${pkgs.jq}/bin/jq";
   cfg = config.dots.agents.mcp;
   instr = config.dots.agents.instructions;
+  claude = config.dots.agents.claude;
+
+  claudeSettings =
+    builtins.fromJSON (builtins.readFile ../config/claude/settings.json)
+    // lib.optionalAttrs (claude.autoMemoryDirectory != null) {
+      inherit (claude) autoMemoryDirectory;
+    };
 
   inherit (pkgs.stdenv) isDarwin;
 
@@ -66,6 +73,18 @@ in {
       };
     };
 
+    # Per-host overrides layered onto the shared config/claude/settings.json.
+    claude.autoMemoryDirectory = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "~/Documents/Obsidian/life/agents/memory";
+      description = ''
+        Claude Code `autoMemoryDirectory` (absolute or `~/`-prefixed). Set only on
+        hosts where the directory is real and synced; null keeps Claude's
+        per-project default.
+      '';
+    };
+
     # Shared base + per-host add-on, concatenated into ~/.agents/AGENTS.md
     # (which Claude reads via the CLAUDE.md symlink and Devin via read_config_from).
     instructions = {
@@ -92,7 +111,8 @@ in {
     };
 
     # ── Claude Code ──────────────────────────────────────────────
-    home.file.".claude/settings.json".source = ../config/claude/settings.json;
+    home.file.".claude/settings.json".source =
+      (pkgs.formats.json {}).generate "claude-settings.json" claudeSettings;
     home.file.".claude/statusline.sh" = {
       source = ../config/claude/statusline.sh;
       executable = true;

@@ -11,6 +11,7 @@
 
   # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.
   dots.homebrew.extraCasks = ["obsidian"];
+  home-manager.users.charlie.dots.agents.claude.autoMemoryDirectory = "~/Documents/Obsidian/life/agents/memory";
 
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-agent.md;

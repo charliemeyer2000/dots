@@ -9,6 +9,7 @@
   # Slippi Launcher itself is a one-off install (self-updating, no cask exists).
   # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.
   dots.homebrew.extraCasks = ["dolphin" "obsidian"];
+  home-manager.users.charlie.dots.agents.claude.autoMemoryDirectory = "~/Documents/Obsidian/life/agents/memory";
 
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-personal.md;

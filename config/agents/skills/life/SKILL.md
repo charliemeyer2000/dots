@@ -47,6 +47,6 @@ Through the Executor gateway (MCP):
 - `ledger.*` — finance read tools.
 - `onepassword.*` — 1Password.
 
-On a Mac the vault is a plain folder (Obsidian + Remotely Save), `~/Documents/Obsidian/life`, and
-Claude Code's auto-memory already points at `agents/memory/` inside it. The same rules apply to
-direct file edits: stay inside `agents/` unless Charlie has approved the change.
+On Charlie's personal Macs the vault is a plain folder (Obsidian + Remotely Save),
+`~/Documents/Obsidian/life`, and Claude Code's auto-memory points at `agents/memory/` inside it.
+The same rules apply to direct file edits: stay inside `agents/` unless Charlie has approved the change.
