@@ -48,5 +48,5 @@ Through the Executor gateway (MCP):
 - `onepassword.*` — 1Password.
 
 On Charlie's personal Macs the vault is a plain folder (Obsidian + Remotely Save),
-`~/Documents/Obsidian/life`, and Claude Code's auto-memory points at `agents/memory/` inside it.
+`~/all/life`, and Claude Code's auto-memory points at `agents/memory/` inside it.
 The same rules apply to direct file edits: stay inside `agents/` unless Charlie has approved the change.
