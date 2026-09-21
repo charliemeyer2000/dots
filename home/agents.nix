@@ -77,7 +77,7 @@ in {
     claude.autoMemoryDirectory = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      example = "~/Documents/Obsidian/life/agents/memory";
+      example = "~/all/life/agents/memory";
       description = ''
         Claude Code `autoMemoryDirectory` (absolute or `~/`-prefixed). Set only on
         hosts where the directory is real and synced; null keeps Claude's
