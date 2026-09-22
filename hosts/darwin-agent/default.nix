@@ -16,8 +16,9 @@
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-agent.md;
 
-  # personal-project MCP servers
+  # personal-project MCP servers; this Mac's own Executor API key for `life`
   home-manager.users.charlie.dots.agents.mcp.catalog =
     (import ../../home/mcp-servers.nix)
     // (import ../../home/mcp-servers-personal.nix);
+  dots.onePassword.extraEnv.LIFE_MCP_API_KEY = "op://Developer/Life MCP/darwin-agent";
 }

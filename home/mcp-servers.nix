@@ -4,7 +4,8 @@
 # darwin-agent) and inline catalog extensions in hosts/*/default.nix (darwin-cog).
 # Schema: stdio → { command; args; env?; }   remote → { type; url; headers?; }
 # Remote servers use each CLI's OAuth login (no tokens here); exa reads
-# EXA_API_KEY from the shell env.
+# EXA_API_KEY from the shell env, and `life` (personal) sends LIFE_MCP_API_KEY as a
+# header — both CLIs expand `${VAR}` in `headers`/`url`/`env` at connect time.
 # No browser MCP: browser control is the agent-browser CLI (via its skill), not a
 # chrome MCP, so its tool schemas stay out of every session's baseline context.
 {
