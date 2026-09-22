@@ -38,5 +38,11 @@ in {
   dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/devin-cloud.md;
 
+  # The life gateway is the one personal server a tag:devin node can reach;
+  # the rest of mcp-servers-personal.nix needs a browser OAuth login.
+  dots.agents.mcp.catalog =
+    (import ../../home/mcp-servers.nix)
+    // lib.getAttrs ["life"] (import ../../home/mcp-servers-personal.nix);
+
   nixpkgs.config.allowUnfree = true;
 }
