@@ -16,7 +16,7 @@
 
   extraEnvExports = lib.concatStrings (lib.mapAttrsToList (name: ref: ''
       if VALUE="$($OP_CMD read "${ref}" 2>/dev/null)"; then
-        echo "export ${name}=\"$VALUE\"" >> ${homeDir}/.env.local
+        printf 'export %s=%q\n' ${name} "$VALUE" >> ${homeDir}/.env.local
       else
         echo "  -> ${ref} unreadable, ${name} not exported"
       fi
