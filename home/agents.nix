@@ -105,8 +105,15 @@ in {
   config = {
     home.file.".agents/AGENTS.md".text =
       instr.base + lib.optionalString (instr.host != "") ("\n" + instr.host);
+    # Skills symlinked into a plugin (config/agents/skills/life -> ../plugins/life/...)
+    # keep their relative target under lndir, so ~/.agents/plugins must sit next to
+    # ~/.agents/skills for them to resolve.
     home.file.".agents/skills" = {
       source = ../config/agents/skills;
+      recursive = true;
+    };
+    home.file.".agents/plugins" = {
+      source = ../config/agents/plugins;
       recursive = true;
     };
 

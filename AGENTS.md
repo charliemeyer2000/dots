@@ -24,7 +24,8 @@ dots/
 │   ├── agents/
 │   │   ├── AGENTS.md     # Shared base agent instructions (host-agnostic)
 │   │   ├── hosts/        # Per-host add-ons (darwin-personal.md, workstation.md, ...)
-│   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.)
+│   │   ├── plugins/      # Agent plugins (life: skill + MCP server), installable by Devin/Claude Code from this repo
+│   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.; `life` symlinks into plugins/)
 │   └── claude/
 │       ├── settings.json # Claude Code-specific settings (model, plugins)
 │       └── statusline.sh # Claude Code statusline script
@@ -126,13 +127,14 @@ All inputs follow the root nixpkgs for consistency.
 
 ### Agent Configuration
 Agent config is managed in a tool-agnostic way:
-- Source of truth: `config/agents/` (shared `AGENTS.md` base + `hosts/<host>.md` add-ons + skills/)
+- Source of truth: `config/agents/` (shared `AGENTS.md` base + `hosts/<host>.md` add-ons + skills/ + plugins/)
 - Claude-specific settings: `config/claude/settings.json`
 - Deployed to `~/.agents/` via home-manager (agents.nix)
 - `~/.agents/AGENTS.md` = shared base + the current host's add-on, concatenated at build time (see "Agent instructions" below)
 - `~/.claude/CLAUDE.md` → `~/.agents/AGENTS.md` (symlink)
 - `~/.claude/skills` → `~/.agents/skills` (symlink)
 - `~/.config/devin/skills` → `~/.agents/skills` (symlink)
+- `~/.agents/plugins/<name>` = `config/agents/plugins/<name>`; a skill that belongs to a plugin lives in the plugin and is symlinked from `config/agents/skills/<name>` (relative, so it resolves both in the repo and under `~/.agents/`)
 - Any AGENTS.md-compatible coding agent can read from `~/.agents/`
 - Commands: `skill-add`, `skill-search`, `skill-list`, `skill-remove`, `skill-browse`, `skill-install`
 - Portable across all machines
@@ -147,7 +149,8 @@ Agent config is managed in a tool-agnostic way:
 - **Catalog** (`home/mcp-servers.nix`): single source of truth — agent-neutral defs (stdio `{command, args, env?}`, remote `{type, url, headers?}`). agents.nix renders each into the target tool's dialect (Claude keeps `type`; Devin uses `transport`). Host-scoped servers extend it: `home/mcp-servers-personal.nix` (life, posthog, Sanity, whop-docs — darwin-personal + darwin-agent; devin-cloud takes only `life`) and inline additions in `hosts/darwin-cog/default.nix` (metabase, notion, slack — work only).
 - **Per-host, per-agent** via `dots.agents.mcp`: `.claude` / `.devin` pick catalog names (`null` = all, `[]` = none), `.catalog` is extendable. Override on a darwin host with `home-manager.users.charlie.dots.agents.mcp.devin = ["exa" "datadog"];` (or directly on the workstation).
 - **Merged, not symlinked**: both CLIs rewrite their config at runtime, so agents.nix jq-merges managed servers in (a symlink gets clobbered). Catalog servers are authoritative; out-of-band ones (e.g. `claude mcp add`) are preserved.
-- **Auth via OAuth, not env keys**: remote servers (datadog, posthog, Sanity) carry no credentials — log in once per machine (`devin mcp login <name>` or Claude `/mcp`), re-login to switch accounts. Exa reads a key (`EXA_API_KEY`) from the shell env, and `life` (the Executor edge, `mcp-servers-personal.nix`; darwin-personal, darwin-agent, devin-cloud) sends `x-api-key: ${LIFE_MCP_API_KEY}` — both CLIs expand `${VAR}` in `headers` when they connect, so the key never lands in the catalog or the rendered configs. One Executor API key per client: Macs via `dots.onePassword.extraEnv`, Devin VMs via the `LIFE_MCP_API_KEY` org secret.
+- **Auth via OAuth, not env keys**: remote servers (datadog, posthog, Sanity) carry no credentials — log in once per machine (`devin mcp login <name>` or Claude `/mcp`), re-login to switch accounts. Exa reads a key (`EXA_API_KEY`) from the shell env, and `life` (the Executor edge; darwin-personal, darwin-agent, devin-cloud) sends `x-api-key: ${LIFE_MCP_API_KEY}` — both CLIs expand `${VAR}` in `headers` when they connect, so the key never lands in the catalog or the rendered configs. One Executor API key per client: Macs via `dots.onePassword.extraEnv`, Devin VMs via the `LIFE_MCP_API_KEY` org secret.
+- **`life` is a plugin first**: `config/agents/plugins/life/` (`.claude-plugin/plugin.json` — Devin loads the Claude layout too — `.mcp.json`, `skills/life/`) is what Devin cloud installs from this repo (`git-subdir` `config/agents/plugins/life`) and what the root `.claude-plugin/marketplace.json` exposes to Claude Code. `mcp-servers-personal.nix` reads the server definition from that `.mcp.json`, so the local catalog and the plugin can't drift. A machine should get `life` from one path: the plugin (Devin cloud, and Claude Code via the marketplace) or the catalog (the Macs' rendered configs) — the same name from both is harmless only because the definitions are identical.
 - **No browser MCP**: browser control is the `agent-browser` CLI (Homebrew on darwin, the `llm-agents` overlay on Linux), driven via the `agent-browser` skill — deliberately not an MCP, so ~29 tool schemas stay out of every session's baseline context. `chrome-devtools-mcp` was removed for this reason; re-add it to the catalog only for a one-off perf/Lighthouse deep-dive. The merge is additive, so removing a catalog server also needs a one-time manual prune of `~/.claude.json` + `~/.config/devin/config.json`.
 
 ### Host Composition

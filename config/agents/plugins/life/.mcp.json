@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "life": {
+      "type": "http",
+      "url": "https://life.tail0eb43d.ts.net/mcp",
+      "headers": {
+        "x-api-key": "${LIFE_MCP_API_KEY}"
+      }
+    }
+  }
+}
