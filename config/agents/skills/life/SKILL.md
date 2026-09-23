@@ -47,6 +47,11 @@ Through the Executor gateway (MCP):
 - `ledger.*` — finance read tools.
 - `onepassword.*` — 1Password.
 
-On Charlie's personal Macs the vault is a plain folder (Obsidian + Remotely Save),
+Paths are relative to each server's root (`brain`: vault root, `agents`: `agents/`); a leading `/`
+is rejected as "escapes the vault". On Devin cloud VMs the tailnet joins on the first shell
+command, so if the first `life` call fails with "error sending request", run
+`devin-tailscale-up --auto` and retry.
+
+On Charlie's personal Macs the vault is a plain folder (Obsidian + Self-hosted LiveSync),
 `~/all/life`, and Claude Code's auto-memory points at `agents/memory/` inside it.
 The same rules apply to direct file edits: stay inside `agents/` unless Charlie has approved the change.
