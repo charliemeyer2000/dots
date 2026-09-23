@@ -1,0 +1,8 @@
+{
+  "name": "life",
+  "version": "0.1.0",
+  "description": "Charlie's life vault over the Executor MCP gateway: the `life` skill (vault rules, agent memory, tool paths) and the tailnet-only `life` MCP server (brain/agents/ledger/1Password), authenticated with the client's LIFE_MCP_API_KEY.",
+  "author": {"name": "Charlie Meyer"},
+  "repository": "https://github.com/charliemeyer2000/dots",
+  "keywords": ["life", "vault", "mcp", "executor", "obsidian"]
+}

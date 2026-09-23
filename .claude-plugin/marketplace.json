@@ -1,0 +1,12 @@
+{
+  "name": "dots",
+  "owner": {"name": "Charlie Meyer", "url": "https://github.com/charliemeyer2000"},
+  "description": "Plugins shared by every agent Charlie runs (Devin, Claude Code, ...), sourced from config/agents/plugins/.",
+  "plugins": [
+    {
+      "name": "life",
+      "source": "./config/agents/plugins/life",
+      "description": "Charlie's life vault: the `life` skill + the Executor MCP gateway (brain/agents/ledger/1Password)."
+    }
+  ]
+}
