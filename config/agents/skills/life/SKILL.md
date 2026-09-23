@@ -50,7 +50,8 @@ Through the Executor gateway (MCP):
 Paths are relative to each server's root (`brain`: vault root, `agents`: `agents/`); a leading `/`
 is rejected as "escapes the vault". On Devin cloud VMs the tailnet joins on the first shell
 command, so if the first `life` call fails with "error sending request", run
-`devin-tailscale-up --auto` and retry.
+`devin-tailscale-up` (it prints the error if the join itself is failing) and retry the MCP
+call — don't fall back to curl/scripts against the gateway.
 
 On Charlie's personal Macs the vault is a plain folder (Obsidian + Self-hosted LiveSync),
 `~/all/life`, and Claude Code's auto-memory points at `agents/memory/` inside it.
