@@ -26,9 +26,9 @@ initialize:
       if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
       fi
-      # nix-daemon has no init service (--init none); start it for the build-time
-      # activation below. Not needed at session runtime (profile tools are plain
-      # /nix/store paths that work without the daemon).
+      # nix-daemon has no init service (--init none) and a snapshot boots with no
+      # processes, so start it here for the build and again from $ENVRC (below)
+      # for sessions that run nix itself (`just check`, `nix build`).
       if command -v nix >/dev/null 2>&1 && ! nix store info >/dev/null 2>&1; then
         sudo sh -c 'nohup /nix/var/nix/profiles/default/bin/nix-daemon >/tmp/nix-daemon.log 2>&1 &'
         sleep 3
@@ -63,6 +63,9 @@ initialize:
         if [ -n "${ENVRC:-}" ]; then
           JOIN='command -v devin-tailscale-up >/dev/null 2>&1 && devin-tailscale-up --auto || true'
           grep -qF 'devin-tailscale-up --auto' "$ENVRC" || printf '%s\n' "$JOIN" >> "$ENVRC"
+          # `nix` on PATH + the daemon up (pgrep is ~5 ms; the start runs once per boot).
+          NIXD="[ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ] && . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh; pgrep -x nix-daemon >/dev/null 2>&1 || sudo sh -c 'nohup /nix/var/nix/profiles/default/bin/nix-daemon >/tmp/nix-daemon.log 2>&1 &'"
+          grep -qF 'pgrep -x nix-daemon' "$ENVRC" || printf '%s\n' "$NIXD" >> "$ENVRC"
         fi
       else
         echo "WARN: devin-cloud host not built -- see /tmp/hm-build.log" >&2
@@ -78,17 +81,21 @@ knowledge:
       access to Charlie's 1Password "Developer" vault.
   - name: tailnet-access
     contents: |
-      This VM is already on Charlie's tailnet: $ENVRC runs `devin-tailscale-up
-      --auto` before every command, which exchanges the session's Devin OIDC
-      token with Tailscale (workload identity federation; TS_DEVIN_OIDC_CLIENT_ID
-      org var, not a secret) and joins as an ephemeral tag:devin node --
-      auto-removed at session end, ACL-scoped to life:443 + workstation:22/8080.
-      So the life gateway (https://life.tail0eb43d.ts.net/mcp) and the
+      This VM joins Charlie's tailnet on its first shell command: $ENVRC runs
+      `devin-tailscale-up --auto` before every command, which exchanges the
+      session's Devin OIDC token with Tailscale (workload identity federation;
+      TS_DEVIN_OIDC_CLIENT_ID org var, not a secret) and joins as an ephemeral
+      tag:devin node -- auto-removed at session end, ACL-scoped to life:443 +
+      workstation:22/8080. After that the life gateway
+      (https://life.tail0eb43d.ts.net/mcp; the `life` MCP server) and the
       workstation (aiworkstation: hostd :8080, Grafana, Tailscale SSH as
-      charlie) just work; if `tailscale status` says otherwise, run
-      devin-tailscale-up by hand to see the error. There is no Tailscale secret
-      on this VM. Deploys to AWS/Vercel go through CI -- open a PR, don't hold
-      creds.
+      charlie) just work. The `life` MCP client connects at session start,
+      before any shell command, so its first call can fail with "error sending
+      request" -- that is the tailnet, not LIFE_MCP_API_KEY: run
+      devin-tailscale-up by hand (it prints why a join fails), then call the
+      MCP again; never curl or script against the gateway. There is no
+      Tailscale secret on this VM. Deploys to AWS/Vercel go through CI -- open
+      a PR, don't hold creds.
   - name: machine-ssh-1password
     contents: |
       Hosts that are NOT on the tailnet need Charlie's SSH key, loaded from
