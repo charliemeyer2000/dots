@@ -51,7 +51,9 @@ Read the `pr-stacking` skill for the git side (restack, `--update-refs`, force-w
    api() { curl -sS -H @<(printf 'Authorization: Bearer %s\n' "$TOK") \
      -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2026-03-10" "$@"; }
    api -X PUT "https://api.github.com/repos/charliemeyer2000/<repo>/pulls/<top>/merge-async" \
-     -d '{"merge_method":"squash","merge_action":"direct_merge","expected_head_sha":"<top head sha>"}'
+     -d '{"merge_method":"squash","merge_action":"direct_merge","sha":"<top head sha you checked>"}'
+   # `sha` pins the merge to the head you preflighted (409 if the branch moved since);
+   # the response echoes it back as `expected_head_sha`.
    # → {"status":"pending","details":{"uuid":…}}; poll until it leaves "pending":
    api "https://api.github.com/repos/charliemeyer2000/<repo>/pulls/<top>/merge-async/<uuid>"
    unset TOK
@@ -62,8 +64,8 @@ Read the `pr-stacking` skill for the git side (restack, `--update-refs`, force-w
    stack needs Charlie's PAT.
 4. `{"status":"failed","details":{"message":"Merge conflict detected"}}` means the stack isn't
    linear on top of trunk (the "Rebase stack" button state) — `main` moved since the stack's
-   base. Restack locally from the leaf (`git rebase --update-refs origin/main`), resolve, verify
-   each PR's diff is unchanged, `git push --force-with-lease` all branches, wait one CI cycle,
+   base. Restack locally from the leaf (`git fetch origin && git rebase --update-refs
+   origin/main`), resolve, verify each PR's diff is unchanged, `git push --force-with-lease` all branches, wait one CI cycle,
    retry step 3. A chain whose branch tips are *merge commits* (a child merged its parent branch
    back in) can't be linearized by `--update-refs` alone: rebuild it bottom-up with `git checkout
    -B <branch> <parent> && git cherry-pick <that PR's own commits>`, then push.

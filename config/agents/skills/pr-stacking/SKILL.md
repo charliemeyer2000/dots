@@ -402,7 +402,8 @@ gh api repos/OWNER/REPO/git/refs/heads/<branch> -X DELETE
 | Conflict markers | `git grep -nE '^(<<<<<<<\|>>>>>>>\|=======$)'` |
 | Check API at level | `git show <branch>:<file> \| grep -A10 "def func"` |
 | CI status | `(.conclusion // .state // .status // "PENDING")` |
-| Merge stack | `merge_stack "owner/repo" 101 102 103` |
+| Merge stack (native) | `PUT repos/o/r/pulls/<top>/merge-async {"merge_method":"squash","merge_action":"direct_merge","sha":…}` (API `2026-03-10`) |
+| Merge stack (manual fallback) | `merge_stack "owner/repo" 101 102 103` |
 | Auto-delete setting | `gh api repos/o/r --jq .delete_branch_on_merge` |
 | Restack after merge | `git fetch origin && git checkout <leaf> && git rebase origin/main` |
 | Required checks | `gh pr checks <pr> --required` |
