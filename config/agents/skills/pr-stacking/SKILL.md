@@ -283,6 +283,17 @@ gh pr view "$pr" --repo "$REPO" --json statusCheckRollup --jq '
 
 ## Merging stacks
 
+**Native GitHub stacks first** (public preview, API version `2026-03-10`): if the PRs report a
+`stack` object (`gh api repos/O/R/pulls/N --jq .stack`) — or you register the chain with
+`POST /repos/O/R/stacks {"pull_requests":[bottom..top]}` — then one
+`PUT /repos/O/R/pulls/<top>/merge-async {"merge_method":"squash","merge_action":"direct_merge"}`
+squash-merges every PR below the top, bottom-up, one commit each, in a single operation (poll
+`/merge-async/<uuid>` until it leaves `pending`). No per-level retarget dance, no per-level CI
+cycle, one post-merge workflow run. It fails with `Merge conflict detected` when the stack isn't
+linear on top of trunk: restack from the leaf (below), force-with-lease, one CI cycle, retry.
+Auto-merge isn't supported on stacks; merge queues are. The `pr-merge` skill has the PAT-authed
+recipe. Everything below is the manual fallback for repos/providers without native stacks.
+
 Bottom-up with squash. First check the repo setting — it decides the retarget flow:
 
 ```bash
@@ -391,7 +402,8 @@ gh api repos/OWNER/REPO/git/refs/heads/<branch> -X DELETE
 | Conflict markers | `git grep -nE '^(<<<<<<<\|>>>>>>>\|=======$)'` |
 | Check API at level | `git show <branch>:<file> \| grep -A10 "def func"` |
 | CI status | `(.conclusion // .state // .status // "PENDING")` |
-| Merge stack | `merge_stack "owner/repo" 101 102 103` |
+| Merge stack (native) | `PUT repos/o/r/pulls/<top>/merge-async {"merge_method":"squash","merge_action":"direct_merge","sha":…}` (API `2026-03-10`) |
+| Merge stack (manual fallback) | `merge_stack "owner/repo" 101 102 103` |
 | Auto-delete setting | `gh api repos/o/r --jq .delete_branch_on_merge` |
 | Restack after merge | `git fetch origin && git checkout <leaf> && git rebase origin/main` |
 | Required checks | `gh pr checks <pr> --required` |
