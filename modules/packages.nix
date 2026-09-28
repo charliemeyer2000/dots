@@ -23,6 +23,7 @@ with pkgs;
     zoxide
     gh
     gum
+    p4
     nmap
     socat
     watchexec
