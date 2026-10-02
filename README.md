@@ -155,6 +155,7 @@ required once per new mac for everything to work end-to-end:
 - **xcode CLT** — auto-installed by `darwin.nix` activation script; fall back to `sudo xcode-select --install` if it fails
 - **accept the Xcode license** — `sudo xcodebuild -license accept` (required for `xcodebuild` and some brew formulas)
 - **Raycast hotkeys** — Raycast cloud sync handles preferences but the **global launch hotkey is per-machine**; rebind under Settings → General → Hotkey
+- **Raycast script directory** — add `~/.config/raycast-scripts` once under Settings → Script Commands → Add Script Directory (deployed from `config/raycast/`)
 - **log out / reboot** — required after the first `just switch` for keyboard repeat, press-and-hold, and other `NSGlobalDomain` defaults to take effect
 
 ### app sign-ins (cloud-synced)

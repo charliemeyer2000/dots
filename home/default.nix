@@ -15,6 +15,7 @@ in {
     ./fonts.nix
     ./ghostty.nix
     ./agents.nix
+    ./raycast.nix
   ];
 
   _module.args = {inherit onePasswordAgentSocket;};
