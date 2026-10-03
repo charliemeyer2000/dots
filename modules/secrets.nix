@@ -8,11 +8,9 @@
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
-  # OAuth client scoped to `auth_keys` + tag:personal only; read straight from
-  # 1Password at activation so it never lands in ~/.env.local.
-  tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-personal";
   asCharlie = "sudo -u charlie HOME=${homeDir}";
   cfg = config.dots.onePassword;
+  ts = config.dots.tailscale;
 
   extraEnvExports = lib.concatStrings (lib.mapAttrsToList (name: ref: ''
       if VALUE="$($OP_CMD read "${ref}" 2>/dev/null)"; then
@@ -23,6 +21,22 @@
     '')
     cfg.extraEnv);
 in {
+  options.dots.tailscale = {
+    tag = lib.mkOption {
+      type = lib.types.str;
+      default = "tag:personal";
+      description = "Role tag this host advertises (life-infra tailscale/policy.hujson).";
+    };
+    clientRef = lib.mkOption {
+      type = lib.types.str;
+      default = "op://Developer/Tailscale/oauth-client-secret-personal";
+      description = ''
+        1Password reference of an OAuth client scoped to `auth_keys` + exactly `tag`; read straight
+        from 1Password at activation so it never lands in ~/.env.local.
+      '';
+    };
+  };
+
   options.dots.onePassword = {
     account = lib.mkOption {
       type = lib.types.str;
@@ -71,9 +85,9 @@ in {
     fi
 
     # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
-    if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+    if TS_CLIENT_SECRET="$($OP_CMD read "${ts.clientRef}" 2>/dev/null)"; then
       echo "Authenticating Tailscale..."
-      if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
+      if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=${ts.tag} 2>/dev/null; then
         echo "  -> Tailscale authenticated"
       else
         echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
