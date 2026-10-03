@@ -9,7 +9,9 @@
 
   dots.tart.headlessKeychain = true;
   # A LaunchAgent (and Messages.app, which imsg drives) only exists inside a logged-in session, so
-  # an unattended reboot must log `charlie` straight back in. Requires FileVault *off* on this box.
+  # an unattended reboot must log `charlie` straight back in. This sets the loginwindow preference;
+  # macOS honours it only after the one-time System Settings → Users & Groups → Automatic login
+  # toggle has written /etc/kcpassword (needs FileVault *off*) — day-one runbook step 1.
   system.defaults.loginwindow.autoLoginUser = "charlie";
   # imsg converts voice notes (CAF → m4a) for the model with ffmpeg; imsg itself is in darwin.nix's brews.
   environment.systemPackages = [pkgs.ffmpeg];
