@@ -8,6 +8,9 @@
   networking.localHostName = "charlie-mini";
 
   dots.tart.headlessKeychain = true;
+  # A LaunchAgent (and Messages.app, which imsg drives) only exists inside a logged-in session, so
+  # an unattended reboot must log `charlie` straight back in. Requires FileVault *off* on this box.
+  system.defaults.loginwindow.autoLoginUser = "charlie";
   # imsg converts voice notes (CAF → m4a) for the model with ffmpeg; imsg itself is in darwin.nix's brews.
   environment.systemPackages = [pkgs.ffmpeg];
   dots.tailscale.tag = "tag:agent";
@@ -49,9 +52,10 @@
         ''
           set -a; source "$HOME/.env.local"; set +a
           unset ANTHROPIC_API_KEY
-          export IMSG_HOST="$(/Applications/Tailscale.app/Contents/MacOS/Tailscale ip -4)" IMSG_PORT=8765
-          export BOT_CWD="$HOME/all/life" BOT_PROFILE="$HOME/all/life/agents/memory/MEMORY.md"
-          exec "$HOME/.local/bin/uv" run --directory "$HOME/all/life-infra" imessage-bot
+          export IMSG_HOST="$(tailscale ip -4)" IMSG_PORT=8765
+          export BOT_CWD="$HOME/all/life" BOT_PROFILE="$HOME/all/life/agents/bot"
+          export BOT_MODEL=claude-opus-5-5 BOT_EFFORT=max
+          exec uv run --directory "$HOME/all/life-infra" imessage-bot
         ''
       ];
       RunAtLoad = true;
@@ -59,7 +63,8 @@
       ThrottleInterval = 10;
       StandardOutPath = "/Users/charlie/Library/Logs/imessage-bot.log";
       StandardErrorPath = "/Users/charlie/Library/Logs/imessage-bot.log";
-      EnvironmentVariables.PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      # Nix (uv, tailscale) + Homebrew (imsg); launchd's default PATH has neither.
+      EnvironmentVariables.PATH = "/etc/profiles/per-user/charlie/bin:/run/current-system/sw/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
     };
   };
 }
