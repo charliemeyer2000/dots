@@ -55,6 +55,7 @@ When reading documentation, always:
 - The fleet (the machine you're currently on is detailed under "This machine" at the end):
     - `darwin-personal` — M4 Pro MacBook Pro, daily driver (nix-darwin + home-manager)
     - `darwin-agent` — M1 Pro MacBook Pro, always-on agent (nix-darwin + home-manager)
+    - `darwin-bot` — Mac mini `charlie-mini`, Charlie's Bot on iMessage (nix-darwin + home-manager; life-infra `services/imessage-bot` as a LaunchAgent)
     - `darwin-cog` — Cognition work MacBook (nix-darwin + home-manager)
     - `workstation` — Linux box, 32 CPU + 5090 GPU (standalone home-manager)
     - `devin-cloud` — ephemeral Devin cloud-agent VM (headless standalone home-manager; Devin-managed secrets + scoped 1Password service-account for `op read`)

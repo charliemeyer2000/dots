@@ -60,6 +60,7 @@
     "darwin-personal"
     "darwin-agent"
     "darwin-cog"
+    "darwin-bot"
   ];
 in {
   flake = {
