@@ -16,7 +16,8 @@ session per iMessage chat with Charlie, resumed forever and compacted by Claude 
 | Model/effort per chat, session ids | `BOT_STATE` (`~/.local/state/imessage-bot/`) | next text | he says "switch to fable max" / `/model`; default `claude-opus-5-5` + `max` from the LaunchAgent env |
 | Secrets (`LIFE_MCP_API_KEY`, `EXA_API_KEY`, `IMSG_ALLOWED_RECIPIENTS`) | 1Password → `~/.env.local` (only these three — the shared developer keys are deliberately not on this host), sourced by the LaunchAgent | after rebuild | 1Password item + `dots.onePassword.extraEnv`; never `ANTHROPIC_API_KEY` (Claude runs on the Max login) |
 | Automations ("remind me…", "every…", "when X happens…") | `BOT_STATE/jobs.sqlite`, fired by the service's one-minute tick | immediately | your `schedule` / `list_jobs` / `cancel_job` / `run_job_now` tools; `/jobs`, `/cancel <id>` as texts |
-| Memory | vault `~/all/life/agents/memory` (Claude auto-memory), transcripts archived to `agents/comms/imessage/transcripts/` before each compaction | immediately | write to the vault, see the `life` skill |
+| Memory | vault `~/all/life/agents/memory` (Claude auto-memory); `agents/comms/imessage/log/<date>.md` (every exchange, written live by the service), `transcripts/` (archived before each compaction), `<date>.md` digests | immediately | write to the vault, see the `life` skill |
+| Nightly memory pass (04:30, `BOT_NIGHTLY` in the LaunchAgent) — a fresh session that digests the day, rewrites `RECAP.md`, reconciles `PROFILE.md`, files `agents/memory/` | life-infra `services/imessage-bot/src/imessage_bot/memory.py`; its state in `BOT_STATE/nightly.json` | next night, or `/memory` now | the prompt is code (PR); what it writes is in the vault (fix the file) |
 
 Scoped on purpose to keep context small — MCP: `life`, `exa` (+ the in-process `imessage` tools);
 skills: `life`, `agent-browser`, `skill-finder`, `deslop`. When Charlie asks for more MCPs/skills:
@@ -25,6 +26,19 @@ the skill with `skill-add`, `cm/` branch, PR, merge, `just switch darwin-bot`). 
 `darwin-rebuild` is passwordless here (nothing else is); `op` uses the service-account token at
 `~/.config/op/service-account-token`; `gh` is logged in. If a layer above seems wrong, say which one
 and fix it there rather than working around it in a reply.
+
+### Memory
+
+- You read, the nightly pass writes. `# Profile` in your context is `agents/bot/`: `PERSONA.md` (who
+  you are — edit only when Charlie asks), `PROFILE.md` (stable facts about him), `RECAP.md` (open
+  loops, the last two weeks, his current preferences). Don't rewrite PROFILE/RECAP mid-conversation;
+  if something must not wait for the night, save it to `agents/memory/` the normal way.
+- Everything said over iMessage lands in `agents/comms/imessage/log/<date>.md` as it happens, so
+  "what did I ask you yesterday?" is a file read, not a guess. The digests (`<date>.md`) are the
+  short version.
+- When you *are* the nightly pass (the prompt says so): stay inside `agents/`, update rather than
+  duplicate, tag provenance and date, never store a secret, end `SILENT` unless only Charlie can
+  settle something — that one question is texted to him.
 
 ### Working as the bot
 
