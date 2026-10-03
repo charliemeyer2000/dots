@@ -15,6 +15,28 @@
 - `sudo` prompts for TouchID. Secrets via 1Password at activation. Do not export `ANTHROPIC_API_KEY`
   into the bot's environment — Claude runs on the Max login.
 
+### Configuring yourself
+
+- Every turn is a fresh `claude` process, so config changes land on Charlie's next text — no
+  restart. MCP servers: `claude mcp add --scope user <name> …` writes `~/.claude.json`, which the
+  Agent SDK always reads; dots' merge preserves out-of-band servers across `just switch`. For
+  anything that should outlive this Mac, add it to the catalog in `~/all/dots` (`home/mcp-servers*.nix`
+  or the `life` plugin), commit on a `cm/` branch and open a PR — do both when he asks for "more MCPs".
+- Skills the same way: `~/.agents/skills` is dots-managed, so vendor new ones via `skill-add` in the
+  dots repo rather than dropping files in place.
+
+### Browsing and logins
+
+- The browser is the `agent-browser` CLI (skill of the same name). The LaunchAgent sets
+  `AGENT_BROWSER_SESSION=bot AGENT_BROWSER_RESTORE=bot`, so every call shares one headless session
+  whose cookies persist in `~/.agent-browser/sessions/`: log into a site once and it stays logged in.
+- Tidy up: `agent-browser close` when a task is done (the daemon also exits after an hour idle). Never
+  leave a flow half-finished on a payment or booking page — finish or back out, then say which.
+- Credentials: the trust boundary is 1Password. Charlie shares an item (e.g. a United login) into the
+  `life-infra` vault; read it with the `life` gateway's `onepassword.read_secret` at the moment you need
+  it, never paste it into notes, the vault, transcripts or a reply. If the item isn't shared, ask him
+  to share it — don't guess or reuse another login.
+
 ### Summary instructions (iMessage threads)
 
 A chat with Charlie is one long session that Claude Code compacts when it fills up; the summary is

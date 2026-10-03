@@ -57,6 +57,7 @@
           export IMSG_HOST="$(tailscale ip -4)" IMSG_PORT=8765
           export BOT_CWD="$HOME/all/life" BOT_PROFILE="$HOME/all/life/agents/bot"
           export BOT_TRANSCRIPTS="$HOME/all/life/agents/comms/imessage/transcripts"
+          export AGENT_BROWSER_SESSION=bot AGENT_BROWSER_RESTORE=bot
           export BOT_MODEL=claude-opus-5-5 BOT_EFFORT=max
           exec uv run --directory "$HOME/all/life-infra" imessage-bot
         ''
