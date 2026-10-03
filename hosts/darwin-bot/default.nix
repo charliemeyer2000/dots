@@ -35,6 +35,25 @@
   home-manager.users.charlie.dots.agents.mcp.catalog =
     (import ../../home/mcp-servers.nix)
     // (import ../../home/mcp-servers-personal.nix);
+  # A scoped context, not the whole catalogue: the bot can still `claude mcp add` / vendor a skill
+  # and PR it here when Charlie asks for more.
+  home-manager.users.charlie.dots.agents.mcp.claude = ["life" "exa"];
+  home-manager.users.charlie.dots.agents.mcp.devin = ["life" "exa"];
+  home-manager.users.charlie.dots.agents.skills = [
+    "life"
+    "agent-browser"
+    "skill-finder"
+    "review-loop"
+    "pr-merge"
+    "deslop"
+    "tracking-doc"
+  ];
+
+  # Headless: TouchID sudo can't be answered over SSH, and the bot applies its own dots PRs with
+  # `just switch darwin-bot`. Only darwin-rebuild, nothing else.
+  security.sudo.extraConfig = ''
+    charlie ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+  '';
 
   dots.onePassword.extraEnv = {
     LIFE_MCP_API_KEY = "op://Developer/Life MCP/darwin-bot";

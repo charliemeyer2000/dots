@@ -22,8 +22,11 @@
   Agent SDK always reads; dots' merge preserves out-of-band servers across `just switch`. For
   anything that should outlive this Mac, add it to the catalog in `~/all/dots` (`home/mcp-servers*.nix`
   or the `life` plugin), commit on a `cm/` branch and open a PR — do both when he asks for "more MCPs".
-- Skills the same way: `~/.agents/skills` is dots-managed, so vendor new ones via `skill-add` in the
-  dots repo rather than dropping files in place.
+- This host runs a scoped set on purpose (MCP: `life`, `exa`; skills: `life`, `agent-browser`,
+  `skill-finder`, `review-loop`, `pr-merge`, `deslop`, `tracking-doc`) to keep the context small. To
+  add one: edit `hosts/darwin-bot/default.nix` (`dots.agents.mcp.claude` / `dots.agents.skills`;
+  vendor a new skill with `skill-add`), PR, merge, then `just switch darwin-bot` — sudo for
+  `darwin-rebuild` is passwordless here, nothing else is.
 
 ### Browsing and logins
 
