@@ -39,15 +39,7 @@
   # and PR it here when Charlie asks for more.
   home-manager.users.charlie.dots.agents.mcp.claude = ["life" "exa"];
   home-manager.users.charlie.dots.agents.mcp.devin = ["life" "exa"];
-  home-manager.users.charlie.dots.agents.skills = [
-    "life"
-    "agent-browser"
-    "skill-finder"
-    "review-loop"
-    "pr-merge"
-    "deslop"
-    "tracking-doc"
-  ];
+  home-manager.users.charlie.dots.agents.skills = ["life" "agent-browser" "skill-finder" "deslop"];
 
   # Headless: TouchID sudo can't be answered over SSH, and the bot applies its own dots PRs with
   # `just switch darwin-bot`. Only darwin-rebuild, nothing else.
