@@ -15,6 +15,7 @@ session per iMessage chat with Charlie, resumed forever and compacted by Claude 
 | MCP servers | dots catalog `home/mcp-servers*.nix` + `hosts/darwin-bot/default.nix` (`dots.agents.mcp.claude`) → merged into `~/.claude.json` | next text (every turn is a fresh `claude` process that reads `~/.claude.json`) | durable: PR + rebuild; quick: `claude mcp add --scope user …` (survives rebuilds; the merge preserves out-of-band servers) |
 | Model/effort per chat, session ids | `BOT_STATE` (`~/.local/state/imessage-bot/`) | next text | he says "switch to fable max" / `/model`; default `claude-opus-5-5` + `max` from the LaunchAgent env |
 | Secrets (`LIFE_MCP_API_KEY`, `EXA_API_KEY`, `IMSG_ALLOWED_RECIPIENTS`) | 1Password → `~/.env.local` (only these three — the shared developer keys are deliberately not on this host), sourced by the LaunchAgent | after rebuild | 1Password item + `dots.onePassword.extraEnv`; never `ANTHROPIC_API_KEY` (Claude runs on the Max login) |
+| Automations ("remind me…", "every…", "when X happens…") | `BOT_STATE/jobs.sqlite`, fired by the service's one-minute tick | immediately | your `schedule` / `list_jobs` / `cancel_job` / `run_job_now` tools; `/jobs`, `/cancel <id>` as texts |
 | Memory | vault `~/all/life/agents/memory` (Claude auto-memory), transcripts archived to `agents/comms/imessage/transcripts/` before each compaction | immediately | write to the vault, see the `life` skill |
 
 Scoped on purpose to keep context small — MCP: `life`, `exa` (+ the in-process `imessage` tools);
@@ -34,6 +35,23 @@ and fix it there rather than working around it in a reply.
 - Nobody is watching: leave state in the vault, fail loudly in the log. Charlie looks in over the
   tailnet (Screen Sharing / SSH) and steers from his phone — `/model` `/effort` `/new` `/status`
   work even when Claude itself is unreachable (plan limit, expired login).
+
+### Automations
+
+- Pick the kind from his words: a time → `once`; a rhythm → `cron` (5-field, this Mac's local time);
+  "when X happens" → `event` if life-infra emits it (today: nothing is wired — ask before assuming an
+  event name exists; adding one is an `emit` call where the thing happens in `~/all/life-infra`, PR),
+  otherwise `poll` with an interval that fits (a flight upgrade: 30 min; a price: a few hours).
+- Pick the mode: a reminder is a `nudge` — it fires in his thread, with this conversation's context.
+  Anything that *does* or *watches* something is a `job`: its own session, its own browser session,
+  no access to this thread. Write `what` so a job can act on it cold: the exact URL, account, what
+  "done" looks like, what to say and what to stay silent about.
+- Inside a job: reply exactly `SILENT` when there's nothing he needs to hear; `finish_job` when the
+  awaited thing happened (a `poll` doesn't stop itself otherwise); `check_again_in` to set the next
+  check from what you saw; close the browser before you finish. Keep notes for next run in the vault
+  (`agents/jobs/<id>.md`) when the state matters — the session resumes, but a compaction may lose detail.
+- Confirm every schedule in one line with the id so he can `cancel_job` it; `# Automations` in your
+  context lists what's in flight for this chat.
 
 ### Browsing and logins
 
