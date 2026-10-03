@@ -50,6 +50,16 @@ in {
         ignores this — the token already identifies its account.
       '';
     };
+    sharedTemplate = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Inject `secrets/secrets.zsh.tmpl` (every shared developer key) into `~/.env.local`.
+        Disable on a host whose processes should see only its own `extraEnv` — e.g. the bot,
+        which sources `~/.env.local` into an agent that should not hold `ANTHROPIC_API_KEY`
+        or the trading keys.
+      '';
+    };
     extraEnv = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = {};
@@ -75,7 +85,11 @@ in {
     fi
 
     echo "Injecting secrets via 1Password..."
-    if $OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local; then
+    if ${
+      if cfg.sharedTemplate
+      then "$OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local"
+      else "$OP_CMD whoami >/dev/null 2>&1 && : > ${homeDir}/.env.local"
+    }; then
       ${extraEnvExports}
       chown charlie:staff ${homeDir}/.env.local
       chmod 600 ${homeDir}/.env.local

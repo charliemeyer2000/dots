@@ -47,8 +47,12 @@
     charlie ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
   '';
 
+  # The bot sources ~/.env.local into an agent, so it gets only its own keys — not the shared
+  # developer set (ANTHROPIC_API_KEY would also flip Claude from the Max login to API billing).
+  dots.onePassword.sharedTemplate = false;
   dots.onePassword.extraEnv = {
     LIFE_MCP_API_KEY = "op://Developer/Life MCP/darwin-bot";
+    EXA_API_KEY = "op://Developer/Exa/credential";
     # Charlie's own handles, comma-separated: the only senders answered and the only recipients.
     IMSG_ALLOWED_RECIPIENTS = "op://Developer/iMessage Bot/recipients";
   };
