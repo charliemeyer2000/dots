@@ -26,9 +26,10 @@ dots/
 │   │   ├── hosts/        # Per-host add-ons (darwin-personal.md, workstation.md, ...)
 │   │   ├── plugins/      # Agent plugins (life: skill + MCP server), installable by Devin/Claude Code from this repo
 │   │   └── skills/       # Agent skills (wandb-monitor, skill-creator, etc.; `life` symlinks into plugins/)
-│   └── claude/
-│       ├── settings.json # Claude Code-specific settings (model, plugins)
-│       └── statusline.sh # Claude Code statusline script
+│   ├── claude/
+│   │   ├── settings.json # Claude Code-specific settings (model, plugins)
+│   │   └── statusline.sh # Claude Code statusline script
+│   └── raycast/          # Raycast Script Commands (stamp-pr.sh; _lib/ helpers have no @raycast header)
 ├── home/                 # Home-manager modules
 │   ├── default.nix       # Entry point — imports all modules below
 │   ├── zsh.nix           # Shell: aliases, PATH, env vars, oh-my-zsh
@@ -40,6 +41,7 @@ dots/
 │   ├── mcp-servers-personal.nix # Personal-project MCP servers (darwin-personal + darwin-agent only)
 │   ├── fonts.nix         # Nerd fonts (JetBrainsMono, FiraCode)
 │   ├── direnv.nix        # direnv + nix-direnv for per-project shells
+│   ├── raycast.nix       # Deploys config/raycast/ → ~/.config/raycast-scripts (macOS)
 │   └── hammerspoon.nix   # Hammerspoon window management (macOS)
 ├── hosts/                # Machine-specific configurations
 │   ├── _darwin-common.nix # Shared base for all darwin hosts (imports + user + nix.enable + stateVersion)
@@ -316,6 +318,7 @@ Required once per new Mac for everything to work end-to-end:
 - **Accept the Xcode license** — `sudo xcodebuild -license accept`. Required before any `xcodebuild` use (including some Homebrew formulas that build from source). Re-run after installing the full Xcode app.
 - **Install full Xcode** *(only if doing iOS/macOS dev)* — install from the App Store, then re-run `sudo xcodebuild -license accept`.
 - **Raycast hotkeys** — Raycast's cloud sync handles preferences/extensions, but the **global launch hotkey is per-machine** and must be re-bound manually under Raycast → Settings → General → Hotkey.
+- **Raycast script directory** — Script Commands live in `config/raycast/` and are deployed to `~/.config/raycast-scripts` by `home/raycast.nix`. Register that directory once under Raycast → Settings → Script Commands → Add Script Directory (use "Reload Script Directories" if a command doesn't show up). Scripts don't inherit the shell profile, so they must export `PATH` themselves (see `stamp-pr.sh`).
 - **Log out / reboot** — see step 6 of the macOS bootstrap above; required for `NSGlobalDomain` defaults (keyboard repeat, press-and-hold, etc.) to take effect.
 
 ### App sign-ins (cloud-synced)
