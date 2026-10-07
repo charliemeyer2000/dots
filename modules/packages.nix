@@ -55,6 +55,7 @@ with pkgs;
 
     # Infra
     awscli2
+    buildkite-cli
     kubectl
     kubernetes-helm
     kind
