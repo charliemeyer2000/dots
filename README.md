@@ -31,6 +31,20 @@ just switch darwin-personal
 #    so keyboard repeat, press-and-hold, etc. only take effect after relogin.
 ```
 
+### intel mac (`darwin-bot`)
+
+Same flow with `.#darwin-bot`, two differences. Determinate's installer dropped Intel Macs after
+v3.12.2 (current tags ship no `x86_64-darwin` binary), so pin step 1:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+  NIX_INSTALLER_BINARY_ROOT=https://install.determinate.systems/nix/tag/v3.12.2 sh -s -- install
+```
+
+And `imsg` needs macOS 14 Sonoma or newer. The host builds from nixpkgs 26.05 (the last release
+with Intel Macs — see `flake.nix`), so expect no package updates after that branch freezes; the two
+brews compile from source on the first switch.
+
 ### linux workstation
 
 ```bash
