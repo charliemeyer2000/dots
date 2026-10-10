@@ -131,9 +131,10 @@ after adding/removing a skill, run `just switch <config>` to deploy (or use `ski
 | `darwin-personal` | M4 Pro MacBook Pro | nix-darwin | daily driver, full GUI apps |
 | `darwin-agent` | M1 Pro MacBook Pro | nix-darwin | always-on agent, never sleeps |
 | `darwin-cog` | Cognition work MacBook | nix-darwin | excludes IT-managed casks (zoom) |
+| `darwin-bot` | Intel MacBook `charlie-bot` | nix-darwin (`x86_64-darwin`) | always-on iMessage bot; server trim: `imsg` + `agent-browser` brews, 3 casks, no tart/login apps |
 | `workstation` | Ubuntu, RTX 5090 | standalone home-manager | dotfiles + CLI only (no NixOS) |
 
-all darwin hosts share `hosts/_darwin-common.nix` (imports + user + nix.enable + stateVersion). each host's `default.nix` only declares its differences. add a new darwin host by creating `hosts/<name>/default.nix` and appending `"<name>"` to `darwinHosts` in `parts/hosts.nix`.
+all darwin hosts share `hosts/_darwin-common.nix` (imports + user + nix.enable + stateVersion). each host's `default.nix` only declares its differences. add a new darwin host by creating `hosts/<name>/default.nix` and adding `<name> = "<aarch64|x86_64>-darwin";` to `darwinHosts` in `parts/hosts.nix`.
 
 ## ssh hosts
 

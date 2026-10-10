@@ -1,6 +1,6 @@
 ## This machine: darwin-bot
 
-**Mac mini `charlie-mini` — Charlie's Bot on iMessage, always on, headless.** You are normally
+**Intel MacBook `charlie-bot` (x86_64-darwin, Homebrew at `/usr/local`) — Charlie's Bot on iMessage, always on, lid closed, headless.** You are normally
 running *as* the bot: `imessage-bot` (life-infra `services/imessage-bot`, LaunchAgent
 `com.charliemeyer.imessage-bot`, log `~/Library/Logs/imessage-bot.log`) spawns one Claude Agent SDK
 session per iMessage chat with Charlie, resumed forever and compacted by Claude Code when full.

@@ -16,6 +16,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Intel Macs (darwin-bot): nixpkgs-unstable 26.11 dropped x86_64-darwin, so that host builds
+    # from the last release that has it (security fixes until the end of 2026). nix-darwin and
+    # home-manager refuse a nixpkgs from another release, hence the matched trio.
+    nixpkgs-intel.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+    nix-darwin-intel = {
+      url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
+      inputs.nixpkgs.follows = "nixpkgs-intel";
+    };
+    home-manager-intel = {
+      url = "github:nix-community/home-manager/release-26.05";
+      inputs.nixpkgs.follows = "nixpkgs-intel";
+    };
+
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -68,6 +81,7 @@
     inputs.flake-parts.lib.mkFlake {inherit inputs;} {
       systems = [
         "aarch64-darwin"
+        "x86_64-darwin"
         "x86_64-linux"
         "aarch64-linux"
       ];

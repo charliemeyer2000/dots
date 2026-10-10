@@ -1,13 +1,31 @@
-{pkgs, ...}: {
-  # Mac mini — Charlie's Bot on iMessage (life-infra services/imessage-bot), always on.
-  # A dedicated machine with a dedicated Apple Account, so the bot runs as `charlie`; the only
-  # thing it must never see is ANTHROPIC_API_KEY (Claude Max login via Keychain instead).
-  # Shared darwin config lives in ../_darwin-common.nix.
-  networking.hostName = "charlie-mini";
+{
+  pkgs,
+  lib,
+  ...
+}: {
+  # Intel MacBook (x86_64-darwin, see parts/hosts.nix) — Charlie's Bot on iMessage (life-infra
+  # services/imessage-bot), always on, lid closed, on mains. A dedicated machine with a dedicated
+  # Apple Account, so the bot runs as `charlie`; the only thing it must never see is
+  # ANTHROPIC_API_KEY (Claude Max login via Keychain instead).
+  # Shared darwin config lives in ../_darwin-common.nix; this file trims it to a server.
+  networking.hostName = "charlie-bot";
   networking.computerName = "Charlie's Bot";
-  networking.localHostName = "charlie-mini";
+  networking.localHostName = "charlie-bot";
 
-  dots.tart.headlessKeychain = true;
+  # Server, not a workstation: no Tart VMs (Apple Silicon only), no login apps, and only the
+  # Homebrew packages the bot needs — Homebrew ships no Intel bottles for most formulae now, so
+  # each of these compiles from source on first `just switch` (agent-browser: rust + node).
+  dots.tart.images = lib.mkForce [];
+  dots.darwin.loginApps = [];
+  homebrew.brews = [
+    "steipete/tap/imsg" # universal binary; needs macOS 14+
+    "agent-browser"
+  ];
+  homebrew.casks = [
+    "1password" # first sign-in + the service-account token; `op` itself comes from nix
+    "google-chrome" # agent-browser drives the real Chrome, headed, in the logged-in session
+    "ghostty"
+  ];
   # A LaunchAgent (and Messages.app, which imsg drives) only exists inside a logged-in session, so
   # an unattended reboot must log `charlie` straight back in. This sets the loginwindow preference;
   # macOS honours it only after the one-time System Settings → Users & Groups → Automatic login
@@ -18,10 +36,11 @@
   dots.tailscale.tag = "tag:agent";
   dots.tailscale.clientRef = "op://Developer/Tailscale/oauth-client-secret-agent";
 
-  # Headless box: see and drive it over the tailnet — Screen Sharing (`open vnc://charlie-mini`
+  # Headless box: see and drive it over the tailnet — Screen Sharing (`open vnc://charlie-bot`
   # from a Mac, any VNC client from the phone) and SSH. Both are only reachable through Tailscale
-  # (policy.hujson grants tag:agent to Charlie's devices), and a HDMI dummy plug keeps the GPU
-  # rendering at a usable resolution with no monitor attached.
+  # (policy.hujson grants tag:agent to Charlie's devices). darwin.nix's `disablesleep 1` keeps a
+  # closed-lid MacBook awake on mains; a HDMI dummy plug keeps the GPU rendering at a usable
+  # resolution with no monitor attached.
   system.activationScripts.postActivation.text = ''
     /bin/launchctl enable system/com.apple.screensharing 2>/dev/null || true
     /bin/launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensharing.plist 2>/dev/null || true
@@ -82,8 +101,9 @@
       ThrottleInterval = 10;
       StandardOutPath = "/Users/charlie/Library/Logs/imessage-bot.log";
       StandardErrorPath = "/Users/charlie/Library/Logs/imessage-bot.log";
-      # Nix (uv, tailscale) + Homebrew (imsg); launchd's default PATH has neither.
-      EnvironmentVariables.PATH = "/etc/profiles/per-user/charlie/bin:/run/current-system/sw/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin";
+      # Nix (uv, tailscale) + Homebrew (imsg, agent-browser; /usr/local on Intel); launchd's
+      # default PATH has neither.
+      EnvironmentVariables.PATH = "/etc/profiles/per-user/charlie/bin:/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
     };
   };
 }
