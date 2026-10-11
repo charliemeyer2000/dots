@@ -43,6 +43,7 @@
     inputs.uvacompute.overlays.default
     inputs.rv.overlays.default
     (import ../overlays/bun.nix)
+    (import ../overlays/imsg-ventura.nix)
   ];
 
   pkgsLinux = import inputs.nixpkgs {

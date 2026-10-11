@@ -22,7 +22,6 @@ in {
   dots.tart.images = lib.mkForce [];
   dots.darwin.loginApps = [];
   homebrew.brews = [
-    "steipete/tap/imsg" # universal binary; needs macOS 14+
     "agent-browser"
   ];
   homebrew.casks = [
@@ -35,8 +34,10 @@ in {
   # macOS honours it only after the one-time System Settings → Users & Groups → Automatic login
   # toggle has written /etc/kcpassword (needs FileVault *off*) — day-one runbook step 1.
   system.defaults.loginwindow.autoLoginUser = user;
-  # imsg converts voice notes (CAF → m4a) for the model with ffmpeg; imsg itself is in darwin.nix's brews.
-  environment.systemPackages = [pkgs.ffmpeg];
+  # imsg: the Ventura build from charliemeyer2000/imsg (overlays/imsg-ventura.nix), not the
+  # `steipete/tap/imsg` brew the workstations use — upstream's binary needs macOS 14+, this
+  # laptop tops out at 13. ffmpeg converts voice notes (CAF → m4a) for the model.
+  environment.systemPackages = [pkgs.imsg-ventura pkgs.ffmpeg];
   dots.tailscale.tag = "tag:agent";
   dots.tailscale.clientRef = "op://Developer/Tailscale/oauth-client-secret-agent";
 
@@ -106,7 +107,7 @@ in {
       ThrottleInterval = 10;
       StandardOutPath = "${home}/Library/Logs/imessage-bot.log";
       StandardErrorPath = "${home}/Library/Logs/imessage-bot.log";
-      # Nix (uv, tailscale) + Homebrew (imsg, agent-browser; /usr/local on Intel); launchd's
+      # Nix (uv, tailscale, imsg) + Homebrew (agent-browser; /usr/local on Intel); launchd's
       # default PATH has neither.
       EnvironmentVariables.PATH = "/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
     };

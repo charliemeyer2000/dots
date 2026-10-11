@@ -41,9 +41,12 @@ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix 
   NIX_INSTALLER_BINARY_ROOT=https://install.determinate.systems/nix/tag/v3.12.2 sh -s -- install
 ```
 
-And `imsg` needs macOS 14 Sonoma or newer. The host builds from nixpkgs 26.05 (the last release
-with Intel Macs — see `flake.nix`), so expect no package updates after that branch freezes; the two
-brews compile from source on the first switch.
+The laptop tops out at macOS 13 Ventura, which upstream `imsg` refuses (14+), so this host installs
+`pkgs.imsg-ventura` — the same code built with a macOS 13 deployment target from
+[charliemeyer2000/imsg](https://github.com/charliemeyer2000/imsg/tree/ventura) (`overlays/imsg-ventura.nix`).
+The host builds from nixpkgs 26.05 (the last release with Intel Macs — see `flake.nix`), so expect no
+package updates after that branch freezes; the one brew (`agent-browser`) compiles from source on the
+first switch.
 
 ### linux workstation
 
