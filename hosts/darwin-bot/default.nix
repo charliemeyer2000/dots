@@ -1,0 +1,115 @@
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}: let
+  user = config.system.primaryUser; # charliebot (parts/hosts.nix)
+  home = config.users.users.${user}.home;
+in {
+  # Intel MacBook (x86_64-darwin, see parts/hosts.nix) — Charlie's Bot on iMessage (life-infra
+  # services/imessage-bot), always on, lid closed, on mains. A dedicated machine with a dedicated
+  # Apple Account and its own macOS account (`charliebot`); the only thing it must never see is
+  # ANTHROPIC_API_KEY (Claude Max login via Keychain instead).
+  # Shared darwin config lives in ../_darwin-common.nix; this file trims it to a server.
+  networking.hostName = "charlie-bot";
+  networking.computerName = "Charlie's Bot";
+  networking.localHostName = "charlie-bot";
+
+  # Server, not a workstation: no Tart VMs (Apple Silicon only), no login apps, and only the
+  # Homebrew packages the bot needs — Homebrew ships no Intel bottles for most formulae now, so
+  # each of these compiles from source on first `just switch` (agent-browser: rust + node).
+  dots.tart.images = lib.mkForce [];
+  dots.darwin.loginApps = [];
+  homebrew.brews = [
+    "agent-browser"
+  ];
+  homebrew.casks = [
+    "1password" # first sign-in + the service-account token; `op` itself comes from nix
+    "google-chrome" # agent-browser drives the real Chrome, headed, in the logged-in session
+    "ghostty"
+  ];
+  # A LaunchAgent (and Messages.app, which imsg drives) only exists inside a logged-in session, so
+  # an unattended reboot must log the bot account straight back in. This sets the loginwindow preference;
+  # macOS honours it only after the one-time System Settings → Users & Groups → Automatic login
+  # toggle has written /etc/kcpassword (needs FileVault *off*) — day-one runbook step 1.
+  system.defaults.loginwindow.autoLoginUser = user;
+  # imsg: the Ventura build from charliemeyer2000/imsg (overlays/imsg-ventura.nix), not the
+  # `steipete/tap/imsg` brew the workstations use — upstream's binary needs macOS 14+, this
+  # laptop tops out at 13. ffmpeg converts voice notes (CAF → m4a) for the model.
+  environment.systemPackages = [pkgs.imsg-ventura pkgs.ffmpeg];
+  dots.tailscale.tag = "tag:agent";
+  dots.tailscale.clientRef = "op://Developer/Tailscale/oauth-client-secret-agent";
+
+  # Headless box: see and drive it over the tailnet — Screen Sharing (`open vnc://charlie-bot`
+  # from a Mac, any VNC client from the phone) and SSH. Both are only reachable through Tailscale
+  # (policy.hujson grants tag:agent to Charlie's devices). darwin.nix's `disablesleep 1` keeps a
+  # closed-lid MacBook awake on mains; a HDMI dummy plug keeps the GPU rendering at a usable
+  # resolution with no monitor attached.
+  system.activationScripts.postActivation.text = ''
+    /bin/launchctl enable system/com.apple.screensharing 2>/dev/null || true
+    /bin/launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensharing.plist 2>/dev/null || true
+    /usr/sbin/systemsetup -setremotelogin on >/dev/null 2>&1 || true
+    /usr/bin/pmset -a sleep 0 displaysleep 10 disksleep 0 autorestart 1 >/dev/null 2>&1 || true
+  '';
+
+  home-manager.users.${user}.dots.agents = {
+    claude.autoMemoryDirectory = "~/all/life/agents/memory";
+    instructions.host = builtins.readFile ../../config/agents/hosts/darwin-bot.md;
+    mcp.catalog =
+      (import ../../home/mcp-servers.nix)
+      // (import ../../home/mcp-servers-personal.nix);
+    # A scoped context, not the whole catalogue: the bot can still `claude mcp add` / vendor a skill
+    # and PR it here when Charlie asks for more.
+    mcp.claude = ["life" "exa"];
+    mcp.devin = ["life" "exa"];
+    skills = ["life" "agent-browser" "skill-finder" "deslop"];
+  };
+
+  # Headless: TouchID sudo can't be answered over SSH, and the bot applies its own dots PRs with
+  # `just switch darwin-bot`. Only darwin-rebuild, nothing else.
+  security.sudo.extraConfig = ''
+    ${user} ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+  '';
+
+  # The bot sources ~/.env.local into an agent, so it gets only its own keys — not the shared
+  # developer set (ANTHROPIC_API_KEY would also flip Claude from the Max login to API billing).
+  dots.onePassword.sharedTemplate = false;
+  dots.onePassword.extraEnv = {
+    LIFE_MCP_API_KEY = "op://Developer/Life MCP/darwin-bot";
+    EXA_API_KEY = "op://Developer/Exa/credential";
+    # Charlie's own handles, comma-separated: the only senders answered and the only recipients.
+    IMSG_ALLOWED_RECIPIENTS = "op://Developer/iMessage Bot/recipients";
+  };
+
+  # The bot: one process = `imsg rpc` child + inbound Claude Agent SDK loop + outbound MCP on the
+  # tailnet (8765). Sources ~/.env.local for the two keys above and drops ANTHROPIC_API_KEY so the
+  # SDK's `claude` uses the Max login. Exits when imsg dies; KeepAlive brings it back.
+  launchd.user.agents.imessage-bot = {
+    serviceConfig = {
+      Label = "com.charliemeyer.imessage-bot";
+      ProgramArguments = [
+        "/bin/zsh"
+        "-c"
+        ''
+          set -a; source "$HOME/.env.local"; set +a
+          unset ANTHROPIC_API_KEY
+          export IMSG_HOST="$(tailscale ip -4)" IMSG_PORT=8765
+          export BOT_CWD="$HOME/all/life" BOT_PROFILE="$HOME/all/life/agents/bot"
+          export BOT_COMMS="$HOME/all/life/agents/comms/imessage" BOT_NIGHTLY="30 4 * * *"
+          export AGENT_BROWSER_SESSION=bot AGENT_BROWSER_RESTORE=bot
+          export BOT_MODEL=claude-opus-5-5 BOT_EFFORT=max
+          exec uv run --directory "$HOME/all/life-infra" imessage-bot
+        ''
+      ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      ThrottleInterval = 10;
+      StandardOutPath = "${home}/Library/Logs/imessage-bot.log";
+      StandardErrorPath = "${home}/Library/Logs/imessage-bot.log";
+      # Nix (uv, tailscale, imsg) + Homebrew (agent-browser; /usr/local on Intel); launchd's
+      # default PATH has neither.
+      EnvironmentVariables.PATH = "/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
+    };
+  };
+}

@@ -166,6 +166,27 @@
         "type": "github"
       }
     },
+    "home-manager-intel": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-intel"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790996401,
+        "narHash": "sha256-f+kOxEmOUnQazVAmGg0i8hzwgd1kX/geY+k/Dpheye8=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "db7d5e2332710f5abb088f6b5de927d7f9511b35",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "ref": "release-26.05",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
     "llm-agents": {
       "inputs": {
         "bun2nix": "bun2nix",
@@ -210,6 +231,27 @@
         "type": "github"
       }
     },
+    "nix-darwin-intel": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-intel"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783744694,
+        "narHash": "sha256-2cp6N3rrwnGYLTx9l6N+NI+kwrCWxvJUbj5WJhvB29A=",
+        "owner": "nix-darwin",
+        "repo": "nix-darwin",
+        "rev": "c3e90c89649b07d1a96e4b9dd6cd0d6e44b91a74",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-darwin",
+        "ref": "nix-darwin-26.05",
+        "repo": "nix-darwin",
+        "type": "github"
+      }
+    },
     "nix-homebrew": {
       "inputs": {
         "brew-src": "brew-src"
@@ -240,6 +282,22 @@
       "original": {
         "owner": "NixOS",
         "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-intel": {
+      "locked": {
+        "lastModified": 1791447531,
+        "narHash": "sha256-AsoGS8G2y3shwAtQWQhgV4Fa3uw6qzFejfqSblOGkhE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "55afc4c3adc7194df3b96d43b7d18bf8131bfcfa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-26.05-darwin",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -286,10 +344,13 @@
         "devin-cli-overlay": "devin-cli-overlay",
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
+        "home-manager-intel": "home-manager-intel",
         "llm-agents": "llm-agents",
         "nix-darwin": "nix-darwin",
+        "nix-darwin-intel": "nix-darwin-intel",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-intel": "nixpkgs-intel",
         "pre-commit-hooks": "pre-commit-hooks",
         "rv": "rv",
         "sf-cli-overlay": "sf-cli-overlay",

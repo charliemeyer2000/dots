@@ -31,6 +31,23 @@ just switch darwin-personal
 #    so keyboard repeat, press-and-hold, etc. only take effect after relogin.
 ```
 
+### intel mac (`darwin-bot`)
+
+Same flow with `.#darwin-bot`, two differences. Determinate's installer dropped Intel Macs after
+v3.12.2 (current tags ship no `x86_64-darwin` binary), so pin step 1:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+  NIX_INSTALLER_BINARY_ROOT=https://install.determinate.systems/nix/tag/v3.12.2 sh -s -- install
+```
+
+The laptop tops out at macOS 13 Ventura, which upstream `imsg` refuses (14+), so this host installs
+`pkgs.imsg-ventura` — the same code built with a macOS 13 deployment target from
+[charliemeyer2000/imsg](https://github.com/charliemeyer2000/imsg/tree/ventura) (`overlays/imsg-ventura.nix`).
+The host builds from nixpkgs 26.05 (the last release with Intel Macs — see `flake.nix`), so expect no
+package updates after that branch freezes; the one brew (`agent-browser`) compiles from source on the
+first switch.
+
 ### linux workstation
 
 ```bash
@@ -131,9 +148,10 @@ after adding/removing a skill, run `just switch <config>` to deploy (or use `ski
 | `darwin-personal` | M4 Pro MacBook Pro | nix-darwin | daily driver, full GUI apps |
 | `darwin-agent` | M1 Pro MacBook Pro | nix-darwin | always-on agent, never sleeps |
 | `darwin-cog` | Cognition work MacBook | nix-darwin | excludes IT-managed casks (zoom) |
+| `darwin-bot` | Intel MacBook `charlie-bot` | nix-darwin (`x86_64-darwin`) | always-on iMessage bot; server trim: `imsg` + `agent-browser` brews, 3 casks, no tart/login apps |
 | `workstation` | Ubuntu, RTX 5090 | standalone home-manager | dotfiles + CLI only (no NixOS) |
 
-all darwin hosts share `hosts/_darwin-common.nix` (imports + user + nix.enable + stateVersion). each host's `default.nix` only declares its differences. add a new darwin host by creating `hosts/<name>/default.nix` and appending `"<name>"` to `darwinHosts` in `parts/hosts.nix`.
+all darwin hosts share `hosts/_darwin-common.nix` (imports + user + nix.enable + stateVersion). each host's `default.nix` only declares its differences. add a new darwin host by creating `hosts/<name>/default.nix` and adding `<name> = "<aarch64|x86_64>-darwin";` to `darwinHosts` in `parts/hosts.nix`.
 
 ## ssh hosts
 

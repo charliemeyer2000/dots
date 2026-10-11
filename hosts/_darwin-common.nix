@@ -13,12 +13,6 @@
     "ghcr.io/cirruslabs/macos-tahoe-base:latest"
   ];
 
-  system.primaryUser = "charlie";
-  users.users.charlie = {
-    name = "charlie";
-    home = "/Users/charlie";
-  };
-
   nix.enable = false;
   system.stateVersion = 6;
 }
