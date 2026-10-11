@@ -11,11 +11,11 @@
       inherit (inputs) nix-darwin home-manager;
     };
 
-  hmModule = {
+  hmModule = user: {
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
     home-manager.backupFileExtension = "bak";
-    home-manager.users.charlie = {
+    home-manager.users.${user} = {
       imports = [
         (import ../home)
         (import ../home/hammerspoon.nix)
@@ -24,12 +24,12 @@
     };
   };
 
-  homebrewModule = {pkgs, ...}: {
+  homebrewModule = user: {pkgs, ...}: {
     nix-homebrew = {
+      inherit user;
       enable = true;
       # Rosetta is an Apple Silicon feature; nix-homebrew asserts on Intel if asked for it.
       enableRosetta = pkgs.stdenv.hostPlatform.isAarch64;
-      user = "charlie";
       autoMigrate = true;
     };
   };
@@ -51,10 +51,14 @@
     overlays = overlays ++ [inputs.llm-agents.overlays.shared-nixpkgs];
   };
 
-  # Build a nix-darwin system from a host module under ../hosts/<name> for the given platform.
-  # All darwin hosts share the same wiring (home-manager, nix-homebrew, overlays);
-  # per-host divergence belongs in ../hosts/<name>/default.nix.
-  mkDarwin = name: system: let
+  # Build a nix-darwin system from a host module under ../hosts/<name> for the given platform and
+  # macOS account. All darwin hosts share the same wiring (home-manager, nix-homebrew, overlays);
+  # per-host divergence belongs in ../hosts/<name>/default.nix. Modules read the account back via
+  # `config.system.primaryUser` — never hard-code `charlie`.
+  mkDarwin = name: {
+    system,
+    user ? "charlie",
+  }: let
     toolchain = toolchainFor system;
   in
     toolchain.nix-darwin.lib.darwinSystem {
@@ -64,20 +68,28 @@
         ../hosts/${name}
         toolchain.home-manager.darwinModules.home-manager
         inputs.nix-homebrew.darwinModules.nix-homebrew
-        hmModule
-        homebrewModule
+        (hmModule user)
+        (homebrewModule user)
         {
           nixpkgs.hostPlatform = system;
           nixpkgs.overlays = overlays;
+          system.primaryUser = user;
+          users.users.${user} = {
+            name = user;
+            home = "/Users/${user}";
+          };
         }
       ];
     };
 
   darwinHosts = {
-    darwin-personal = "aarch64-darwin";
-    darwin-agent = "aarch64-darwin";
-    darwin-cog = "aarch64-darwin";
-    darwin-bot = "x86_64-darwin"; # the always-on Intel MacBook
+    darwin-personal.system = "aarch64-darwin";
+    darwin-agent.system = "aarch64-darwin";
+    darwin-cog.system = "aarch64-darwin";
+    darwin-bot = {
+      system = "x86_64-darwin"; # the always-on Intel MacBook
+      user = "charliebot"; # its own macOS account, created at first boot
+    };
   };
 in {
   flake = {

@@ -158,7 +158,7 @@ Agent config is managed in a tool-agnostic way:
 
 ### Host Composition
 
-All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
+All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets + tart`, sets `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
 
 ```
 _darwin-common.nix = base + darwin + apps + secrets + tart  (shared imports + defaults)
@@ -170,7 +170,7 @@ workstation      = home + packages + hm-secrets            (standalone home-mana
 devin-cloud      = zsh + direnv + agents + packages        (headless standalone home-manager, ephemeral Devin cloud-agent VM)
 ```
 
-Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` with at minimum `networking.hostName`, then add `<name> = "<platform>";` to the `darwinHosts` attrset in `parts/hosts.nix` (`aarch64-darwin` for Apple Silicon, `x86_64-darwin` for Intel — `darwin-bot`). Homebrew's prefix follows the platform via `config.homebrew.prefix`; never hard-code `/opt/homebrew`. A server-style host replaces the workstation `homebrew.brews`/`homebrew.casks` lists (both are `mkDefault`) and sets `dots.darwin.loginApps = []`, `dots.tart.images = lib.mkForce []`.
+Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` with at minimum `networking.hostName`, then add `<name>.system = "<platform>";` to the `darwinHosts` attrset in `parts/hosts.nix` (`aarch64-darwin` for Apple Silicon, `x86_64-darwin` for Intel — `darwin-bot`). The macOS account defaults to `charlie`; a host with a different one sets `user = "<account>";` there too (`darwin-bot` runs as `charliebot`) — `mkDarwin` turns it into `system.primaryUser` + `users.users.<user>` + the home-manager/nix-homebrew user, and modules read `config.system.primaryUser` rather than hard-coding the name. Homebrew's prefix follows the platform via `config.homebrew.prefix`; never hard-code `/opt/homebrew`. A server-style host replaces the workstation `homebrew.brews`/`homebrew.casks` lists (both are `mkDefault`) and sets `dots.darwin.loginApps = []`, `dots.tart.images = lib.mkForce []`.
 
 The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
 

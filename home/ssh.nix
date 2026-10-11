@@ -1,5 +1,6 @@
 {
   pkgs,
+  config,
   onePasswordAgentSocket,
   ...
 }: let
@@ -21,7 +22,7 @@ in {
     enableDefaultConfig = false;
     includes =
       if isDarwin
-      then ["/Users/charlie/.colima/ssh_config"]
+      then ["${config.home.homeDirectory}/.colima/ssh_config"]
       else [];
     settings = {
       workstation = {

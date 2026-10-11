@@ -1,11 +1,15 @@
 {
   pkgs,
   lib,
+  config,
   ...
-}: {
+}: let
+  user = config.system.primaryUser; # charliebot (parts/hosts.nix)
+  home = config.users.users.${user}.home;
+in {
   # Intel MacBook (x86_64-darwin, see parts/hosts.nix) — Charlie's Bot on iMessage (life-infra
   # services/imessage-bot), always on, lid closed, on mains. A dedicated machine with a dedicated
-  # Apple Account, so the bot runs as `charlie`; the only thing it must never see is
+  # Apple Account and its own macOS account (`charliebot`); the only thing it must never see is
   # ANTHROPIC_API_KEY (Claude Max login via Keychain instead).
   # Shared darwin config lives in ../_darwin-common.nix; this file trims it to a server.
   networking.hostName = "charlie-bot";
@@ -27,10 +31,10 @@
     "ghostty"
   ];
   # A LaunchAgent (and Messages.app, which imsg drives) only exists inside a logged-in session, so
-  # an unattended reboot must log `charlie` straight back in. This sets the loginwindow preference;
+  # an unattended reboot must log the bot account straight back in. This sets the loginwindow preference;
   # macOS honours it only after the one-time System Settings → Users & Groups → Automatic login
   # toggle has written /etc/kcpassword (needs FileVault *off*) — day-one runbook step 1.
-  system.defaults.loginwindow.autoLoginUser = "charlie";
+  system.defaults.loginwindow.autoLoginUser = user;
   # imsg converts voice notes (CAF → m4a) for the model with ffmpeg; imsg itself is in darwin.nix's brews.
   environment.systemPackages = [pkgs.ffmpeg];
   dots.tailscale.tag = "tag:agent";
@@ -48,22 +52,23 @@
     /usr/bin/pmset -a sleep 0 displaysleep 10 disksleep 0 autorestart 1 >/dev/null 2>&1 || true
   '';
 
-  home-manager.users.charlie.dots.agents.claude.autoMemoryDirectory = "~/all/life/agents/memory";
-  home-manager.users.charlie.dots.agents.instructions.host =
-    builtins.readFile ../../config/agents/hosts/darwin-bot.md;
-  home-manager.users.charlie.dots.agents.mcp.catalog =
-    (import ../../home/mcp-servers.nix)
-    // (import ../../home/mcp-servers-personal.nix);
-  # A scoped context, not the whole catalogue: the bot can still `claude mcp add` / vendor a skill
-  # and PR it here when Charlie asks for more.
-  home-manager.users.charlie.dots.agents.mcp.claude = ["life" "exa"];
-  home-manager.users.charlie.dots.agents.mcp.devin = ["life" "exa"];
-  home-manager.users.charlie.dots.agents.skills = ["life" "agent-browser" "skill-finder" "deslop"];
+  home-manager.users.${user}.dots.agents = {
+    claude.autoMemoryDirectory = "~/all/life/agents/memory";
+    instructions.host = builtins.readFile ../../config/agents/hosts/darwin-bot.md;
+    mcp.catalog =
+      (import ../../home/mcp-servers.nix)
+      // (import ../../home/mcp-servers-personal.nix);
+    # A scoped context, not the whole catalogue: the bot can still `claude mcp add` / vendor a skill
+    # and PR it here when Charlie asks for more.
+    mcp.claude = ["life" "exa"];
+    mcp.devin = ["life" "exa"];
+    skills = ["life" "agent-browser" "skill-finder" "deslop"];
+  };
 
   # Headless: TouchID sudo can't be answered over SSH, and the bot applies its own dots PRs with
   # `just switch darwin-bot`. Only darwin-rebuild, nothing else.
   security.sudo.extraConfig = ''
-    charlie ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+    ${user} ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
   '';
 
   # The bot sources ~/.env.local into an agent, so it gets only its own keys — not the shared
@@ -99,11 +104,11 @@
       RunAtLoad = true;
       KeepAlive = true;
       ThrottleInterval = 10;
-      StandardOutPath = "/Users/charlie/Library/Logs/imessage-bot.log";
-      StandardErrorPath = "/Users/charlie/Library/Logs/imessage-bot.log";
+      StandardOutPath = "${home}/Library/Logs/imessage-bot.log";
+      StandardErrorPath = "${home}/Library/Logs/imessage-bot.log";
       # Nix (uv, tailscale) + Homebrew (imsg, agent-browser; /usr/local on Intel); launchd's
       # default PATH has neither.
-      EnvironmentVariables.PATH = "/etc/profiles/per-user/charlie/bin:/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
+      EnvironmentVariables.PATH = "/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
     };
   };
 }

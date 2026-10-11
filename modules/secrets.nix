@@ -4,11 +4,12 @@
   config,
   ...
 }: let
-  homeDir = "/Users/charlie";
+  user = config.system.primaryUser;
+  homeDir = "/Users/${user}";
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
-  asCharlie = "sudo -u charlie HOME=${homeDir}";
+  asUser = "sudo -u ${user} HOME=${homeDir}";
   cfg = config.dots.onePassword;
   ts = config.dots.tailscale;
 
@@ -80,7 +81,7 @@ in {
       OP_CMD="${op}"
       echo "Using 1Password service account..."
     else
-      OP_CMD="${asCharlie} ${op} --account ${cfg.account}"
+      OP_CMD="${asUser} ${op} --account ${cfg.account}"
       echo "Using 1Password desktop app integration (account: ${cfg.account})..."
     fi
 
@@ -91,7 +92,7 @@ in {
       else "$OP_CMD whoami >/dev/null 2>&1 && : > ${homeDir}/.env.local"
     }; then
       ${extraEnvExports}
-      chown charlie:staff ${homeDir}/.env.local
+      chown ${user}:staff ${homeDir}/.env.local
       chmod 600 ${homeDir}/.env.local
       echo "  -> ~/.env.local injected"
     else
