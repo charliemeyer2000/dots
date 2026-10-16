@@ -15,7 +15,7 @@
   };
   datadog = {
     type = "http";
-    url = "https://mcp.us3.datadoghq.com/api/unstable/mcp-server/mcp";
+    url = "https://mcp.us3.datadoghq.com/v1/mcp";
   };
   "linear" = {
     type = "http";
