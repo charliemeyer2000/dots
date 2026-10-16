@@ -58,7 +58,7 @@ dots/
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
 │   ├── tart.nix          # Tart VM management: image pre-pull + headless keychain unlock
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
-├── overlays/             # Local package overrides (bun.nix: pin bun ahead of nixpkgs)
+├── overlays/             # Local package overrides (bun.nix: pin bun ahead of nixpkgs; cli-from-flake.nix: devin/sf CLIs on the host's nixpkgs)
 ├── parts/                # Flake-parts modules
 │   ├── hosts.nix         # mkDarwin helper + darwinHosts list + workstation & devin-cloud HM configs
 │   ├── formatter.nix     # alejandra (nix formatter)
@@ -76,12 +76,13 @@ dots/
 | nixpkgs | nixpkgs-unstable | Rolling release packages |
 | flake-parts | hercules-ci/flake-parts | Modular flake organization |
 | nix-darwin | LnL7/nix-darwin | macOS system configuration |
+| nixpkgs-intel, nix-darwin-intel, home-manager-intel | nixpkgs-26.05-darwin, nix-darwin-26.05, release-26.05 | Matched trio for `x86_64-darwin` (`darwin-bot`): nixpkgs-unstable 26.11 dropped Intel Macs; 26.05 is the last release with it (security fixes until end of 2026) |
 | home-manager | nix-community/home-manager | User-level dotfiles |
 | pre-commit-hooks | cachix/pre-commit-hooks.nix | Git hook framework |
 | nix-homebrew | zhaofengli-wip/nix-homebrew | Declarative Homebrew on macOS |
 | claude-code-overlay | sadjow/claude-code-nix | Nix overlay for Claude Code CLI (official Anthropic binaries) |
-| devin-cli-overlay | charliemeyer2000/devin-cli-overlay | Nix overlay for Devin CLI |
-| sf-cli-overlay | charliemeyer2000/sf-cli-overlay | Nix overlay for SF Compute CLI |
+| devin-cli-overlay | charliemeyer2000/devin-cli-overlay | Devin CLI (built via `overlays/cli-from-flake.nix` against the host's nixpkgs) |
+| sf-cli-overlay | charliemeyer2000/sf-cli-overlay | SF Compute CLI (same) |
 | llm-agents | numtide/llm-agents.nix | agent-browser CLI (Linux only; darwin uses the Homebrew formula) |
 | uvacompute | uvacompute.com/nix/flake.tar.gz | UVACompute CLI |
 | rv | charliemeyer2000/rivanna.dev | rv CLI — GPU job submission on Rivanna/Afton HPC |
@@ -104,6 +105,7 @@ All inputs follow the root nixpkgs for consistency.
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 - Multi-account: `dots.onePassword.account` (default `"my.1password.com"`) is passed as `op --account <value>` in the desktop-app path so vault lookups disambiguate when both personal and work 1Password accounts are signed in. Service-account auth ignores it (the token already identifies the account). Override per-host if a machine should resolve secrets against a different account.
 - Per-host secrets: `dots.onePassword.extraEnv.<VAR> = "op://..."` (nix-darwin hosts) is `op read` at activation and appended to `~/.env.local` after the shared template. Use it when the value differs per machine — e.g. each Mac's own Executor API key `LIFE_MCP_API_KEY` from `op://Developer/Life MCP/<host>` — since a missing field in the shared template would fail `op inject` everywhere.
+- `dots.onePassword.sharedTemplate = false` skips the shared template so `~/.env.local` holds only that host's `extraEnv` (darwin-bot: `LIFE_MCP_API_KEY`, `EXA_API_KEY`, `IMSG_ALLOWED_RECIPIENTS`). Whatever 1Password identity does the reading is the real boundary — scope the bot's service account to those items.
 
 ### Python via uv
 - No system python3 in base.nix — uv manages all Python versions
@@ -150,6 +152,7 @@ Agent config is managed in a tool-agnostic way:
 #### MCP servers (shared, per-host configurable)
 - **Catalog** (`home/mcp-servers.nix`): single source of truth — agent-neutral defs (stdio `{command, args, env?}`, remote `{type, url, headers?}`). agents.nix renders each into the target tool's dialect (Claude keeps `type`; Devin uses `transport`). Host-scoped servers extend it: `home/mcp-servers-personal.nix` (life, posthog, Sanity, whop-docs — darwin-personal + darwin-agent; devin-cloud takes only `life`) and inline additions in `hosts/darwin-cog/default.nix` (metabase, notion, slack — work only).
 - **Per-host, per-agent** via `dots.agents.mcp`: `.claude` / `.devin` pick catalog names (`null` = all, `[]` = none), `.catalog` is extendable. Override on a darwin host with `home-manager.users.charlie.dots.agents.mcp.devin = ["exa" "datadog"];` (or directly on the workstation).
+- **Skills per host** via `dots.agents.skills`: `null` (default) deploys all of `config/agents/skills`; a list deploys only those names (e.g. `darwin-bot` sees `life`, `agent-browser`, … and nothing else). Plugin-backed skills keep their relative symlink, so `life` works either way.
 - **Merged, not symlinked**: both CLIs rewrite their config at runtime, so agents.nix jq-merges managed servers in (a symlink gets clobbered). Catalog servers are authoritative; out-of-band ones (e.g. `claude mcp add`) are preserved.
 - **Auth via OAuth, not env keys**: remote servers (datadog, posthog, Sanity) carry no credentials — log in once per machine (`devin mcp login <name>` or Claude `/mcp`), re-login to switch accounts. Exa reads a key (`EXA_API_KEY`) from the shell env, and `life` (the Executor edge; darwin-personal, darwin-agent, devin-cloud) sends `x-api-key: ${LIFE_MCP_API_KEY}` — both CLIs expand `${VAR}` in `headers` when they connect, so the key never lands in the catalog or the rendered configs. One Executor API key per client: Macs via `dots.onePassword.extraEnv`, Devin VMs via the `LIFE_MCP_API_KEY` org secret.
 - **`life` is a plugin first**: `config/agents/plugins/life/` (`.claude-plugin/plugin.json` — Devin loads the Claude layout too — `.mcp.json`, `skills/life/`) is what Devin cloud installs from this repo (`git-subdir` `config/agents/plugins/life`) and what the root `.claude-plugin/marketplace.json` exposes to Claude Code. `mcp-servers-personal.nix` reads the server definition from that `.mcp.json`, so the local catalog and the plugin can't drift. A machine should get `life` from one path: the plugin (Devin cloud, and Claude Code via the marketplace) or the catalog (the Macs' rendered configs) — the same name from both is harmless only because the definitions are identical.
@@ -157,7 +160,7 @@ Agent config is managed in a tool-agnostic way:
 
 ### Host Composition
 
-All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
+All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets + tart`, sets `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
 
 ```
 _darwin-common.nix = base + darwin + apps + secrets + tart  (shared imports + defaults)
@@ -169,7 +172,7 @@ workstation      = home + packages + hm-secrets            (standalone home-mana
 devin-cloud      = zsh + direnv + agents + packages        (headless standalone home-manager, ephemeral Devin cloud-agent VM)
 ```
 
-Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` with at minimum `networking.hostName`, then append `"<name>"` to the `darwinHosts` list in `parts/hosts.nix`.
+Adding a new darwin host is a 2-step diff: create `hosts/<name>/default.nix` with at minimum `networking.hostName`, then add `<name>.system = "<platform>";` to the `darwinHosts` attrset in `parts/hosts.nix` (`aarch64-darwin` for Apple Silicon, `x86_64-darwin` for Intel — `darwin-bot`). The macOS account defaults to `charlie`; a host with a different one sets `user = "<account>";` there too (`darwin-bot` runs as `charliebot`) — `mkDarwin` turns it into `system.primaryUser` + `users.users.<user>` + the home-manager/nix-homebrew user, and modules read `config.system.primaryUser` rather than hard-coding the name. Homebrew's prefix follows the platform via `config.homebrew.prefix`; never hard-code `/opt/homebrew`. A server-style host replaces the workstation `homebrew.brews`/`homebrew.casks` lists (both are `mkDefault`) and sets `dots.darwin.loginApps = []`, `dots.tart.images = lib.mkForce []`.
 
 The workstation host uses standalone home-manager (not NixOS) to manage dotfiles and CLI packages on Ubuntu. System-level concerns (GPU drivers, k3s, networking) remain Ubuntu-managed.
 

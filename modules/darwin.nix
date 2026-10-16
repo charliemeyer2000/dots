@@ -5,25 +5,17 @@
 }: let
   user = config.system.primaryUser;
   hostname = config.networking.hostName;
+  # /opt/homebrew on Apple Silicon, /usr/local on Intel — nix-darwin derives it from the platform.
+  brewPrefix = config.homebrew.prefix;
   maxFilesSoft = 65536;
   maxFilesHard = 200000;
-  loginApps = [
-    "Google Chrome"
-    "Raycast"
-    "Stats"
-    "Claude"
-    "Ghostty"
-    "CleanShot X"
-    "Granola"
-    "Hammerspoon"
-  ];
 in {
   # ── Pre-activation: Homebrew dirs, Xcode CLT ───────────────────────
   system.activationScripts.preActivation.text = ''
     # Fix Homebrew prefix directories that may have wrong ownership
     # NOTE: $USER is root during activation (runs via sudo), so we use the configured primaryUser
-    /bin/mkdir -p /opt/homebrew/var/log /opt/homebrew/var/run
-    /usr/sbin/chown -R ${user}:admin /opt/homebrew/var/log /opt/homebrew/var/run
+    /bin/mkdir -p ${brewPrefix}/var/log ${brewPrefix}/var/run
+    /usr/sbin/chown -R ${user}:admin ${brewPrefix}/var/log ${brewPrefix}/var/run
 
     if ! /usr/sbin/pkgutil --pkg-info=com.apple.pkg.CLTools_Executables &>/dev/null; then
       echo "Installing Xcode Command Line Tools (this may take a few minutes)..."
@@ -403,7 +395,7 @@ in {
         KeepAlive = false;
       };
     })
-    loginApps);
+    config.dots.darwin.loginApps);
 
   # ── Services ────────────────────────────────────────────────────────
   services.tailscale.enable = true;
@@ -452,7 +444,9 @@ in {
         trusted = true;
       }
     ];
-    brews = [
+    # The workstation set. A server host (darwin-bot) replaces the whole list — Homebrew
+    # publishes almost no Intel bottles anymore, so every formula there is a source build.
+    brews = lib.mkDefault [
       "cirruslabs/cli/tart"
       "mas"
       "hashicorp/tap/terraform"

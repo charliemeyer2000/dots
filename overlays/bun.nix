@@ -22,12 +22,14 @@ _final: prev: {
       // {
         hashes = {
           "bun-darwin-aarch64.zip" = "sha256-xmnpf2Fk4cluBwF0jbmN+ndJKQjL2DlMdVcTSnNd44E=";
+          "bun-darwin-x64-baseline.zip" = "sha256-2pufG0unZsbymXEfON+qmGI+HtnECJaqU9uAPFLsH6A=";
           "bun-linux-aarch64.zip" = "sha256-SxozLuhhmD65O8/m93D/+U4+MbLDiL2uo8jtNeWO7Q4=";
           "bun-linux-x64-baseline.zip" = "sha256-GE+0WV8NQBohfPfHjBvEMLqDMU2reouUgFurv3+nCX8=";
         };
         # nixpkgs' bun reads `src` from here, so the new version flows through.
         sources = {
           "aarch64-darwin" = asset "bun-darwin-aarch64.zip";
+          "x86_64-darwin" = asset "bun-darwin-x64-baseline.zip"; # nixpkgs' sourceRoot expects the baseline build here
           "aarch64-linux" = asset "bun-linux-aarch64.zip";
           "x86_64-linux" = asset "bun-linux-x64-baseline.zip";
         };

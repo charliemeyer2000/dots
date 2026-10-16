@@ -73,6 +73,13 @@ in {
       };
     };
 
+    skills = lib.mkOption {
+      type = lib.types.nullOr (lib.types.listOf lib.types.str);
+      default = null;
+      example = ["life" "agent-browser"];
+      description = "Skills from config/agents/skills deployed to ~/.agents/skills (null = all). Scope a host whose agents should not see the whole catalogue.";
+    };
+
     # Per-host overrides layered onto the shared config/claude/settings.json.
     claude.autoMemoryDirectory = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
@@ -109,7 +116,17 @@ in {
     # keep their relative target under lndir, so ~/.agents/plugins must sit next to
     # ~/.agents/skills for them to resolve.
     home.file.".agents/skills" = {
-      source = ../config/agents/skills;
+      source =
+        if config.dots.agents.skills == null
+        then ../config/agents/skills
+        else
+          # cp -R keeps the plugin skills' relative symlinks intact
+          pkgs.runCommandLocal "agent-skills" {} ''
+            mkdir -p $out
+            for s in ${lib.escapeShellArgs config.dots.agents.skills}; do
+              cp -R ${../config/agents/skills}/"$s" $out/"$s"
+            done
+          '';
       recursive = true;
     };
     home.file.".agents/plugins" = {

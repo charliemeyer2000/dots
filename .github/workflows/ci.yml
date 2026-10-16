@@ -26,3 +26,16 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix build .#darwinConfigurations.darwin-personal.system
+
+  # darwin-bot is the Intel MacBook: build it on an Intel runner so x86_64-darwin
+  # package availability (overlays, bun pin) is proven, not just evaluation.
+  build-darwin-intel:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v6
+      # v3.12.2 is the last nix-installer with an x86_64-darwin binary (same pin as README).
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          source-tag: v3.12.2
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix build .#darwinConfigurations.darwin-bot.system

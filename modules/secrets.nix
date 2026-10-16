@@ -4,15 +4,14 @@
   config,
   ...
 }: let
-  homeDir = "/Users/charlie";
+  user = config.system.primaryUser;
+  homeDir = "/Users/${user}";
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
-  # OAuth client scoped to `auth_keys` + tag:personal only; read straight from
-  # 1Password at activation so it never lands in ~/.env.local.
-  tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-personal";
-  asCharlie = "sudo -u charlie HOME=${homeDir}";
+  asUser = "sudo -u ${user} HOME=${homeDir}";
   cfg = config.dots.onePassword;
+  ts = config.dots.tailscale;
 
   extraEnvExports = lib.concatStrings (lib.mapAttrsToList (name: ref: ''
       if VALUE="$($OP_CMD read "${ref}" 2>/dev/null)"; then
@@ -23,6 +22,22 @@
     '')
     cfg.extraEnv);
 in {
+  options.dots.tailscale = {
+    tag = lib.mkOption {
+      type = lib.types.str;
+      default = "tag:personal";
+      description = "Role tag this host advertises (life-infra tailscale/policy.hujson).";
+    };
+    clientRef = lib.mkOption {
+      type = lib.types.str;
+      default = "op://Developer/Tailscale/oauth-client-secret-personal";
+      description = ''
+        1Password reference of an OAuth client scoped to `auth_keys` + exactly `tag`; read straight
+        from 1Password at activation so it never lands in ~/.env.local.
+      '';
+    };
+  };
+
   options.dots.onePassword = {
     account = lib.mkOption {
       type = lib.types.str;
@@ -34,6 +49,16 @@ in {
         desktop-app (interactive) path so vault lookups disambiguate when multiple
         accounts are signed in (e.g. personal + work). The service-account path
         ignores this — the token already identifies its account.
+      '';
+    };
+    sharedTemplate = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Inject `secrets/secrets.zsh.tmpl` (every shared developer key) into `~/.env.local`.
+        Disable on a host whose processes should see only its own `extraEnv` — e.g. the bot,
+        which sources `~/.env.local` into an agent that should not hold `ANTHROPIC_API_KEY`
+        or the trading keys.
       '';
     };
     extraEnv = lib.mkOption {
@@ -56,14 +81,18 @@ in {
       OP_CMD="${op}"
       echo "Using 1Password service account..."
     else
-      OP_CMD="${asCharlie} ${op} --account ${cfg.account}"
+      OP_CMD="${asUser} ${op} --account ${cfg.account}"
       echo "Using 1Password desktop app integration (account: ${cfg.account})..."
     fi
 
     echo "Injecting secrets via 1Password..."
-    if $OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local; then
+    if ${
+      if cfg.sharedTemplate
+      then "$OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local"
+      else "$OP_CMD whoami >/dev/null 2>&1 && : > ${homeDir}/.env.local"
+    }; then
       ${extraEnvExports}
-      chown charlie:staff ${homeDir}/.env.local
+      chown ${user}:staff ${homeDir}/.env.local
       chmod 600 ${homeDir}/.env.local
       echo "  -> ~/.env.local injected"
     else
@@ -71,9 +100,9 @@ in {
     fi
 
     # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
-    if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+    if TS_CLIENT_SECRET="$($OP_CMD read "${ts.clientRef}" 2>/dev/null)"; then
       echo "Authenticating Tailscale..."
-      if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
+      if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=${ts.tag} 2>/dev/null; then
         echo "  -> Tailscale authenticated"
       else
         echo "  -> Tailscale auth failed (tailscaled may not be running yet)"

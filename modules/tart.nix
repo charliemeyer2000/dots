@@ -5,6 +5,7 @@
 }: let
   cfg = config.dots.tart;
   user = config.system.primaryUser;
+  tart = "${config.homebrew.prefix}/bin/tart";
 in {
   options.dots.tart = {
     images = lib.mkOption {
@@ -37,9 +38,9 @@ in {
             # Derive local VM name from image: ghcr.io/cirruslabs/macos-sequoia-base:latest → macos-sequoia-base
             localName = builtins.head (lib.splitString ":" (lib.last (lib.splitString "/" image)));
           in ''
-            if ! sudo -u ${user} /opt/homebrew/bin/tart list 2>/dev/null | grep -qw "${localName}"; then
+            if ! sudo -u ${user} ${tart} list 2>/dev/null | grep -qw "${localName}"; then
               echo "  -> Pre-pulling Tart image: ${image} as ${localName}"
-              sudo -u ${user} /opt/homebrew/bin/tart clone "${image}" "${localName}" || \
+              sudo -u ${user} ${tart} clone "${image}" "${localName}" || \
                 echo "  -> Failed to pull ${image} (network may be unavailable)"
             else
               echo "  -> Tart image already present: ${localName}"

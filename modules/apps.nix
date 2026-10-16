@@ -56,6 +56,21 @@
     "hiddenbar"
   ];
 in {
+  options.dots.darwin.loginApps = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [
+      "Google Chrome"
+      "Raycast"
+      "Stats"
+      "Claude"
+      "Ghostty"
+      "CleanShot X"
+      "Granola"
+      "Hammerspoon"
+    ];
+    description = "Apps opened at login (darwin.nix makes one LaunchAgent each). [] on headless hosts.";
+  };
+
   options.dots.homebrew = {
     excludeCasks = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -86,7 +101,8 @@ in {
     # installed manually via the App Store.
     homebrew.masApps = {};
 
+    # mkDefault so a server host can replace the workstation set outright (darwin-bot).
     homebrew.casks =
-      lib.subtractLists cfg.excludeCasks (baseCasks ++ cfg.extraCasks);
+      lib.mkDefault (lib.subtractLists cfg.excludeCasks (baseCasks ++ cfg.extraCasks));
   };
 }

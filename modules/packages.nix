@@ -49,8 +49,6 @@ with pkgs;
     claude-code
     devin-cli
     sf-cli
-    uvacompute
-    rv
     _1password-cli
 
     # Infra
@@ -70,6 +68,11 @@ with pkgs;
   ]
   ++ lib.optionals pkgs.stdenv.isDarwin [
     colima
+  ]
+  # Neither flake ships an x86_64-darwin build (and the Intel bot box has no use for HPC CLIs).
+  ++ lib.optionals (!(pkgs.stdenv.hostPlatform.isDarwin && pkgs.stdenv.hostPlatform.isx86_64)) [
+    uvacompute
+    rv
   ]
   ++ lib.optionals pkgs.stdenv.isLinux [
     llm-agents.agent-browser # darwin installs this via Homebrew instead
