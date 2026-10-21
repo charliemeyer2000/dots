@@ -30,7 +30,12 @@
     "discord"
     "signal"
     "slack"
-    "whatsapp"
+    # whatsapp marks itself auto_updates but its in-app updater dies once the
+    # version expires, so brew must upgrade it greedily on rebuild
+    {
+      name = "whatsapp";
+      greedy = true;
+    }
     "zoom"
 
     # Productivity

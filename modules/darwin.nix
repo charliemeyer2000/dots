@@ -413,6 +413,7 @@ in {
     enable = true;
     onActivation = {
       autoUpdate = true;
+      upgrade = true;
       cleanup = "zap";
     };
     # All third-party (non-official) taps. `trusted = true` adds `trusted: true`
