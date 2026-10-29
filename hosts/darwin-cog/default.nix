@@ -5,8 +5,8 @@
   networking.computerName = "Charlie's Cognition Laptop";
   networking.localHostName = "charlie-cog-laptop";
 
-  # IT-managed apps
-  dots.homebrew.excludeCasks = ["zoom"];
+  # IT-managed apps (Iru, formerly Kandji, installs and updates these via .pkg)
+  dots.homebrew.excludeCasks = ["zoom" "1password" "figma" "notion"];
 
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-cog.md;

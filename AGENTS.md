@@ -47,7 +47,7 @@ dots/
 │   ├── _darwin-common.nix # Shared base for all darwin hosts (imports + user + nix.enable + stateVersion)
 │   ├── darwin-personal/  # M4 Pro MacBook Pro: only host-unique networking attrs
 │   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): only host-unique attrs
-│   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed casks (zoom)
+│   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed casks (zoom, 1password, figma, notion)
 │   ├── workstation/      # Linux workstation: standalone home-manager + secrets
 │   └── devin-cloud/      # Ephemeral Devin cloud-agent VM: headless HM + bin/ helpers + canonical org-blueprint.yaml
 ├── modules/              # System-level modules
@@ -164,7 +164,7 @@ _darwin-common.nix = base + darwin + apps + secrets + tart  (shared imports + de
 
 darwin-personal  = _darwin-common.nix + hostname           (nix-darwin, M4 Pro MacBook Pro)
 darwin-agent     = _darwin-common.nix + hostname           (nix-darwin, M1 Pro MacBook Pro, always-on)
-darwin-cog       = _darwin-common.nix + hostname + excludeCasks=["zoom"]  (Cognition work MacBook, IT manages Zoom)
+darwin-cog       = _darwin-common.nix + hostname + excludeCasks=[zoom 1password figma notion]  (Cognition work MacBook, IT/Iru manages these)
 workstation      = home + packages + hm-secrets            (standalone home-manager, Ubuntu 24.04)
 devin-cloud      = zsh + direnv + agents + packages        (headless standalone home-manager, ephemeral Devin cloud-agent VM)
 ```
@@ -236,7 +236,7 @@ Language management:
 - Screenshots: saved to `~/Desktop/screenshots`
 - TouchID for sudo
 - Tailscale service enabled
-- Homebrew taps: cirruslabs/cli, hashicorp, k9s, stripe, graphite, ekristen, steipete, speakeasy-api
+- Homebrew taps: openai/tools (tart), hashicorp, k9s, stripe, graphite, ekristen, steipete, speakeasy-api
 
 ### Per-Host Homebrew Casks
 
@@ -250,7 +250,7 @@ Resolved as: `homebrew.casks = subtractLists excludeCasks (baseCasks ++ extraCas
 Example (`hosts/darwin-cog/default.nix`):
 
 ```nix
-dots.homebrew.excludeCasks = ["zoom"];
+dots.homebrew.excludeCasks = ["zoom" "1password" "figma" "notion"];
 ```
 
 ## SSH Hosts (ssh.nix)

@@ -421,7 +421,7 @@ in {
     # Homebrew 6.0+'s HOMEBREW_REQUIRE_TAP_TRUST (covers transitive deps too).
     taps = [
       {
-        name = "cirruslabs/cli";
+        name = "openai/tools";
         trusted = true;
       }
       {
@@ -454,7 +454,7 @@ in {
       }
     ];
     brews = [
-      "cirruslabs/cli/tart"
+      "openai/tools/tart"
       "mas"
       "hashicorp/tap/terraform"
       "derailed/k9s/k9s"
