@@ -32,8 +32,8 @@ in {
       # resolutions (stray >>>>>>> markers without matching pairs) when the
       # new conflict's shape differs slightly from the recorded one.
       rerere.autoUpdate = false;
-      credential."https://github.com".helper = ghCredHelper;
-      credential."https://gist.github.com".helper = ghCredHelper;
+      credential."https://github.com".helper = ["" ghCredHelper];
+      credential."https://gist.github.com".helper = ["" ghCredHelper];
     };
     ignores = [".DS_Store" ".env.local" "*.log" ".claude/settings.local.json" ".agents/local/"];
   };
