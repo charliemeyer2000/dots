@@ -8,6 +8,10 @@
   # IT-managed apps (Iru, formerly Kandji, installs and updates these via .pkg)
   dots.homebrew.excludeCasks = ["zoom" "1password" "figma" "notion"];
 
+  # Work machine — don't inject personal API keys into ~/.env.local
+  # (Tailscale auth in secrets.nix still runs; `op read` secrets on demand).
+  dots.onePassword.injectEnv = false;
+
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-cog.md;
 

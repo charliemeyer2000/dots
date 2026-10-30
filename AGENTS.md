@@ -104,6 +104,7 @@ All inputs follow the root nixpkgs for consistency.
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 - Multi-account: `dots.onePassword.account` (default `"my.1password.com"`) is passed as `op --account <value>` in the desktop-app path so vault lookups disambiguate when both personal and work 1Password accounts are signed in. Service-account auth ignores it (the token already identifies the account). Override per-host if a machine should resolve secrets against a different account.
 - Per-host secrets: `dots.onePassword.extraEnv.<VAR> = "op://..."` (nix-darwin hosts) is `op read` at activation and appended to `~/.env.local` after the shared template. Use it when the value differs per machine — e.g. each Mac's own Executor API key `LIFE_MCP_API_KEY` from `op://Developer/Life MCP/<host>` — since a missing field in the shared template would fail `op inject` everywhere.
+- Per-host opt-out: `dots.onePassword.injectEnv = false` (nix-darwin hosts) skips the `~/.env.local` injection entirely (shared template + `extraEnv`) while keeping Tailscale auth. Set on `darwin-cog` so personal API keys stay off the work machine; `op read` secrets on demand there instead.
 
 ### Python via uv
 - No system python3 in base.nix — uv manages all Python versions

@@ -36,6 +36,16 @@ in {
         ignores this — the token already identifies its account.
       '';
     };
+    injectEnv = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether to inject `secrets/secrets.zsh.tmpl` (plus `extraEnv`) into
+        `~/.env.local` at activation. Disable on hosts that shouldn't carry
+        personal secrets in the shell env (e.g. work machines) — Tailscale
+        auth below is unaffected.
+      '';
+    };
     extraEnv = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = {};
@@ -60,15 +70,17 @@ in {
       echo "Using 1Password desktop app integration (account: ${cfg.account})..."
     fi
 
-    echo "Injecting secrets via 1Password..."
-    if $OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local; then
-      ${extraEnvExports}
-      chown charlie:staff ${homeDir}/.env.local
-      chmod 600 ${homeDir}/.env.local
-      echo "  -> ~/.env.local injected"
-    else
-      echo "1Password not signed in or inject failed, skipping secrets."
-    fi
+    ${lib.optionalString cfg.injectEnv ''
+      echo "Injecting secrets via 1Password..."
+      if $OP_CMD inject -f -i ${dotsDir}/secrets/secrets.zsh.tmpl -o ${homeDir}/.env.local; then
+        ${extraEnvExports}
+        chown charlie:staff ${homeDir}/.env.local
+        chmod 600 ${homeDir}/.env.local
+        echo "  -> ~/.env.local injected"
+      else
+        echo "1Password not signed in or inject failed, skipping secrets."
+      fi
+    ''}
 
     # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
     if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
