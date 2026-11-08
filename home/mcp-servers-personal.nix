@@ -21,4 +21,15 @@
     type = "http";
     url = "https://docs.whop.com/mcp";
   };
+  # iOS Simulator tools for Dueflow's Expo app: build/run, AX tree, tap/type,
+  # screenshots (Sentry's ex-XcodeBuildMCP), and Maestro for E2E flows.
+  MobileBuildMCP = {
+    command = "npx";
+    args = ["-y" "mobilebuildmcp@2.7.1" "mcp"];
+    env.MOBILEBUILDMCP_ENABLED_WORKFLOWS = "simulator,ui-automation,debugging";
+  };
+  maestro = {
+    command = "maestro";
+    args = ["mcp"];
+  };
 }

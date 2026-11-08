@@ -8,7 +8,18 @@
   # Dolphin emulator for offline SSBM mods (20XX, UnclePunch Training Mode).
   # Slippi Launcher itself is a one-off install (self-updating, no cask exists).
   # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.
-  dots.homebrew.extraCasks = ["dolphin" "obsidian"];
+  # zulu@17: the JDK Maestro needs for Dueflow's iOS (Expo) app.
+  dots.homebrew.extraCasks = ["dolphin" "obsidian" "zulu@17"];
+
+  # iOS / React Native dev (Dueflow's Expo app): pods, Metro's file watcher,
+  # simulator E2E flows, and Xcode version switching.
+  homebrew.taps = [
+    {
+      name = "mobile-dev-inc/tap";
+      trusted = true;
+    }
+  ];
+  homebrew.brews = ["cocoapods" "watchman" "xcodes" "mobile-dev-inc/tap/maestro"];
   home-manager.users.charlie.dots.agents.claude.autoMemoryDirectory = "~/all/life/agents/memory";
 
   home-manager.users.charlie.dots.agents.instructions.host =
