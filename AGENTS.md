@@ -56,7 +56,6 @@ dots/
 │   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
 │   ├── apps.nix          # Shared base list of Homebrew casks + dots.homebrew.{excludeCasks,extraCasks} options
 │   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
-│   ├── tart.nix          # Tart VM management: image pre-pull + headless keychain unlock
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── overlays/             # Local package overrides (bun.nix: pin bun ahead of nixpkgs)
 ├── parts/                # Flake-parts modules
@@ -161,7 +160,7 @@ Agent config is managed in a tool-agnostic way:
 All darwin hosts share the same base — defined once in `hosts/_darwin-common.nix` (imports `base + darwin + apps + secrets`, sets `primaryUser`, `users.users.charlie`, `nix.enable = false`, `stateVersion`) and wired in via the `mkDarwin` helper in `parts/hosts.nix`. Each host's own `default.nix` only declares what's *different* (hostname, per-host agent instructions add-on, optional `dots.homebrew.*` overrides).
 
 ```
-_darwin-common.nix = base + darwin + apps + secrets + tart  (shared imports + defaults)
+_darwin-common.nix = base + darwin + apps + secrets  (shared imports + defaults)
 
 darwin-personal  = _darwin-common.nix + hostname           (nix-darwin, M4 Pro MacBook Pro)
 darwin-agent     = _darwin-common.nix + hostname           (nix-darwin, M1 Pro MacBook Pro, always-on)
@@ -361,3 +360,4 @@ Hooks only work inside `nix develop`. Outside that context they may hang or fail
 2. `just check` before committing
 3. Conventional commits (feat:, fix:, chore:, docs:)
 4. Secrets in 1Password templates only — never commit actual values
+5. Custom nix-darwin activation steps go in `system.activationScripts.{preActivation,postActivation}.text` (both merge across modules). nix-darwin silently ignores any other `system.activationScripts.<name>`, which is why the old tart.nix image pre-pull and headless-keychain scripts never ran.
