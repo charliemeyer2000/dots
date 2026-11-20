@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   # M4 Pro MacBook Pro — daily driver.
   # Shared darwin config lives in ../_darwin-common.nix.
   networking.hostName = "charlie-m4pro";
@@ -10,6 +10,8 @@
   # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.
   # zulu@17: the JDK Maestro needs for Dueflow's iOS (Expo) app.
   dots.homebrew.extraCasks = ["dolphin" "obsidian" "zulu@17"];
+
+  environment.systemPackages = [pkgs.subfinder];
 
   # iOS / React Native dev (Dueflow's Expo app): pods, Metro's file watcher,
   # simulator E2E flows, and Xcode version switching.
