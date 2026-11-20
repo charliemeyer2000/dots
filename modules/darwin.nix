@@ -25,10 +25,12 @@ in {
     /bin/mkdir -p /opt/homebrew/var/log /opt/homebrew/var/run
     /usr/sbin/chown -R ${user}:admin /opt/homebrew/var/log /opt/homebrew/var/run
 
-    if ! /usr/sbin/pkgutil --pkg-info=com.apple.pkg.CLTools_Executables &>/dev/null; then
+    CLT_MAJOR=$(/usr/sbin/pkgutil --pkg-info=com.apple.pkg.CLTools_Executables 2>/dev/null | /usr/bin/awk -F'[ .]' '/^version:/ {print $2}') || true
+    MACOS_MAJOR=$(/usr/bin/sw_vers -productVersion | /usr/bin/cut -d. -f1)
+    if [ -z "$CLT_MAJOR" ] || [ "$CLT_MAJOR" -lt "$MACOS_MAJOR" ]; then
       echo "Installing Xcode Command Line Tools (this may take a few minutes)..."
       /usr/bin/touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
-      CLT_LABEL=$(/usr/sbin/softwareupdate -l 2>&1 | /usr/bin/grep -o "Label: Command Line Tools.*" | /usr/bin/sed 's/Label: //' | /usr/bin/tail -1)
+      CLT_LABEL=$(/usr/sbin/softwareupdate -l 2>&1 | /usr/bin/grep -o "Label: Command Line Tools.*" | /usr/bin/sed 's/Label: //' | /usr/bin/tail -1) || true
       if [ -n "$CLT_LABEL" ]; then
         /usr/sbin/softwareupdate -i "$CLT_LABEL"
         echo "  -> Xcode CLT installed"
