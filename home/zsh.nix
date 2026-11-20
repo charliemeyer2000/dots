@@ -3,7 +3,7 @@
   onePasswordAgentSocket,
   ...
 }: let
-  inherit (pkgs.stdenv) isDarwin;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
 in {
   programs.zsh = {
     enable = true;
@@ -27,7 +27,7 @@ in {
 
     shellAliases =
       {
-        rebuild = "echo 'Usage: rebuild <config>' && echo 'Example: rebuild darwin-personal' && echo '' && cd $DOTS_DIR && just switch";
+        rebuild = "cd $DOTS_DIR && just switch";
         dots = "cd $DOTS_DIR";
         k = "kubectl";
         tf = "terraform";

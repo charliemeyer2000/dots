@@ -3,7 +3,7 @@
   onePasswordAgentSocket,
   ...
 }: let
-  inherit (pkgs.stdenv) isDarwin;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
 in {
   # The 1Password SSH agent only offers keys from the built-in Personal/Private
   # vaults unless this config exists — our SSH key lives in the personal

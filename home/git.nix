@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  inherit (pkgs.stdenv) isDarwin;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
   opSshSign =
     if isDarwin
     then "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"

@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  inherit (pkgs.stdenv) isDarwin;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
   # Path to 1Password SSH agent socket, relative to $HOME / ~.
   # Single source of truth for both ssh_config (IdentityAgent) and shell (SSH_AUTH_SOCK).
   onePasswordAgentSocket =

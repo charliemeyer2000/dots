@@ -16,7 +16,7 @@
       inherit (claude) autoMemoryDirectory;
     };
 
-  inherit (pkgs.stdenv) isDarwin;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
 
   # Devin Desktop bundles its own (often older) "Devin Local" agent which, by
   # default, shares ~/.local/share/devin/cli/sessions.db with the standalone

@@ -68,9 +68,9 @@ with pkgs;
     postgresql
     ollama
   ]
-  ++ lib.optionals pkgs.stdenv.isDarwin [
+  ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
     colima
   ]
-  ++ lib.optionals pkgs.stdenv.isLinux [
+  ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     llm-agents.agent-browser # darwin installs this via Homebrew instead
   ]

@@ -1,6 +1,6 @@
 {pkgs, ...}: let
   font = "Berkeley Mono"; # paid font, fallback: JetBrainsMono Nerd Font
-  inherit (pkgs.stdenv) isDarwin;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
   mod =
     if isDarwin
     then "cmd"
