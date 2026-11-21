@@ -25,6 +25,7 @@
     inputs.claude-code-overlay.overlays.default
     inputs.devin-cli-overlay.overlays.default
     inputs.sf-cli-overlay.overlays.default
+    inputs.capy-desktop-overlay.overlays.default
     inputs.uvacompute.overlays.default
     inputs.rv.overlays.default
     (import ../overlays/bun.nix)

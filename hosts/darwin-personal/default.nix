@@ -11,7 +11,7 @@
   # zulu@17: the JDK Maestro needs for Dueflow's iOS (Expo) app.
   dots.homebrew.extraCasks = ["dolphin" "obsidian" "zulu@17"];
 
-  environment.systemPackages = [pkgs.subfinder];
+  environment.systemPackages = [pkgs.subfinder pkgs.capy-desktop];
 
   # iOS / React Native dev (Dueflow's Expo app): pods, Metro's file watcher,
   # simulator E2E flows, and Xcode version switching.

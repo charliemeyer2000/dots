@@ -81,6 +81,7 @@ dots/
 | claude-code-overlay | sadjow/claude-code-nix | Nix overlay for Claude Code CLI (official Anthropic binaries) |
 | devin-cli-overlay | charliemeyer2000/devin-cli-overlay | Nix overlay for Devin CLI |
 | sf-cli-overlay | charliemeyer2000/sf-cli-overlay | Nix overlay for SF Compute CLI |
+| capy-desktop-overlay | charliemeyer2000/capy-desktop-overlay | Nix overlay for the Capy desktop app (darwin-personal; nix-darwin copies it to `/Applications/Nix Apps`, and darwin.nix pre-grants it Accessibility + Screen Recording for computer use) |
 | llm-agents | numtide/llm-agents.nix | agent-browser CLI (Linux only; darwin uses the Homebrew formula) |
 | uvacompute | uvacompute.com/nix/flake.tar.gz | UVACompute CLI |
 | rv | charliemeyer2000/rivanna.dev | rv CLI — GPU job submission on Rivanna/Afton HPC |

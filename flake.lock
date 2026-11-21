@@ -51,6 +51,26 @@
         "type": "github"
       }
     },
+    "capy-desktop-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795255250,
+        "narHash": "sha256-y2z9KcI5AdAaM6TH57m24MpMLBScBuF/yYeFO8n1H2k=",
+        "owner": "charliemeyer2000",
+        "repo": "capy-desktop-overlay",
+        "rev": "f8558df37f2ca65b893a1dbcb61c63415b3d3486",
+        "type": "github"
+      },
+      "original": {
+        "owner": "charliemeyer2000",
+        "repo": "capy-desktop-overlay",
+        "type": "github"
+      }
+    },
     "claude-code-overlay": {
       "inputs": {
         "nixpkgs": [
@@ -283,6 +303,7 @@
     },
     "root": {
       "inputs": {
+        "capy-desktop-overlay": "capy-desktop-overlay",
         "claude-code-overlay": "claude-code-overlay",
         "devin-cli-overlay": "devin-cli-overlay",
         "flake-parts": "flake-parts",

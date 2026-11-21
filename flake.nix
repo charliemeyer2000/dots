@@ -42,6 +42,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Capy desktop app — pre-built, signed macOS app bundle
+    capy-desktop-overlay = {
+      url = "github:charliemeyer2000/capy-desktop-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # agent-browser CLI (Linux only; darwin uses the Homebrew formula)
     llm-agents = {
       url = "github:numtide/llm-agents.nix";

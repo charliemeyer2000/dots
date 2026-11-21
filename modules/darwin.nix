@@ -201,6 +201,7 @@ in {
     # Accessibility
     grant_tcc kTCCServiceAccessibility org.hammerspoon.Hammerspoon "/Applications/Hammerspoon.app"
     grant_tcc kTCCServiceAccessibility com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceAccessibility ai.capy.desktop "/Applications/Nix Apps/Capy.app"
     grant_tcc kTCCServiceAccessibility com.raycast.macos "/Applications/Raycast.app"
     grant_tcc kTCCServiceAccessibility com.FluidApp.app "/Applications/FluidVoice.app"
     grant_tcc kTCCServiceAccessibility eu.exelban.Stats "/Applications/Stats.app"
@@ -226,6 +227,7 @@ in {
     # tccd fail the match with "Failed to match existing code requirement".
     grant_tcc kTCCServiceScreenCapture pl.maketheweb.cleanshotx "/Applications/CleanShot X.app"
     grant_tcc kTCCServiceScreenCapture com.anthropic.claudefordesktop "/Applications/Claude.app"
+    grant_tcc kTCCServiceScreenCapture ai.capy.desktop "/Applications/Nix Apps/Capy.app"
     grant_tcc kTCCServiceScreenCapture com.mitchellh.ghostty "/Applications/Ghostty.app"
     grant_tcc kTCCServiceScreenCapture com.google.Chrome "/Applications/Google Chrome.app"
     grant_tcc kTCCServiceScreenCapture com.hnc.Discord "/Applications/Discord.app"
