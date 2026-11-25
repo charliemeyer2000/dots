@@ -47,7 +47,7 @@ dots/
 │   ├── _darwin-common.nix # Shared base for all darwin hosts (imports + user + nix.enable + stateVersion)
 │   ├── darwin-personal/  # M4 Pro MacBook Pro: only host-unique networking attrs
 │   ├── darwin-agent/     # M1 Pro MacBook Pro (always-on agent): only host-unique attrs
-│   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed casks (zoom, 1password, figma, notion)
+│   ├── darwin-cog/       # Cognition work MacBook: excludes IT-managed + personal casks (mullvad, atomic-wallet, ngrok), disables Tailscale
 │   ├── workstation/      # Linux workstation: standalone home-manager + secrets
 │   └── devin-cloud/      # Ephemeral Devin cloud-agent VM: headless HM + bin/ helpers + canonical org-blueprint.yaml
 ├── modules/              # System-level modules
@@ -104,7 +104,7 @@ All inputs follow the root nixpkgs for consistency.
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 - Multi-account: `dots.onePassword.account` (default `"my.1password.com"`) is passed as `op --account <value>` in the desktop-app path so vault lookups disambiguate when both personal and work 1Password accounts are signed in. Service-account auth ignores it (the token already identifies the account). Override per-host if a machine should resolve secrets against a different account.
 - Per-host secrets: `dots.onePassword.extraEnv.<VAR> = "op://..."` (nix-darwin hosts) is `op read` at activation and appended to `~/.env.local` after the shared template. Use it when the value differs per machine — e.g. each Mac's own Executor API key `LIFE_MCP_API_KEY` from `op://Developer/Life MCP/<host>` — since a missing field in the shared template would fail `op inject` everywhere.
-- Per-host opt-out: `dots.onePassword.injectEnv = false` (nix-darwin hosts) skips the `~/.env.local` injection entirely (shared template + `extraEnv`) while keeping Tailscale auth. Set on `darwin-cog` so personal API keys stay off the work machine; `op read` secrets on demand there instead.
+- Per-host opt-out: `dots.onePassword.injectEnv = false` (nix-darwin hosts) skips the `~/.env.local` injection entirely (shared template + `extraEnv`); Tailscale auth is separately tied to `services.tailscale.enable`. When neither is enabled, the host emits no 1Password block at all — an unused `OP_CMD` would fail the activation script's shellcheck. Set on `darwin-cog` so personal API keys stay off the work machine; `op read` secrets on demand there instead.
 
 ### Python via uv
 - No system python3 in base.nix — uv manages all Python versions
@@ -119,6 +119,7 @@ All inputs follow the root nixpkgs for consistency.
   - Devin VMs `tag:devin` — no secret at all: `devin-tailscale-up` exchanges the session's Devin OIDC token with Tailscale (workload identity federation, `tailscale up --client-id/--id-token`); the federated identity pins the Devin issuer + org subject and is limited to `tag:devin`. The org blueprint hooks `devin-tailscale-up --auto` into `$ENVRC`, so every session joins on its first command (no-op once up; 10-min backoff after a failure)
 - The Mac/workstation clients are `op read` at activation time and never written to `~/.env.local`; `tailscale up` runs on every `just switch` (idempotent — re-auths if the node key expired, no-op if current)
 - No manual `tailscale up` needed on new machines (just sign into 1Password first)
+- `darwin-cog` opts out entirely: `services.tailscale.enable = false` (no daemon, CLI out of PATH) and secrets.nix skips the OAuth auth when the service is disabled — no personal-tailnet node key on the work machine
 
 ### Mullvad VPN
 - Two Mullvad integrations: Tailscale exit nodes (primary) and standalone Mullvad VPN app (fallback)
@@ -126,6 +127,7 @@ All inputs follow the root nixpkgs for consistency.
 - Standalone Mullvad VPN conflicts with Tailscale on macOS (aggressive firewall rules drop Tailscale traffic)
 - Mullvad is **not** auto-configured during rebuild — use shell aliases for manual control
 - Shell aliases: `vpn-on`, `vpn-off`, `vpn-status`, `vpn-us`, `vpn-uk`, `vpn-eu` (macOS only)
+- Not installed on `darwin-cog` (`mullvad-vpn` in `dots.homebrew.excludeCasks` — no personal VPNs on the work machine, so the `vpn-*` aliases don't work there; WARP is the corporate VPN)
 - Cloudflare WARP (installed as a cask) also runs a system-level tunnel — only run one VPN at a time (WARP, Mullvad, or Tailscale exit node) to avoid routing conflicts
 
 ### Agent Configuration
@@ -216,7 +218,7 @@ Tooling-guard aliases:
 
 Shared across all machines (via `modules/packages.nix`):
 
-- **CLI tools**: git, git-lfs, git-absorb, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, socat, watchexec
+- **CLI tools**: git, git-lfs, git-absorb, ripgrep, fd, fzf, jq, curl, wget, htop, bat, tmux, tree, zoxide, gh, gum, nmap, subfinder, socat, watchexec
 - **Dev tools**: cmake, graphviz, pandoc, typst, pre-commit, ruff, cppcheck, just, direnv
 - **Languages**: go, rustup, lua, zig, nodejs_22, pnpm, bun, uv
 - **AI/HPC**: claude-code (via claude-code-overlay), devin-cli (via devin-cli-overlay), sf-cli (via sf-cli-overlay), uvacompute, rv (UVA Rivanna job submission CLI), agent-browser (browser automation — Homebrew formula on darwin, llm-agents overlay on Linux)

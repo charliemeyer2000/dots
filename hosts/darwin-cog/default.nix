@@ -5,12 +5,22 @@
   networking.computerName = "Charlie's Cognition Laptop";
   networking.localHostName = "charlie-cog-laptop";
 
-  # IT-managed apps (Iru, formerly Kandji, installs and updates these via .pkg)
-  dots.homebrew.excludeCasks = ["zoom" "1password" "figma" "notion"];
+  # zoom/1password/figma/notion: IT-managed (Iru, formerly Kandji, via .pkg).
+  # mullvad-vpn/atomic-wallet/ngrok: personal or IT-unfriendly tooling — keep
+  # off the work machine.
+  dots.homebrew.excludeCasks = ["zoom" "1password" "figma" "notion" "mullvad-vpn" "atomic-wallet" "ngrok"];
+
+  # Personal-tailnet Tailscale stays off the work machine too (no tailscaled
+  # daemon; secrets.nix skips the OAuth auth when the service is disabled).
+  services.tailscale.enable = false;
 
   # Work machine — don't inject personal API keys into ~/.env.local
-  # (Tailscale auth in secrets.nix still runs; `op read` secrets on demand).
+  # (`op read` secrets on demand).
   dots.onePassword.injectEnv = false;
+
+  # Keep Gatekeeper's download quarantine on the work machine
+  # (the fleet default in darwin.nix disables it for convenience).
+  system.defaults.LaunchServices.LSQuarantine = true;
 
   home-manager.users.charlie.dots.agents.instructions.host =
     builtins.readFile ../../config/agents/hosts/darwin-cog.md;
