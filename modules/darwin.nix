@@ -348,7 +348,8 @@ in {
 
   # ── Launch Services ─────────────────────────────────────────────────
   system.defaults.LaunchServices = {
-    LSQuarantine = false; # disable "downloaded from internet" quarantine
+    # disable "downloaded from internet" quarantine (darwin-cog re-enables it)
+    LSQuarantine = lib.mkDefault false;
   };
 
   # ── Keyboard ────────────────────────────────────────────────────────
@@ -410,7 +411,7 @@ in {
     loginApps);
 
   # ── Services ────────────────────────────────────────────────────────
-  services.tailscale.enable = true;
+  services.tailscale.enable = lib.mkDefault true; # per-host opt-out: darwin-cog
 
   # ── Homebrew ────────────────────────────────────────────────────────
   homebrew = {

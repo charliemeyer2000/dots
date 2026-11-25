@@ -13,6 +13,10 @@
   tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-personal";
   asCharlie = "sudo -u charlie HOME=${homeDir}";
   cfg = config.dots.onePassword;
+  # Everything below exists to run $OP_CMD consumers; when a host enables none
+  # of them (darwin-cog), emit nothing — an unused OP_CMD trips shellcheck
+  # SC2034, which fails nix-darwin's activation-script check.
+  needsOp = cfg.injectEnv || config.services.tailscale.enable;
 
   extraEnvExports = lib.concatStrings (lib.mapAttrsToList (name: ref: ''
       if VALUE="$($OP_CMD read "${ref}" 2>/dev/null)"; then
@@ -59,7 +63,7 @@ in {
     };
   };
 
-  config.system.activationScripts.postActivation.text = ''
+  config.system.activationScripts.postActivation.text = lib.optionalString needsOp ''
     if [ -f ${homeDir}/.config/op/service-account-token ]; then
       OP_SERVICE_ACCOUNT_TOKEN="$(cat ${homeDir}/.config/op/service-account-token)"
       export OP_SERVICE_ACCOUNT_TOKEN
@@ -82,15 +86,18 @@ in {
       fi
     ''}
 
-    # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if current)
-    if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
-      echo "Authenticating Tailscale..."
-      if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
-        echo "  -> Tailscale authenticated"
-      else
-        echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
+    # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if
+    # current). Skipped where services.tailscale.enable = false (darwin-cog).
+    ${lib.optionalString config.services.tailscale.enable ''
+      if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+        echo "Authenticating Tailscale..."
+        if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
+          echo "  -> Tailscale authenticated"
+        else
+          echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
+        fi
+        unset TS_CLIENT_SECRET
       fi
-      unset TS_CLIENT_SECRET
-    fi
+    ''}
   '';
 }
