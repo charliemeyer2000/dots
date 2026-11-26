@@ -86,6 +86,7 @@ ID_TOKEN="$(devin-oidc token --audience "api.tailscale.com/${TS_DEVIN_OIDC_CLIEN
 # dead node key and `logout` fails ("no nodekey to log out"); this registers a new one.
 sudo "$TS_BIN" up \
   --force-reauth \
+  --timeout=60s \
   --client-id="${TS_DEVIN_OIDC_CLIENT_ID}?ephemeral=true&preauthorized=true" \
   --id-token="$ID_TOKEN" \
   --advertise-tags="${TAG}" \
