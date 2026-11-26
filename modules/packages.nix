@@ -25,6 +25,7 @@ with pkgs;
     gum
     p4
     nmap
+    subfinder
     socat
     watchexec
 
