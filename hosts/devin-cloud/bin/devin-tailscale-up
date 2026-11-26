@@ -21,17 +21,23 @@ AUTO=0
 TAG="${DEVIN_TS_TAG:-tag:devin}"
 TS_BIN="$(command -v tailscale)"
 
-connected() {
-  "$TS_BIN" status --json 2>/dev/null |
-    jq -e --arg tag "$TAG" '.BackendState == "Running" and (.Self.Tags // [] | index($tag) != null)' >/dev/null 2>&1
+LOCK=/tmp/devin-tailscale-up.lock
+BACKOFF=/tmp/devin-tailscale-up.failed
+
+# "up" when joined as $TAG and in contact with control; "stale" when joined but out of
+# contact (Self.Online false); else the backend state (NeedsLogin, Stopped, ...).
+ts_state() {
+  "$TS_BIN" status --json 2>/dev/null | jq -r --arg tag "$TAG" '
+    if .BackendState == "Running" and (.Self.Tags // [] | index($tag) != null)
+    then (if .Self.Online then "up" else "stale" end)
+    else .BackendState end' 2>/dev/null
 }
+connected() { [ "$(ts_state)" = up ]; }
 
 connected && exit 0
 
 if [ "$AUTO" = 1 ]; then
   exec >/dev/null 2>&1
-  LOCK=/tmp/devin-tailscale-up.lock
-  BACKOFF=/tmp/devin-tailscale-up.failed
   exec 9>"$LOCK"
   command -v flock >/dev/null 2>&1 && flock 9
   connected && exit 0
@@ -65,14 +71,26 @@ ensure_daemon() {
 }
 
 ensure_daemon
+# Online is false while a live node is still reconnecting (e.g. just after a VM wake): give it
+# 10 s before replacing it.
+if [ "$(ts_state)" = stale ]; then
+  for _ in $(seq 10); do
+    sleep 1
+    connected && { rm -f "$BACKOFF"; exit 0; }
+  done
+fi
 # Tailscale's audience for a federated identity is always api.tailscale.com/<client id>.
 ID_TOKEN="$(devin-oidc token --audience "api.tailscale.com/${TS_DEVIN_OIDC_CLIENT_ID}")"
+# --force-reauth: after a VM sleep, control may have deleted the ephemeral node while tailscaled
+# still says Running (its log repeats "PollNetMap: ... 404: node not found"). Plain `up` keeps that
+# dead node key and `logout` fails ("no nodekey to log out"); this registers a new one.
 sudo "$TS_BIN" up \
+  --force-reauth \
   --client-id="${TS_DEVIN_OIDC_CLIENT_ID}?ephemeral=true&preauthorized=true" \
   --id-token="$ID_TOKEN" \
   --advertise-tags="${TAG}" \
   --hostname="${TS_HOSTNAME}" \
   --accept-routes \
   --reset
-[ "$AUTO" = 1 ] && rm -f "$BACKOFF"
+rm -f "$BACKOFF"
 sudo "$TS_BIN" status
