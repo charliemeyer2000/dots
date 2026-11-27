@@ -8,9 +8,19 @@
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
+  jq = "${pkgs.jq}/bin/jq";
   # OAuth client scoped to `auth_keys` + tag:workstation only; read straight from
   # 1Password at activation so it never lands in ~/.env.local.
   tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-workstation";
+  tailscaleTag = "tag:workstation";
+  # The node's complete non-default Tailscale settings: `tailscale up --reset`
+  # applies exactly these, so a leftover setting (an exit node, ...) can't make
+  # the login refuse to run. --operator lets it run without sudo.
+  tailscaleUpFlags = [
+    "--advertise-tags=${tailscaleTag}"
+    "--ssh"
+    "--operator=${config.home.username}"
+  ];
   cfg = config.dots.onePassword;
 in {
   options.dots.onePassword.account = lib.mkOption {
@@ -45,15 +55,28 @@ in {
       echo "1Password not signed in or inject failed, skipping secrets."
     fi
 
-    if ${tailscale} status &>/dev/null; then
-      echo "  -> Tailscale already connected, skipping auth"
-    elif TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
-      if sudo -n ${tailscale} up --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:workstation 2>/dev/null; then
-        echo "  -> Tailscale authenticated"
-      else
-        echo "  -> Tailscale auth skipped (sudo requires password)"
-      fi
-      unset TS_CLIENT_SECRET
-    fi
+    # Log in only when logged out (fresh install, expired key); a logged-in node is left alone.
+    TS_STATUS="$(${tailscale} status --json 2>/dev/null || true)"
+    case "$(${jq} -r '.BackendState // empty' <<<"$TS_STATUS")" in
+      NeedsLogin | NoState)
+        if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+          echo "Authenticating Tailscale..."
+          if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" ${lib.escapeShellArgs tailscaleUpFlags}; then
+            echo "  -> Tailscale authenticated"
+          else
+            echo "  -> Tailscale auth failed (error above)"
+          fi
+          unset TS_CLIENT_SECRET
+        else
+          echo "  -> ${tailscaleClientRef} unreadable, skipping Tailscale auth"
+        fi
+        ;;
+      "") echo "  -> tailscaled not reachable, skipping Tailscale auth" ;;
+      *)
+        echo "  -> Tailscale already logged in, skipping auth"
+        ${jq} -e '(.Self.Tags // []) | any(. == "${tailscaleTag}")' <<<"$TS_STATUS" >/dev/null ||
+          echo "  !! Tailscale node lacks ${tailscaleTag}; SSH from tagged laptops is refused (AGENTS.md > Troubleshooting)"
+        ;;
+    esac
   '';
 }

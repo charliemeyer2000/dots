@@ -8,15 +8,17 @@
   dotsDir = "${homeDir}/all/dots";
   op = "${pkgs._1password-cli}/bin/op";
   tailscale = "${pkgs.tailscale}/bin/tailscale";
+  jq = "${pkgs.jq}/bin/jq";
   # OAuth client scoped to `auth_keys` + tag:personal only; read straight from
   # 1Password at activation so it never lands in ~/.env.local.
   tailscaleClientRef = "op://Developer/Tailscale/oauth-client-secret-personal";
   asCharlie = "sudo -u charlie HOME=${homeDir}";
   cfg = config.dots.onePassword;
+  tsClient = config.dots.tailscale.client;
   # Everything below exists to run $OP_CMD consumers; when a host enables none
   # of them (darwin-cog), emit nothing — an unused OP_CMD trips shellcheck
   # SC2034, which fails nix-darwin's activation-script check.
-  needsOp = cfg.injectEnv || config.services.tailscale.enable;
+  needsOp = cfg.injectEnv || tsClient != null;
 
   extraEnvExports = lib.concatStrings (lib.mapAttrsToList (name: ref: ''
       if VALUE="$($OP_CMD read "${ref}" 2>/dev/null)"; then
@@ -27,6 +29,19 @@
     '')
     cfg.extraEnv);
 in {
+  options.dots.tailscale.client = lib.mkOption {
+    type = lib.types.nullOr (lib.types.enum ["daemon" "app"]);
+    default = "daemon";
+    example = "app";
+    description = ''
+      How this Mac joins the personal tailnet: `"daemon"` runs nix-darwin's
+      open-source tailscaled (starts at boot, no login session needed), `"app"`
+      installs the standalone Tailscale.app (`tailscale-app` cask), and `null`
+      keeps the Mac off the tailnet (darwin-cog). A single option so a Mac can't
+      run both clients, which enrolls it on the tailnet twice.
+    '';
+  };
+
   options.dots.onePassword = {
     account = lib.mkOption {
       type = lib.types.str;
@@ -63,6 +78,9 @@ in {
     };
   };
 
+  config.services.tailscale.enable = tsClient == "daemon";
+  config.dots.homebrew.extraCasks = lib.optional (tsClient == "app") "tailscale-app";
+
   config.system.activationScripts.postActivation.text = lib.optionalString needsOp ''
     if [ -f ${homeDir}/.config/op/service-account-token ]; then
       OP_SERVICE_ACCOUNT_TOKEN="$(cat ${homeDir}/.config/op/service-account-token)"
@@ -86,18 +104,26 @@ in {
       fi
     ''}
 
-    # Authenticate Tailscale via OAuth (idempotent — re-auths if needed, no-op if
-    # current). Skipped where services.tailscale.enable = false (darwin-cog).
-    ${lib.optionalString config.services.tailscale.enable ''
-      if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
-        echo "Authenticating Tailscale..."
-        if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal 2>/dev/null; then
-          echo "  -> Tailscale authenticated"
-        else
-          echo "  -> Tailscale auth failed (tailscaled may not be running yet)"
-        fi
-        unset TS_CLIENT_SECRET
-      fi
+    # Log in to Tailscale via OAuth only when logged out (fresh install, expired
+    # key): --reset also resets every other setting (exit node, ...), so running
+    # it on every rebuild would wipe them. Skipped when tsClient = null (darwin-cog).
+    ${lib.optionalString (tsClient != null) ''
+      TS_STATUS="$(${tailscale} status --json 2>/dev/null || true)"
+      case "$(${jq} -r '.BackendState // empty' <<<"$TS_STATUS")" in
+        NeedsLogin | NoState)
+          if TS_CLIENT_SECRET="$($OP_CMD read "${tailscaleClientRef}" 2>/dev/null)"; then
+            echo "Authenticating Tailscale..."
+            if ${tailscale} up --reset --auth-key="''${TS_CLIENT_SECRET}?ephemeral=false&preauthorized=true" --advertise-tags=tag:personal; then
+              echo "  -> Tailscale authenticated"
+            else
+              echo "  -> Tailscale auth failed (error above)"
+            fi
+            unset TS_CLIENT_SECRET
+          fi
+          ;;
+        "") echo "  -> Tailscale not reachable (app not running yet?), skipping auth" ;;
+        *) echo "  -> Tailscale already logged in, skipping auth" ;;
+      esac
     ''}
   '';
 }

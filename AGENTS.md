@@ -53,9 +53,9 @@ dots/
 ├── modules/              # System-level modules
 │   ├── packages.nix      # Shared package list (used by base.nix and workstation)
 │   ├── base.nix          # System packages (wraps packages.nix for nix-darwin)
-│   ├── darwin.nix        # macOS defaults, TouchID sudo, Tailscale, Homebrew taps/brews
+│   ├── darwin.nix        # macOS defaults, TouchID sudo, Homebrew taps/brews
 │   ├── apps.nix          # Shared base list of Homebrew casks + dots.homebrew.{excludeCasks,extraCasks} options
-│   ├── secrets.nix       # 1Password op inject + Tailscale OAuth auth (nix-darwin)
+│   ├── secrets.nix       # 1Password op inject + Tailscale client choice (dots.tailscale.client) and OAuth auth (nix-darwin)
 │   └── hm-secrets.nix    # 1Password op inject via home.activation (standalone HM)
 ├── overlays/             # Local package overrides (bun.nix: pin bun ahead of nixpkgs)
 ├── parts/                # Flake-parts modules
@@ -104,7 +104,7 @@ All inputs follow the root nixpkgs for consistency.
 - Workstation uses `home.activation` instead of `system.activationScripts` (standalone HM)
 - Multi-account: `dots.onePassword.account` (default `"my.1password.com"`) is passed as `op --account <value>` in the desktop-app path so vault lookups disambiguate when both personal and work 1Password accounts are signed in. Service-account auth ignores it (the token already identifies the account). Override per-host if a machine should resolve secrets against a different account.
 - Per-host secrets: `dots.onePassword.extraEnv.<VAR> = "op://..."` (nix-darwin hosts) is `op read` at activation and appended to `~/.env.local` after the shared template. Use it when the value differs per machine — e.g. each Mac's own Executor API key `LIFE_MCP_API_KEY` from `op://Developer/Life MCP/<host>` — since a missing field in the shared template would fail `op inject` everywhere.
-- Per-host opt-out: `dots.onePassword.injectEnv = false` (nix-darwin hosts) skips the `~/.env.local` injection entirely (shared template + `extraEnv`); Tailscale auth is separately tied to `services.tailscale.enable`. When neither is enabled, the host emits no 1Password block at all — an unused `OP_CMD` would fail the activation script's shellcheck. Set on `darwin-cog` so personal API keys stay off the work machine; `op read` secrets on demand there instead.
+- Per-host opt-out: `dots.onePassword.injectEnv = false` (nix-darwin hosts) skips the `~/.env.local` injection entirely (shared template + `extraEnv`); Tailscale auth is separately tied to `dots.tailscale.client`. When neither is enabled, the host emits no 1Password block at all — an unused `OP_CMD` would fail the activation script's shellcheck. Set on `darwin-cog` so personal API keys stay off the work machine; `op read` secrets on demand there instead.
 
 ### Python via uv
 - No system python3 in base.nix — uv manages all Python versions
@@ -117,9 +117,12 @@ All inputs follow the root nixpkgs for consistency.
   - laptops `tag:personal` — OAuth client (`auth_keys`, `tag:personal`) at `op://Developer/Tailscale/oauth-client-secret-personal`, read by secrets.nix
   - workstation `tag:workstation` — OAuth client (`auth_keys`, `tag:workstation`) at `op://Developer/Tailscale/oauth-client-secret-workstation`, read by hm-secrets.nix
   - Devin VMs `tag:devin` — no secret at all: `devin-tailscale-up` exchanges the session's Devin OIDC token with Tailscale (workload identity federation, `tailscale up --client-id/--id-token`); the federated identity pins the Devin issuer + org subject and is limited to `tag:devin`. The org blueprint hooks `devin-tailscale-up --auto` into `$ENVRC`, so every session joins on its first command (no-op once up; 10-min backoff after a failure)
-- The Mac/workstation clients are `op read` at activation time and never written to `~/.env.local`; `tailscale up` runs on every `just switch` (idempotent — re-auths if the node key expired, no-op if current)
+- One Tailscale client per Mac, chosen by `dots.tailscale.client` (secrets.nix): `"daemon"` (default) is nix-darwin's open-source tailscaled, which starts at boot without a login session (darwin-agent); `"app"` is the standalone Tailscale.app from the `tailscale-app` cask, with the menu bar and exit-node picker (darwin-personal); `null` keeps the Mac off the tailnet. Running both enrolls the Mac twice.
+- The Mac/workstation OAuth secrets are `op read` at activation time and never written to `~/.env.local`. `just switch` logs Tailscale in only when it's logged out (fresh install, expired key): `tailscale up --reset` resets every other setting, so it never runs against a logged-in node. Errors print as-is.
+- Workstation: the activation runs as `charlie`, Tailscale's operator on the box, so it needs no sudo. Its `tailscale up` restates the node's full settings (`tailscaleUpFlags` in hm-secrets.nix: `--advertise-tags=tag:workstation --ssh --operator=charlie`) because `--reset` drops anything unlisted, so add a setting there, not only by hand. When the node is logged in, the activation warns if it lacks `tag:workstation`.
+- Nodes joined with an OAuth key are tagged and their key never expires. A node logged in through the browser is owned by your user, gets a 180-day key, and loses its tag; tagging it later doesn't turn expiry off. Fix it in the admin console (Troubleshooting → Host Offline on the Tailnet).
 - No manual `tailscale up` needed on new machines (just sign into 1Password first)
-- `darwin-cog` opts out entirely: `services.tailscale.enable = false` (no daemon, CLI out of PATH) and secrets.nix skips the OAuth auth when the service is disabled — no personal-tailnet node key on the work machine
+- `darwin-cog` opts out entirely: `dots.tailscale.client = null` (no daemon or app) and secrets.nix skips the OAuth auth — no personal-tailnet node key on the work machine
 
 ### Mullvad VPN
 - Two Mullvad integrations: Tailscale exit nodes (primary) and standalone Mullvad VPN app (fallback)
@@ -238,7 +241,6 @@ Language management:
 - Keyboard: fast repeat (KeyRepeat=2, InitialKeyRepeat=15), no press-and-hold
 - Screenshots: saved to `~/Desktop/screenshots`
 - TouchID for sudo
-- Tailscale service enabled
 - Homebrew taps: openai/tools (tart), hashicorp, k9s, stripe, graphite, ekristen, steipete, speakeasy-api
 
 ### Per-Host Homebrew Casks
@@ -291,7 +293,7 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 2. Clone: `git clone https://github.com/charliemeyer2000/dots ~/all/dots && cd ~/all/dots`
 3. First build: `sudo nix run nix-darwin -- switch --flake .#darwin-personal` (secrets fail gracefully)
 4. Sign into 1Password desktop app, then `op signin`
-5. Second build: `just switch darwin-personal` (secrets + Tailscale auth succeed)
+5. Second build: `just switch darwin-personal` (secrets + Tailscale auth succeed). On a `dots.tailscale.client = "app"` host, first open Tailscale.app once and approve its VPN configuration, but don't log in through the app: the second build logs it in with the OAuth key, which tags it and turns key expiry off.
 6. **Log out and back in (or reboot)** — required on a fresh machine. macOS caches `NSGlobalDomain` prefs per-session, so keyboard repeat (`KeyRepeat`/`InitialKeyRepeat`), press-and-hold, scroll direction, and other global UI defaults won't take effect in the current session even though `defaults read -g KeyRepeat` shows the new value. Dock and Finder defaults *do* apply immediately because nix-darwin restarts those processes; everything reading from `NSGlobalDomain` needs a logout.
 
 ### Linux Workstation (standalone home-manager)
@@ -301,7 +303,8 @@ Requires two passes — first installs packages (including 1Password CLI), secon
 3. Clone: `git clone https://github.com/charliemeyer2000/dots ~/all/dots && cd ~/all/dots`
 4. First run: `nix run home-manager -- switch --flake .#workstation -b bak` (secrets fail gracefully)
 5. Sign into 1Password desktop app, then `op signin`
-6. Second run: `just switch workstation` (secrets + Tailscale auth succeed)
+6. Install Tailscale (Ubuntu-managed daemon): `curl -fsSL https://tailscale.com/install.sh | sh`, then once `sudo tailscale set --operator=$USER` so the activation can log in without sudo
+7. Second run: `just switch workstation` (secrets + Tailscale auth succeed)
 
 ## Manual Setup Required
 
@@ -345,6 +348,13 @@ These apps have built-in sync — just sign in and configs follow:
 
 ### Nested Claude Code Sessions
 `CLAUDECODE` is unset in zshrc. Open a new terminal if you see the nested session error.
+
+### Host Offline on the Tailnet
+From any machine on the tailnet, read the node's record: `tailscale status --json | jq '.Peer[] | select(.HostName == "aiworkstation") | {Online, LastSeen, KeyExpiry, Expired, Tags}'`
+- **`Expired: true`**: its node key expired. Admin console → Machines → ⋯ → **Temporarily extend key** (or **Reauthorize machine** if that's offered instead), then **Disable key expiry**.
+- **`Tags: null`**: it was logged in through the browser, so it's owned by your user, and the policy refuses SSH from `tag:personal` laptops. ⋯ → **Edit ACL tags** → its role tag, then **Disable key expiry**.
+- **Key valid but still offline**: the host isn't reaching Tailscale, so check its network. The workstation has no built-in Wi-Fi.
+- Don't run `tailscale up --force-reauth` over SSH: it drops the session, and it starts a browser login even when given an auth key.
 
 ### Secrets Not Loading
 1. Sign into 1Password: `op signin`

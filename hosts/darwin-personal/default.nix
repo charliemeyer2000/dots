@@ -5,6 +5,9 @@
   networking.computerName = "Charlie's M4 Pro";
   networking.localHostName = "charlie-m4pro";
 
+  # Tailscale.app (menu bar, exit-node picker) is this Mac's tailnet client.
+  dots.tailscale.client = "app";
+
   # Dolphin emulator for offline SSBM mods (20XX, UnclePunch Training Mode).
   # Slippi Launcher itself is a one-off install (self-updating, no cask exists).
   # Obsidian: the shared life vault (synced via Remotely Save), see the `life` skill.

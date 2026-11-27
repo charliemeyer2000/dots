@@ -410,9 +410,6 @@ in {
     })
     loginApps);
 
-  # ── Services ────────────────────────────────────────────────────────
-  services.tailscale.enable = lib.mkDefault true; # per-host opt-out: darwin-cog
-
   # ── Homebrew ────────────────────────────────────────────────────────
   homebrew = {
     enable = true;

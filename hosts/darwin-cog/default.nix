@@ -11,8 +11,8 @@
   dots.homebrew.excludeCasks = ["zoom" "1password" "figma" "notion" "mullvad-vpn" "atomic-wallet" "ngrok"];
 
   # Personal-tailnet Tailscale stays off the work machine too (no tailscaled
-  # daemon; secrets.nix skips the OAuth auth when the service is disabled).
-  services.tailscale.enable = false;
+  # daemon or app; secrets.nix skips the OAuth auth).
+  dots.tailscale.client = null;
 
   # Work machine — don't inject personal API keys into ~/.env.local
   # (`op read` secrets on demand).
